@@ -114,12 +114,12 @@ namespace eli {
                     return b;
                 }
 
-                void set_y_sym(const data_type &yysym) {
-                    ysym = yysym;
+                void set_top_bot_sym(const data_type &tbsym) {
+                    top_bot_sym = tbsym;
                 }
                 
-                void get_y_sym(data_type &yysym) {
-                    yysym = ysym;
+                void get_top_bot_sym(data_type &tbsym) {
+                    tbsym = top_bot_sym;
                 }
                 
                 void set_exponents(const data_type &mm, const data_type &nn) {
@@ -434,8 +434,8 @@ namespace eli {
                             }
                         }
 
-                        // if ysym is true, reflect top curve
-                        if (ysym) {
+                        // if top_bot_sym is true, reflect top curve
+                        if (top_bot_sym) {
                             // mirror for bottom half
                             pc_bottom = pc;
                             pc_bottom.reflect_xz();
@@ -696,7 +696,7 @@ namespace eli {
                 data_type xradius, yradius;
                 data_type a, b, m, n, m_bot, n_bot;
                 data_type max_width_loc;
-                data_type ysym;
+                data_type top_bot_sym;
                 index_type max_degree;
             };
         }
