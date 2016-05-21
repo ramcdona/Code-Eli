@@ -276,6 +276,15 @@ namespace eli
           typedef data__ data_type;
           typedef unsigned short dimension_type;
           typedef tol__ tolerance_type;
+
+          typedef piecewise<curve__, data_type, dim__> piecewise_curve_type;
+
+          typedef typename curve_type::onedbezcurve onedbezcurve;
+          typedef piecewise<curve__, data_type, 1, tol__> onedpiecewisecurve;
+          typedef piecewise<curve__, data_type, 2, tol__> twodpiecewisecurve;
+          typedef piecewise<curve__, data_type, 3, tol__> threedpiecewisecurve;
+          typedef piecewise<curve__, data_type, 4, tol__> fourdpiecewisecurve;
+
           enum error_code
           {
             NO_ERRORS=0,
@@ -285,6 +294,14 @@ namespace eli
             INVALID_PARAM_DIFFERENCE=51,
             SEGMENT_NOT_CONNECTED=100,
             UNKNOWN_ERROR=999
+          };
+
+          enum mod_type
+          {
+            FLAT,
+            ROUND,
+            EDGE,
+            SHARP
           };
 
         public:
@@ -1192,6 +1209,33 @@ namespace eli
             return NO_ERRORS;
           }
 
+          void match_pmap( piecewise<curve__, data_type, dim__> &other )
+          {
+            std::vector < data_type > pmap, omap, cmap;
+
+            get_pmap( pmap );
+            other.get_pmap( omap );
+
+
+            tolerance_type ttol(tol);
+
+            // Comparison function for set_union.
+            auto comp = [&ttol](const data_type &x1, const data_type &x2)->bool
+            {
+              return ttol.approximately_less_than(x1, x2);
+            };
+
+            // Place union of pmap and omap into cmap.
+            std::set_union( pmap.begin(), pmap.end(), omap.begin(), omap.end(), std::back_inserter(cmap), comp );
+
+            for ( int i = 0; i < cmap.size(); i++ )
+            {
+              split( cmap[i] );
+              other.split( cmap[i] );
+            }
+          }
+
+
           void to_cubic(const data_type &ttol)
           {
             typename segment_collection_type::iterator it;
@@ -1439,6 +1483,203 @@ namespace eli
 
             return true;
           }
+
+          // Modify a curve around parameter t.  Remove +-dt and replace with generated curve segment.
+          void modify( const index_type &mod, const data_type &t, const data_type &dt, const data_type &len_factor, const data_type &off_factor, const data_type &str_factor )
+          {
+            data_type tmin = get_parameter_min();
+            data_type tmax_save = tmax;
+
+            data_type tstart, tend;
+
+            bool mod_ends = false;
+
+            if ( tol.approximately_equal( tmin, t ) || tol.approximately_equal( tmax, t ) )
+            {
+              tstart = tmax - dt;
+              tend = tmin + dt;
+              mod_ends = true;
+            }
+            else
+            {
+              tstart = t - dt;
+              tend = t + dt;
+              mod_ends = false;
+            }
+
+            point_type pstart, pend, tanstart, tanend, tjunk;
+
+            // Evaluate point and tangents as needed.
+            pstart = f( tstart );
+            tangents( tstart, tanstart, tjunk );
+            pend = f ( tend );
+            tangents( tend, tjunk, tanend );
+            tanend = -1.0 * tanend;
+
+            // Variable to store new curve segments.
+            curve_type cstart, cend;
+
+            // Distance to close.
+            data_type d = dist( pstart, pend );
+
+            if ( tol.approximately_equal( d, 0 ) )
+            {
+              return;
+            }
+
+            switch ( mod )
+            {
+            case ROUND:
+              {
+                point_type disp = pstart - pend;
+                disp.normalize();
+
+                // Find angles between tangents and displacement
+                data_type dottanstart = disp.dot( tanstart );
+                data_type thetastart = acos( dottanstart );
+
+                data_type dottanend = disp.dot( tanend );
+                data_type thetaend = acos( dottanend );
+
+                // Find circular arc to include
+                data_type theta = eli::constants::math<data__>::pi() + thetaend - thetastart;
+
+                if ( tol.approximately_equal( theta, 0 ) )
+                {
+                  return;
+                }
+
+                // Find radius from chord length.
+                data_type radius = d / ( 2.0 * sin( theta / 2.0 ) );
+
+                // Distance to quad Bezier construction point.
+                data_type b = radius * tan( theta / 4.0 );
+
+                // Extrapolated tip up/down points.
+                point_type ptstart, ptend;
+                ptstart = pstart + tanstart * b * len_factor;
+                ptend = pend + tanend * b * len_factor;
+
+                // Displacement vector at extrapolated tip
+                point_type dispt = ptstart - ptend;
+
+                // Point on center of circle.
+                point_type psplit = ( ptstart + ptend ) * 0.5 + dispt * off_factor;
+
+                // Fraction of radius to place cubic control point
+                data_type f = (4.0/3.0) * tan(theta / 8.0);
+
+                cstart.resize(3);
+                cend.resize(3);
+
+                cstart.set_control_point( pstart, 0 );
+                cstart.set_control_point( pstart + tanstart * radius * f * len_factor, 1 );
+                cstart.set_control_point( psplit + disp * radius * f, 2 );
+                cstart.set_control_point( psplit, 3 );
+
+                cend.set_control_point( psplit, 0 );
+                cend.set_control_point( psplit - disp * radius * f, 1 );
+                cend.set_control_point( pend + tanend * radius * f * len_factor, 2 );
+                cend.set_control_point( pend, 3 );
+              }
+              break;
+            case EDGE:
+              {
+                point_type pt1 = pstart + d * tanstart * len_factor * 0.5;
+                point_type pt2 = pend + d * tanend * len_factor * 0.5;
+
+                point_type disp = pstart - pend;
+                disp.normalize();
+
+                point_type dispt = pt1 - pt2;
+                data_type tipht = dispt.norm();
+
+                point_type psplit = ( pt1 + pt2 ) * 0.5 + disp * tipht * off_factor;
+
+                cstart.resize(1);
+                cend.resize(1);
+
+                cstart.set_control_point( pstart, 0 );
+                cstart.set_control_point( psplit, 1 );
+
+                cend.set_control_point( psplit, 0 );
+                cend.set_control_point( pend, 1 );
+              }
+              break;
+            case SHARP:
+              {
+                point_type pt1 = pstart + d * tanstart * len_factor * 0.5;
+                point_type pt2 = pend + d * tanend * len_factor * 0.5;
+
+                point_type disp = pstart - pend;
+                disp.normalize();
+
+                point_type dispt = pt1 - pt2;
+                data_type tipht = dispt.norm();
+
+                point_type psplit = ( pt1 + pt2 ) * 0.5 + disp * tipht * off_factor;
+
+                point_type cp1 = pstart + d * tanstart * len_factor * 0.5 * str_factor;
+                point_type cp2 = pend + d * tanend * len_factor * 0.5 * str_factor;
+
+                cstart.resize(2);
+                cend.resize(2);
+
+                cstart.set_control_point( pstart, 0 );
+                cstart.set_control_point( cp1, 1 );
+                cstart.set_control_point( psplit, 2 );
+
+                cend.set_control_point( psplit, 0 );
+                cend.set_control_point( cp2, 1 );
+                cend.set_control_point( pend, 2 );
+              }
+              break;
+            case FLAT:
+            default:
+              {
+                point_type padd = ( pstart + pend ) * 0.5;
+
+                cstart.resize(1);
+                cend.resize(1);
+
+                cstart.set_control_point( pstart, 0 );
+                cstart.set_control_point( padd, 1 );
+
+                cend.set_control_point( padd, 0 );
+                cend.set_control_point( pend, 1 );
+                break;
+              }
+            }
+
+            if ( mod_ends )
+            {
+              // Make sure curves are split at modification points.
+              split( tstart );
+              split( tend );
+
+              replace( cend, 0 );
+              replace( cstart, number_segments() - 1 );
+            }
+            else
+            {
+              piecewise_curve_type cbefore, cjunk, cafter;
+
+              split( cbefore, cjunk, tstart );
+              split( cjunk, cafter, tend );
+
+              cbefore.push_back( cstart, dt );
+              cbefore.push_back( cend, dt );
+              cbefore.push_back( cafter );
+
+              clear();
+              set_t0( tmin );
+              push_back( cbefore );
+
+              set_tmax( tmax_save ); // Just to be sure.
+
+            }
+          }
+
 
           bool continuous(eli::geom::general::continuity cont, const data_type &t) const
           {
@@ -1790,6 +2031,58 @@ namespace eli
             return it->second.fp(tt)/delta_t;
           }
 
+          void fps(const data_type &t, point_type &fp1, point_type &fp2) const
+          {
+            // find segment that corresponds to given t
+            typename segment_collection_type::const_iterator it;
+            data_type tt(0), delta_t;
+            find_segment(it, tt, t);
+
+            if (it==segments.end())
+            {
+              assert(false);
+              --it;
+            }
+
+            if ( tol.approximately_equal( tt, 0 ) )
+            {
+              delta_t = get_delta_t(it);
+              fp2 = it->second.fp( tt )/delta_t;
+
+              if ( it == segments.begin() )
+              {
+                fp1 = fp2;
+              }
+              else
+              {
+                --it;
+                delta_t = get_delta_t(it);
+                fp1 = it->second.fp( 1 )/delta_t;
+              }
+            }
+            else if ( tol.approximately_equal( tt, 1 ) )
+            {
+              delta_t = get_delta_t(it);
+              fp1 = it->second.fp( tt )/delta_t;
+              ++it;
+              if ( it == segments.end() )
+              {
+                fp2 = fp1;
+              }
+              else
+              {
+                delta_t = get_delta_t(it);
+                fp2 = it->second.fp( 0 )/delta_t;
+              }
+            }
+            else
+            {
+              delta_t = get_delta_t(it);
+              fp1 = it->second.fp(tt)/delta_t;
+              fp2 = fp1;
+            }
+          }
+
           point_type fpp(const data_type &t) const
           {
             // find segment that corresponds to given t
@@ -1824,7 +2117,7 @@ namespace eli
             return it->second.fppp(tt)/(delta_t*delta_t*delta_t);
           }
 
-          point_type tanget(const data_type &t) const
+          point_type tangent(const data_type &t) const
           {
             // find segment that corresponds to given t
             typename segment_collection_type::const_iterator it;
@@ -1838,6 +2131,53 @@ namespace eli
             }
 
             return it->second.tangent(tt);
+          }
+
+          void tangents(const data_type &t, point_type &t1, point_type &t2) const
+          {
+            // find segment that corresponds to given t
+            typename segment_collection_type::const_iterator it;
+            data_type tt(0);
+            find_segment(it, tt, t);
+
+            if (it==segments.end())
+            {
+              assert(false);
+              --it;
+            }
+
+            if ( tol.approximately_equal( tt, 0 ) )
+            {
+              t2 = it->second.tangent( tt );
+
+              if ( it == segments.begin() )
+              {
+                t1 = t2;
+              }
+              else
+              {
+                --it;
+                t1 = it->second.tangent( 1 );
+              }
+            }
+            else if ( tol.approximately_equal( tt, 1 ) )
+            {
+              t1 = it->second.tangent( tt );
+              ++it;
+              if ( it == segments.end() )
+              {
+                t2 = t1;
+              }
+              else
+              {
+                t2 = it->second.tangent( 0 );
+              }
+            }
+            else
+            {
+              t1 = it->second.tangent(tt);
+              t2 = t1;
+            }
           }
 
           void frenet_serret_frame(point_type &t, point_type &n, point_type &b, const data_type &t0)
@@ -1854,6 +2194,120 @@ namespace eli
             }
 
             it->second.frenet_serret_frame(t, n, b, tt);
+          }
+
+          void product(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita, scitb;
+            scita=a.segments.begin();
+            scitb=b.segments.begin();
+            for ( ; scita!=a.segments.end(); ++scita, ++scitb)
+            {
+              curve_type c;
+
+              c.product( scita->second, scitb->second );
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
+          void product1d(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, 1> &b)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita;
+            typename onedpiecewisecurve::segment_collection_type::const_iterator scitb;
+            scita=a.segments.begin();
+            scitb=b.segments.begin();
+            for ( ; scita!=a.segments.end(); ++scita, ++scitb)
+            {
+              curve_type c;
+
+              c.product1d( scita->second, scitb->second );
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
+          void square(const piecewise<curve__, data_type, dim__> &a)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita;
+            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
+            {
+              curve_type c;
+
+              c.square( scita->second );
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
+          void sqrt(const piecewise<curve__, data_type, dim__> &a)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita;
+            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
+            {
+              curve_type c, b( scita->second );
+
+              bool flip = false;
+
+              if ( b.f(0).x() < 1e-12 )
+              {
+                b.reverse();
+                flip = true;
+              }
+
+              c.sqrt( b );
+
+              if ( flip )
+              {
+                c.reverse();
+              }
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
+          void sum(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita, scitb;
+            scita=a.segments.begin();
+            scitb=b.segments.begin();
+            for ( ; scita!=a.segments.end(); ++scita, ++scitb)
+            {
+              curve_type c;
+
+              c.sum( scita->second, scitb->second );
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
+          onedpiecewisecurve sumcompcurve()
+          {
+            onedpiecewisecurve retcurve;
+
+            retcurve.set_t0( get_t0() );
+
+            typename segment_collection_type::const_iterator scit;
+            for ( scit = segments.begin(); scit!=segments.end(); ++scit)
+            {
+              typename curve_type::onedbezcurve c;
+
+              c = scit->second.sumcompcurve();
+
+              retcurve.push_back( c, get_delta_t(scit) );
+            }
+
+            return retcurve;
           }
 
           // TODO: NEED TO IMPLEMENT
