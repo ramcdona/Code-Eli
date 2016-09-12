@@ -298,6 +298,7 @@ namespace eli
 
           enum mod_type
           {
+            NONE,
             FLAT,
             ROUND,
             EDGE,
@@ -1748,6 +1749,18 @@ namespace eli
                 cend.set_control_point( pend, 2 );
               }
               break;
+            case NONE:
+              {
+                cstart.resize(1);
+                cend.resize(1);
+
+                cstart.set_control_point( pstart, 0 );
+                cstart.set_control_point( pstart, 1 );
+
+                cend.set_control_point( pend, 0 );
+                cend.set_control_point( pend, 1 );
+                break;
+              }
             case FLAT:
             default:
               {
