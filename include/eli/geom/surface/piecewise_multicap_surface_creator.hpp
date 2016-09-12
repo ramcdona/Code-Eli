@@ -123,12 +123,6 @@ namespace eli
                 piecewise_curve_type edge;
                 surface_copy.get_umin_bndy_curve( edge );
 
-                // make sure extracted curve is closed
-                if (edge.open())
-                {
-                  return false;
-                }
-
                 // make sure that the split location is different than the start/end location otherwise
                 // the edge is a point and no need to cap
                 if (tol.approximately_equal(edge.f(vmin), edge.f(vsplit)))
@@ -171,12 +165,6 @@ namespace eli
 
                 piecewise_curve_type edge;
                 surface_copy.get_vmin_bndy_curve( edge );
-
-                // make sure extracted curve is closed
-                if (edge.open())
-                {
-                  return false;
-                }
 
                 // make sure that the split location is different than the start/end location otherwise
                 // the edge is a point and no need to cap
