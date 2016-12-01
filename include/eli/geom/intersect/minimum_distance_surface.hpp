@@ -42,7 +42,7 @@ namespace eli
         {
           public:
             static const int hit_constraint = 101;
-            surface__ s;
+            const surface__ *s;
             typename surface__::point_type pt;
             typename surface__::data_type xtol;
             typename surface__::index_type maxit;
@@ -85,8 +85,8 @@ namespace eli
               typename surface__::tolerance_type tol;
 
               typename surface__::data_type umin, umax, vmin, vmax;
-              s.get_parameter_min(umin,vmin);
-              s.get_parameter_max(umax,vmax);
+              s->get_parameter_min(umin,vmin);
+              s->get_parameter_max(umax,vmax);
 
               bool divflag = false;
 
@@ -97,7 +97,7 @@ namespace eli
               count = 0;
               while ( count < maxit && abs_x_norm > xtol && !all_zero)
               {
-                s.f_pt_derivs( x(0), x(1), q, Su, Sv );
+                s->f_pt_derivs( x(0), x(1), q, Su, Sv );
 
                 r = q - pt;
 
@@ -346,7 +346,7 @@ namespace eli
         x0(1) = v0;
         tpsolve.set_initial_guess( x0 );
         tpsolve.pt = pt;
-        tpsolve.s = s;
+        tpsolve.s = &s;
         tpsolve.maxit = 20;
         tpsolve.xtol = tol.get_absolute_tolerance();
 
@@ -865,10 +865,8 @@ namespace eli
             index_type uk = uit->second;
             index_type vk = vit->second;
 
-            surface_type s = ps.patches[uk][vk];
-
             bounding_box_type bb_local;
-            s.get_bounding_box(bb_local);
+            ps.patches[uk][vk].get_bounding_box(bb_local);
 
             data_type dbbmin;
             dbbmin = minimum_distance(bb_local, pt);
@@ -898,10 +896,8 @@ namespace eli
             index_type uk = uit->second;
             index_type vk = vit->second;
 
-            surface_type s = ps.patches[uk][vk];
-
             data_type uu, vv, d;
-            d=minimum_distance(uu, vv, s, pt);
+            d=minimum_distance(uu, vv, ps.patches[uk][vk], pt);
 
             if(d < dist)
             {
