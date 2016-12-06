@@ -671,12 +671,10 @@ namespace eli
             typename keymap_type::const_iterator uit, vit;
             find_patch(uk, vk, uit, vit, ui, vi);
 
-            surface_type s = patches[uk][vk];
-
             if (ui>0)
             {
               surf.get_uconst_curve(bc0, 0);
-              s.get_uconst_curve(bc1, 0);
+              patches[uk][vk].get_uconst_curve(bc1, 0);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 return PATCH_NOT_CONNECTED;
@@ -685,7 +683,7 @@ namespace eli
             if ((ui+1)<number_u_patches())
             {
               surf.get_uconst_curve(bc0, 1);
-              s.get_uconst_curve(bc1, 1);
+              patches[uk][vk].get_uconst_curve(bc1, 1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 return PATCH_NOT_CONNECTED;
@@ -694,7 +692,7 @@ namespace eli
             if (vi>0)
             {
               surf.get_vconst_curve(bc0, 0);
-              s.get_vconst_curve(bc1, 0);
+              patches[uk][vk].get_vconst_curve(bc1, 0);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 return PATCH_NOT_CONNECTED;
@@ -703,7 +701,7 @@ namespace eli
             if ((vi+1)<number_v_patches())
             {
               surf.get_vconst_curve(bc0, 1);
-              s.get_vconst_curve(bc1, 1);
+              patches[uk][vk].get_vconst_curve(bc1, 1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 return PATCH_NOT_CONNECTED;
@@ -842,12 +840,11 @@ namespace eli
                 index_type uk = uit->second;
                 index_type vk = vit->second;
 
-                surface_type s = patches[uk][vk];
-                surface_type sc(s);
+                surface_type sc = patches[uk][vk];
 
                 sc.to_cubic_u();
 
-                data_type d = s.eqp_distance_bound(sc);
+                data_type d = patches[uk][vk].eqp_distance_bound(sc);
 
                 while(d > ttol)
                 {
@@ -856,12 +853,11 @@ namespace eli
 
                   split_u(uk, uit, u_in, 0.5);
 
-                  s = patches[uk][vk];
-                  sc = s;
+                  sc = patches[uk][vk];
 
                   sc.to_cubic_u();
 
-                  d = s.eqp_distance_bound(sc);
+                  d = patches[uk][vk].eqp_distance_bound(sc);
                 }
               }
             }
@@ -888,12 +884,11 @@ namespace eli
                 index_type uk = uit->second;
                 index_type vk = vit->second;
 
-                surface_type s = patches[uk][vk];
-                surface_type sc(s);
+                surface_type sc = patches[uk][vk];
 
                 sc.to_cubic_v();
 
-                data_type d = s.eqp_distance_bound(sc);
+                data_type d = patches[uk][vk].eqp_distance_bound(sc);
 
                 while(d > ttol)
                 {
@@ -902,12 +897,11 @@ namespace eli
 
                   split_v(vk, vit, v_in, 0.5);
 
-                  s = patches[uk][vk];
-                  sc = s;
+                  sc = patches[uk][vk];
 
                   sc.to_cubic_v();
 
-                  d = s.eqp_distance_bound(sc);
+                  d = patches[uk][vk].eqp_distance_bound(sc);
                 }
               }
             }
@@ -988,11 +982,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_uconst_curve(c, uu);
+              patches[uk][vk].get_uconst_curve(c, uu);
 
               pwc.push_back(c,dv);
             }
@@ -1015,11 +1007,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_umin_bndy_curve(c);
+              patches[uk][vk].get_umin_bndy_curve(c);
 
               pwc.push_back(c,dv);
             }
@@ -1042,11 +1032,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_umax_bndy_curve(c);
+              patches[uk][vk].get_umax_bndy_curve(c);
 
               pwc.push_back(c,dv);
             }
@@ -1069,11 +1057,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vmin_bndy_curve(c);
+              patches[uk][vk].get_vmin_bndy_curve(c);
 
               pwc.push_back(c,du);
             }
@@ -1096,11 +1082,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vmax_bndy_curve(c);
+              patches[uk][vk].get_vmax_bndy_curve(c);
 
               pwc.push_back(c,du);
             }
@@ -1123,11 +1107,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_umin_ndelta_pcurve(c);
+              patches[uk][vk].get_umin_ndelta_pcurve(c);
 
               pwc.push_back(c,dv);
             }
@@ -1150,11 +1132,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_umax_ndelta_pcurve(c);
+              patches[uk][vk].get_umax_ndelta_pcurve(c);
 
               pwc.push_back(c,dv);
             }
@@ -1177,11 +1157,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vmin_ndelta_pcurve(c);
+              patches[uk][vk].get_vmin_ndelta_pcurve(c);
 
               pwc.push_back(c,du);
             }
@@ -1204,11 +1182,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vmax_ndelta_pcurve(c);
+              patches[uk][vk].get_vmax_ndelta_pcurve(c);
 
               pwc.push_back(c,du);
             }
@@ -1234,11 +1210,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_uconst_f_u_curve(c, uu);
+              patches[uk][vk].get_uconst_f_u_curve(c, uu);
 
               pwc.push_back(c,dv);
             }
@@ -1264,11 +1238,9 @@ namespace eli
 
               data_type dv=vkey.get_delta_parm(vit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_uconst_f_v_curve(c, uu);
+              patches[uk][vk].get_uconst_f_v_curve(c, uu);
 
               pwc.push_back(c,dv);
             }
@@ -1294,11 +1266,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vconst_curve(c, vv);
+              patches[uk][vk].get_vconst_curve(c, vv);
 
               pwc.push_back(c,du);
             }
@@ -1324,11 +1294,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vconst_f_u_curve(c, vv);
+              patches[uk][vk].get_vconst_f_u_curve(c, vv);
 
               pwc.push_back(c,du);
             }
@@ -1354,11 +1322,9 @@ namespace eli
 
               data_type du=ukey.get_delta_parm(uit);
 
-              surface_type s=patches[uk][vk];
-
               curve_type c;
 
-              s.get_vconst_f_v_curve(c, vv);
+              patches[uk][vk].get_vconst_f_v_curve(c, vv);
 
               pwc.push_back(c,du);
             }
