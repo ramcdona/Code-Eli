@@ -943,9 +943,7 @@ namespace eli
 
               for (index_type j=0; j<nv; ++j)
               {
-                surface_type s=patches[uk][j];
-
-                s.promote_u_to( ord[i] );
+                patches[uk][j].promote_u_to( ord[i] );
               }
             }
           }
@@ -965,9 +963,7 @@ namespace eli
 
               for (index_type i=0; i<nu; ++i)
               {
-                surface_type s=patches[i][vk];
-
-                s.promote_v_to( ord[j] );
+                patches[i][vk].promote_v_to( ord[j] );
               }
             }
           }
