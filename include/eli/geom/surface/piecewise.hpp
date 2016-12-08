@@ -80,9 +80,10 @@ namespace eli
           };
 
         public:
-          piecewise() : nu(0), nv(0) {}
+          piecewise() : nu(0), nv(0), uclosecache(UNKNOWN), vclosecache(UNKNOWN) {}
           piecewise(const piecewise<surface__, data_type, dim__, tol__> &p)
-            : patches(p.patches), ukey(p.ukey), vkey(p.vkey), nu(p.nu), nv(p.nv) {}
+            : patches(p.patches), ukey(p.ukey), vkey(p.vkey), nu(p.nu), nv(p.nv),
+            uclosecache(p.uclosecache), vclosecache(p.vclosecache) {}
           ~piecewise() {}
 
           piecewise & operator=(const piecewise<surface__, data_type, dim__> &p)
@@ -95,6 +96,8 @@ namespace eli
             vkey=p.vkey;
             nu=p.nu;
             nv=p.nv;
+            uclosecache=p.uclosecache;
+            vclosecache=p.vclosecache;
 
             return (*this);
           }
@@ -114,6 +117,10 @@ namespace eli
             if (number_u_patches()!=p.number_u_patches())
               return false;
             if (number_v_patches()!=p.number_v_patches())
+              return false;
+            if (uclosecache!=p.uclosecache)
+              return false;
+            if (vclosecache!=p.vclosecache)
               return false;
             typename patch_collection_type::const_iterator scit, it;
             for (scit=patches.begin(), it=p.patches.begin(); scit!=patches.end(); ++scit, ++it)
@@ -316,6 +323,8 @@ namespace eli
             patches.clear();
             resize_store(nsegu, nv);
             ukey.init(nsegu, du, u0);
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           void init_v(const index_type &nsegv, const data_type &dv = 1, const data_type &v0 = 0)
@@ -323,6 +332,8 @@ namespace eli
             patches.clear();
             resize_store(nu, nsegv);
             vkey.init(nsegv, dv, v0);
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           void init_uv(const index_type &nsegu, const index_type &nsegv, const data_type &du = 1, const data_type &dv = 1, const data_type &u0 = 0, const data_type &v0 = 0)
@@ -331,6 +342,8 @@ namespace eli
             resize_store(nsegu, nsegv);
             ukey.init(nsegu, du, u0);
             vkey.init(nsegv, dv, v0);
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           template<typename it__>
@@ -339,6 +352,8 @@ namespace eli
             patches.clear();
             ukey.init(dus, due, u0);
             resize_store(ukey.key.size(), nv);
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           template<typename it__>
@@ -347,6 +362,8 @@ namespace eli
             patches.clear();
             vkey.init(dvs, dve, v0);
             resize_store(nu, vkey.key.size());
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           template<typename it__>
@@ -356,6 +373,8 @@ namespace eli
             ukey.init(dus, due, u0);
             vkey.init(dvs, dve, v0);
             resize_store(ukey.key.size(), vkey.key.size());
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           void degree_u(index_type &mind, index_type &maxd)
@@ -454,6 +473,14 @@ namespace eli
           }
           bool closed_u() const
           {
+            if (uclosecache != UNKNOWN)
+            {
+              if (uclosecache == CLOSED)
+                return true;
+
+              return false;
+            }
+
             index_type ifirst, ilast, j;
             typename surface_type::curve_type bc0, bc1;
 
@@ -465,9 +492,13 @@ namespace eli
               patches[ifirst][j].get_uconst_curve(bc0, 0);
               patches[ilast][j].get_uconst_curve(bc1, 1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
+              {
+                uclosecache = OPEN;
                 return false;
+              }
             }
 
+            uclosecache = CLOSED;
             return true;
           }
 
@@ -477,6 +508,13 @@ namespace eli
           }
           bool closed_v() const
           {
+            if (vclosecache != UNKNOWN)
+            {
+              if (vclosecache == CLOSED)
+                return true;
+
+              return false;
+            }
             index_type i, jfirst, jlast;
             typename surface_type::curve_type bc0, bc1;
 
@@ -489,10 +527,12 @@ namespace eli
               patches[i][jlast].get_vconst_curve(bc1, 1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
+                vclosecache = OPEN;
                 return false;
               }
             }
 
+            vclosecache = CLOSED;
             return true;
           }
 
@@ -612,6 +652,10 @@ namespace eli
             vkey.pmax = pmaxtmp;
 
             swap(ukey.key, vkey.key);
+
+            index_type tmp( uclosecache );
+            uclosecache = vclosecache;
+            vclosecache = tmp;
           }
 
           void clear()
@@ -621,6 +665,8 @@ namespace eli
             patches.clear();
             ukey.clear();
             vkey.clear();
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
           }
 
           error_code get(surface_type &surf, const index_type &ui, const index_type &vi) const
@@ -656,6 +702,9 @@ namespace eli
 
             // set the new surf
             patches[uk][vk]=surf;
+
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
 
             return NO_ERRORS;
           }
@@ -710,6 +759,9 @@ namespace eli
 
             // set the new surf
             patches[uk][vk]=surf;
+
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
 
             assert(check_continuity(eli::geom::general::C0));
 
@@ -2227,6 +2279,15 @@ namespace eli
 
           parameter_key ukey, vkey;
           index_type nu, nv;
+
+          enum close_cache
+          {
+            UNKNOWN = 0,
+            CLOSED = 1,
+            OPEN = 2
+          };
+
+          mutable index_type uclosecache, vclosecache;
 
         protected:
           bool check_continuity(const eli::geom::general::continuity &/*cont*/) const
