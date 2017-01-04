@@ -1011,6 +1011,11 @@ namespace eli
 
           void promote_u_to(index_type target_degree)
           {
+              if ( degree_u() >= target_degree )
+              {
+                return;
+              }
+
               typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
               typedef std::vector<control_row_type, Eigen::aligned_allocator<control_row_type> > control_row_collection_type;
 
@@ -1065,6 +1070,11 @@ namespace eli
 
           void promote_v_to(index_type target_degree)
           {
+            if ( degree_v() >= target_degree )
+            {
+              return;
+            }
+
             typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
             typedef std::vector<control_col_type, Eigen::aligned_allocator<control_col_type> > control_col_collection_type;
 

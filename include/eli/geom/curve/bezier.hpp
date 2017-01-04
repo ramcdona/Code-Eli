@@ -513,6 +513,11 @@ namespace eli
 
           void degree_promote_to(const index_type target_degree)
           {
+            if ( degree() >= target_degree )
+            {
+              return;
+            }
+
             // create vector of new control points
             control_point_matrix_type B_new(target_degree+1, dim__);
 
