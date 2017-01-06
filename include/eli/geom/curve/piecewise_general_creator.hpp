@@ -805,8 +805,14 @@ namespace eli
             {
               assert(cond_no*dim__==coef.rows());
 
+              Eigen::SparseMatrix<data_type> coefSp(cond_no*dim__, cond_no*dim__);
+              coefSp = coef.sparseView();
+
+              Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
+              solver.compute( coefSp );
+
               // do direct solve because have no fit constraints
-              x=coef.lu().solve(rhs);
+              x = solver.solve(rhs);
             }
             else
             {
