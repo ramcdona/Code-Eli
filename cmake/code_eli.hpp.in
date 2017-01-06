@@ -80,6 +80,8 @@
 
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
+#include <Eigen/Sparse>
+#include <Eigen/SparseLU>
 
 #if defined _MSC_VER
 # if (_MSC_VER==1600)

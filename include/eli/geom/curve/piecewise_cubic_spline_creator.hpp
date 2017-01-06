@@ -15,8 +15,6 @@
 
 #include <iterator>
 #include <vector>
-#include <Eigen/Sparse>
-#include <Eigen/SparseLU>
 
 #include "eli/code_eli.hpp"
 
