@@ -595,7 +595,7 @@ namespace eli
           }
 
 
-          void get_pmap( std::vector < data_type > &pmap )
+          void get_pmap( std::vector < data_type > &pmap ) const
           {
             pmap.clear();
 
