@@ -29,6 +29,7 @@
 #include "eli/geom/general/bounding_box.hpp"
 #include "eli/geom/curve/fit_container.hpp"
 #include "eli/geom/intersect/minimum_distance_curve.hpp"
+#include "eli/geom/intersect/intersect_plane_curve.hpp"
 
 // TODO: MOVE THESE TO utility namespace
 namespace eli
@@ -124,6 +125,11 @@ namespace eli
           typedef bezier<data_type, 2, tolerance_type> twodbezcurve;
           typedef bezier<data_type, 3, tolerance_type> threedbezcurve;
           typedef bezier<data_type, 4, tolerance_type> fourdbezcurve;
+
+          friend onedbezcurve;
+          friend twodbezcurve;
+          friend threedbezcurve;
+          friend fourdbezcurve;
 
         public:
           bezier() : B(1, dim__), deriv( NULL ) {}
@@ -816,6 +822,18 @@ namespace eli
             invalidate_deriv();
           }
 
+          template < typename curve1__>
+          void dot( const curve1__ &a, const typename curve1__::point_type &v )
+          {
+            index_type i, deg(a.degree());
+            resize( deg );
+            for (i=0; i<=deg; ++i)
+            {
+              B.row(i)(0) = v.dot( a.B.row(i) );
+            }
+            invalidate_deriv();
+          }
+
           void square( const bezier<data_type, dim__> &a )
           {
             assert( a.B.cols() == dim__ );
@@ -934,6 +952,22 @@ namespace eli
             return retcurve;
           }
 
+          // Returns a curve containing the signed distance between this curve and a plane
+          // specified in point/unit normal form.
+          onedbezcurve signeddistcurve( const point_type & pt, const point_type & nvec ) const
+          {
+            onedbezcurve retcurve;
+            typedef bezier<data_type, dim__> curve_type;
+
+            curve_type c(*this);
+
+            c.translate( -pt );
+
+            retcurve.dot( c, nvec );
+
+            return retcurve;
+          }
+
           bool allpos( const data_type &smallpos ) const
           {
             index_type i, j;
@@ -952,6 +986,45 @@ namespace eli
               }
             }
             return true;
+          }
+
+          // Reports number of zero crossings of control polynomial for one-dimensional Bezier.
+          // Represents an upper bound of number of zeros for the curve.
+          // Returns -1 if entire curve is exactly zero.
+          index_type numzerocrossings() const
+          {
+            assert( dim__ == 1 );
+            index_type n( degree() );
+            index_type ncross = 0;
+
+            assert( n >= 1 );
+            int prevsign = sgnnum( B( 0, 0 ) );
+
+            for ( index_type i=1; i<=n; ++i )
+            {
+              int thissign = sgnnum( B( i, 0 ) );
+
+              if ( thissign != prevsign )
+              {
+                ncross++;
+                prevsign = thissign;
+              }
+            }
+
+            // All control points had zero sign.
+            if ( ncross == 0 && prevsign == 0 )
+            {
+              ncross = -1;
+            }
+
+            return ncross;
+          }
+
+        private:
+          template <typename T>
+          int sgnnum(T val) const
+          {
+            return (T(0) < val) - (val < T(0));
           }
 
         private:

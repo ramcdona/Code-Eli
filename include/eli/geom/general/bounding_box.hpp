@@ -103,6 +103,42 @@ namespace eli
           }
           point_type get_max() const {return pmax;}
 
+          // Get negative and positive points in relation to a specified normal vector direction
+          void get_nppts( const point_type &nvec, point_type &npt, point_type &ppt ) const
+          {
+            for (index_type i=0; i<dim__; ++i)
+            {
+              npt(i) = pmax(i);
+              ppt(i) = pmin(i);
+              if ( nvec(i) >= 0.0 )
+              {
+                npt(i) = pmin(i);
+                ppt(i) = pmax(i);
+              }
+            }
+          }
+
+          // Test whether bounding box intersects a plane given as a point/vector.
+          bool intersect_plane( const point_type &pt, const point_type &nvec ) const
+          {
+            point_type npt, ppt;
+            get_nppts( nvec, npt, ppt );
+
+            data_type d = - nvec.dot( pt );
+
+            if ( d + nvec.dot( ppt ) < 0.0 )
+            {
+              return false;
+            }
+
+            if ( d + nvec.dot( npt ) > 0.0 )
+            {
+              return false;
+            }
+
+            return true;
+          }
+
           void clear()
           {
             empty=true;
