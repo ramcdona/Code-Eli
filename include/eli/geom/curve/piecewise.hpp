@@ -677,6 +677,36 @@ namespace eli
             }
           }
 
+          void scale_x(const data_type &s)
+          {
+            typename segment_collection_type::iterator it;
+
+            for (it=segments.begin(); it!=segments.end(); ++it)
+            {
+              it->second.scale_x(s);
+            }
+          }
+
+          void scale_y(const data_type &s)
+          {
+            typename segment_collection_type::iterator it;
+
+            for (it=segments.begin(); it!=segments.end(); ++it)
+            {
+              it->second.scale_y(s);
+            }
+          }
+
+          void scale_z(const data_type &s)
+          {
+            typename segment_collection_type::iterator it;
+
+            for (it=segments.begin(); it!=segments.end(); ++it)
+            {
+              it->second.scale_z(s);
+            }
+          }
+
           void rotate(const rotation_matrix_type &rmat)
           {
             typename segment_collection_type::iterator it;

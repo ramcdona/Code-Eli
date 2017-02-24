@@ -379,6 +379,24 @@ namespace eli
             invalidate_deriv();
           }
 
+          void scale_x(const data_type &s)
+          {
+              B.col(0)*=s;
+              invalidate_deriv();
+          }
+
+          void scale_y(const data_type &s)
+          {
+              B.col(1)*=s;
+              invalidate_deriv();
+          }
+
+          void scale_z(const data_type &s)
+          {
+              B.col(2)*=s;
+              invalidate_deriv();
+          }
+
           bool open() const {return !closed();}
           bool closed() const
           {
