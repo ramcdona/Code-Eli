@@ -96,6 +96,11 @@ namespace eli
             str_factor = sf;
             sweep_correct = sc;
 
+            if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
+            {
+              return false;
+            }
+
             return true;
           }
 
