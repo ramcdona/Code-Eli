@@ -107,7 +107,7 @@ namespace eli
 
                 typename surface__::data_type N = norm.dot( norm );
 
-                if( fabs( N ) > tol.get_absolute_tolerance() )
+                if( std::abs( N ) > tol.get_absolute_tolerance() )
                 {
                     dx(0) = A.dot( norm ) / N;
                     dx(1) = -B.dot( norm ) / N;

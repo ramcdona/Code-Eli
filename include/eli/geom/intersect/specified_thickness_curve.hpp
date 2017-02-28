@@ -199,7 +199,7 @@ namespace eli
           assert((t2>=tmin) && (t2<=tmax));
 
           dist=eli::geom::point::distance(c.f(t1), c.f(t2))-d;
-          if ( abs(dist) <= abs(dist0) )
+          if ( std::abs(dist) <= std::abs(dist0) )
           {
             return dist;
           }

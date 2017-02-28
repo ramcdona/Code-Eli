@@ -145,7 +145,7 @@ namespace eli
           assert((t>=c.get_t0()) && (t<=c.get_tmax()));
 
           dist = eli::geom::point::distance(c.f(t), pt)-r0;
-          if ( abs(dist) <= abs(dist0) )
+          if ( std::abs(dist) <= std::abs(dist0) )
           {
             return dist;
           }
@@ -186,7 +186,7 @@ namespace eli
           assert((t>=c.get_t0()) && (t<=c.get_tmax()));
 
           dist = eli::geom::point::distance(c.f(t), pt)-r0;
-          if ( abs(dist) <= abs(dist0) )
+          if ( std::abs(dist) <= std::abs(dist0) )
           {
             return dist;
           }
