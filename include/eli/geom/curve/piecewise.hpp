@@ -2446,7 +2446,7 @@ namespace eli
             typename segment_collection_type::const_iterator scita, scitb;
             scita=a.segments.begin();
             scitb=b.segments.begin();
-            for ( ; scita!=a.segments.end(); ++scita, ++scitb)
+            for ( ; scita!=a.segments.end() && scitb!=b.segments.end(); ++scita, ++scitb)
             {
               curve_type c;
 
