@@ -627,6 +627,62 @@ namespace eli
             vkey.reverse_keymap();
           }
 
+          void scale(const data_type &s)
+          {
+            typename patch_collection_type::iterator uit;
+            typename patch_strip_type::iterator vit;
+
+            for (uit=patches.begin(); uit!=patches.end(); ++uit)
+            {
+              for (vit=(*uit).begin(); vit!=(*uit).end(); ++vit)
+              {
+                vit->scale(s);
+              }
+            }
+          }
+
+          void scale_x(const data_type &s)
+          {
+            typename patch_collection_type::iterator uit;
+            typename patch_strip_type::iterator vit;
+
+            for (uit=patches.begin(); uit!=patches.end(); ++uit)
+            {
+              for (vit=(*uit).begin(); vit!=(*uit).end(); ++vit)
+              {
+                vit->scale_x(s);
+              }
+            }
+          }
+
+          void scale_y(const data_type &s)
+          {
+            typename patch_collection_type::iterator uit;
+            typename patch_strip_type::iterator vit;
+
+            for (uit=patches.begin(); uit!=patches.end(); ++uit)
+            {
+              for (vit=(*uit).begin(); vit!=(*uit).end(); ++vit)
+              {
+                vit->scale_y(s);
+              }
+            }
+          }
+
+          void scale_z(const data_type &s)
+          {
+            typename patch_collection_type::iterator uit;
+            typename patch_strip_type::iterator vit;
+
+            for (uit=patches.begin(); uit!=patches.end(); ++uit)
+            {
+              for (vit=(*uit).begin(); vit!=(*uit).end(); ++vit)
+              {
+                vit->scale_z(s);
+              }
+            }
+          }
+
           void swap_uv()
           {
             patch_collection_type old_patches;

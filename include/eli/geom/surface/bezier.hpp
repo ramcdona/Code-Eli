@@ -288,6 +288,45 @@ namespace eli
             invalidate_deriv();
           }
 
+          void scale_x(const data_type &s)
+          {
+            index_type i, j, degu(degree_u()), degv(degree_v());
+            for (j=0; j<=degv; ++j)
+            {
+              for (i=0; i<=degu; ++i)
+              {
+                B_u[j].row(i).col(0)*=s;
+              }
+            }
+            invalidate_deriv();
+          }
+
+          void scale_y(const data_type &s)
+          {
+            index_type i, j, degu(degree_u()), degv(degree_v());
+            for (j=0; j<=degv; ++j)
+            {
+              for (i=0; i<=degu; ++i)
+              {
+                B_u[j].row(i).col(1)*=s;
+              }
+            }
+            invalidate_deriv();
+          }
+
+          void scale_z(const data_type &s)
+          {
+            index_type i, j, degu(degree_u()), degv(degree_v());
+            for (j=0; j<=degv; ++j)
+            {
+              for (i=0; i<=degu; ++i)
+              {
+                B_u[j].row(i).col(2)*=s;
+              }
+            }
+            invalidate_deriv();
+          }
+
           bool open_u() const {return !closed_u();}
           bool closed_u() const
           {
