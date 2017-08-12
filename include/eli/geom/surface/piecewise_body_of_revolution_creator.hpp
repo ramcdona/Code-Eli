@@ -35,7 +35,7 @@ namespace eli
       template<typename data__, unsigned short dim__, typename tol__>
       bool create_body_of_revolution(piecewise<bezier, data__, dim__, tol__> &ps,
                                      const eli::geom::curve::piecewise<eli::geom::curve::bezier, data__, dim__, tol__> &pc,
-                                     int axis, bool outward_normal)
+                                     int axis, bool outward_normal, bool match_uparm = false)
       {
         typedef piecewise<bezier, data__, dim__, tol__> piecewise_surface_type;
         typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data__, dim__, tol__> piecewise_curve_type;
@@ -54,7 +54,22 @@ namespace eli
         index_type i, j, pp, qq, nu=pc.number_segments(), nv=4, udim, vdim;
 
         // resize the surface
-        ps.init_uv(nu, nv);
+        if ( match_uparm )
+        {
+          vector<data_type> umap, du;
+          pc.get_pmap( umap );
+
+          for ( i = 0; i < nu; i++ )
+          {
+            du.push_back( umap[ i + 1 ] - umap[ i ] );
+          }
+
+          ps.init_uv( du.begin(), du.end(), nv, 1, umap[0] );
+        }
+        else
+        {
+          ps.init_uv(nu, nv);
+        }
 
         // set the axis of rotation
         switch(axis)
