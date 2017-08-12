@@ -51,7 +51,7 @@ namespace eli
         piecewise_curve_type pc_circle;
         point_type origin, normal, start;
         data_type du, dv;
-        index_type i, j, pp, qq, nu=pc.number_segments(), nv=4, udim, vdim;
+        index_type i, j, pp, qq, nu=pc.number_segments(), nv=4, udeg, vdeg;
 
         // resize the surface
         if ( match_uparm )
@@ -105,16 +105,17 @@ namespace eli
         for (pp=0; pp<nu; ++pp)
         {
           // resize the surface patch
-          udim=c.dimension();
-          vdim=3;
+          vdeg=3;
           pc.get(c, du, pp);
-          s[0].resize(udim, vdim);
-          s[1].resize(udim, vdim);
-          s[2].resize(udim, vdim);
-          s[3].resize(udim, vdim);
+          udeg = c.degree();
+
+          s[0].resize(udeg, vdeg);
+          s[1].resize(udeg, vdeg);
+          s[2].resize(udeg, vdeg);
+          s[3].resize(udeg, vdeg);
 
           // cycle through each control point in current curve and create patch control points
-          for (i=0; i<=udim; ++i)
+          for (i=0; i<=udeg; ++i)
           {
             // set up the vectors for this circle
             start=c.get_control_point(i);
