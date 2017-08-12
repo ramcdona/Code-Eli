@@ -377,6 +377,28 @@ namespace eli
             vclosecache=UNKNOWN;
           }
 
+          template<typename it__>
+          void init_uv(const it__ &dus, const it__ &due, const index_type &nsegv, const data_type &dv = 1, const data_type &u0 = 0, const data_type &v0 = 0)
+          {
+            patches.clear();
+            ukey.init(dus, due, u0);
+            vkey.init(nsegv, dv, v0);
+            resize_store(ukey.key.size(), vkey.key.size());
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
+          }
+
+          template<typename it__>
+          void init_uv(const index_type &nsegu, const it__ &dvs, const it__ &dve, const data_type &du = 1, const data_type &u0 = 0, const data_type &v0 = 0)
+          {
+            patches.clear();
+            ukey.init(nsegu, du, u0);
+            vkey.init(dvs, dve, v0);
+            resize_store(ukey.key.size(), vkey.key.size());
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
+          }
+
           void degree_u(index_type &mind, index_type &maxd)
           {
             typename patch_collection_type::iterator uit;
