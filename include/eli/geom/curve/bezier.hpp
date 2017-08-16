@@ -970,6 +970,24 @@ namespace eli
             return retcurve;
           }
 
+          onedbezcurve singledimensioncurve( const index_type & idim ) const
+          {
+            onedbezcurve retcurve;
+
+            index_type n(degree()), i;
+
+            retcurve.resize(n);
+            for (i=0; i<=n; ++i)
+            {
+              typename onedbezcurve::point_type pd;
+              pd(0) = get_control_point( i )(idim);
+
+              retcurve.set_control_point( pd, i );
+            }
+
+            return retcurve;
+          }
+
           // Returns a curve containing the signed distance between this curve and a plane
           // specified in point/unit normal form.
           onedbezcurve signeddistcurve( const point_type & pt, const point_type & nvec ) const
