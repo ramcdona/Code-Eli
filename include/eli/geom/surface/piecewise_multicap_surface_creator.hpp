@@ -126,7 +126,15 @@ namespace eli
                 surface_copy.split_v( vsplit );
 
                 piecewise_curve_type edge;
-                surface_copy.get_umin_bndy_curve( edge );
+
+                if ( edge_to_cap == CAP_UMIN )
+                {
+                  surface_copy.get_umin_bndy_curve( edge );
+                }
+                else
+                {
+                  surface_copy.get_umax_bndy_curve( edge );
+                }
 
                 // make sure that the split location is different than the start/end location otherwise
                 // the edge is a point and no need to cap
@@ -169,7 +177,15 @@ namespace eli
                 surface_copy.split_u( usplit );
 
                 piecewise_curve_type edge;
-                surface_copy.get_vmin_bndy_curve( edge );
+
+                if ( edge_to_cap == CAP_VMIN )
+                {
+                  surface_copy.get_vmin_bndy_curve( edge );
+                }
+                else
+                {
+                  surface_copy.get_vmax_bndy_curve( edge );
+                }
 
                 // make sure that the split location is different than the start/end location otherwise
                 // the edge is a point and no need to cap
