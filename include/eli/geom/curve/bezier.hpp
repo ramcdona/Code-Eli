@@ -1038,6 +1038,12 @@ namespace eli
             return ncross;
           }
 
+          bezier<data_type, dim__> * getderiv() const
+          {
+            validate_deriv();
+            return deriv;
+          }
+
         private:
           template <typename T>
           int sgnnum(T val) const
