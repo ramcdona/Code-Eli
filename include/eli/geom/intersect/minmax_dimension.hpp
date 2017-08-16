@@ -7,16 +7,12 @@
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*    David D. Marshall - initial code and implementation
+*    Rob McDonald - initial code and implementation
 ********************************************************************************/
 
-#ifndef eli_geom_intersect_hpp
-#define eli_geom_intersect_hpp
+#ifndef eli_geom_intersect_minmax_dimension_hpp
+#define eli_geom_intersect_minmax_dimension_hpp
 
-#include "eli/geom/intersect/intersect_plane.hpp"
-#include "eli/geom/intersect/minimum_distance.hpp"
-#include "eli/geom/intersect/minmax_dimension.hpp"
-#include "eli/geom/intersect/specified_distance.hpp"
-#include "eli/geom/intersect/specified_thickness.hpp"
+#include "eli/geom/intersect/minimum_dimension_curve.hpp"
 
 #endif

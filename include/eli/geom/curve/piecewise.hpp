@@ -255,6 +255,13 @@ namespace eli
 
       template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
       typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type
+                      minimum_dimension(
+                              typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
+                              const curve::piecewise<curve1__, data1__, dim1__, tol1__> &pc,
+                              const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::index_type &idim);
+
+      template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
+      typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type
 	                  intersect_plane(
                               typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
                               const curve::piecewise<curve1__, data1__, dim1__, tol1__> &pc,
@@ -2499,6 +2506,13 @@ namespace eli
                                   typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
                                   const piecewise<curve1__, data1__, dim1__, tol1__> &pc,
                                   const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt);
+
+          template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
+          friend typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type
+                          eli::geom::intersect::minimum_dimension(
+                                  typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
+                                  const piecewise<curve1__, data1__, dim1__, tol1__> &pc,
+                                  const typename piecewise<curve1__, data1__, dim1__, tol1__>::index_type &idim);
 
           template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
           friend typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type
