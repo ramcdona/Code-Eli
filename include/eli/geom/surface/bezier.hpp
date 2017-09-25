@@ -518,7 +518,7 @@ namespace eli
 
           void get_umin_ndelta_pcurve( curve_type &bc ) const
           {
-            index_type j, m(degree_v());
+            index_type j, m(degree_v()), n(degree_u());
 
             tolerance_type tol;
 
@@ -531,7 +531,16 @@ namespace eli
             bc.resize(m);
             for (j=0; j<=m; ++j)
             {
-              point_type p = B_v[0].row(j) - B_v[1].row(j);
+              point_type p;
+              if ( n <= 0 )
+              {
+                p << 0, 0, 0;
+              }
+              else
+              {
+                p = B_v[0].row(j) - B_v[1].row(j);
+              }
+
               data_type len = p.norm();
               if ( tol.approximately_equal(len, 0) )
               {
@@ -560,7 +569,16 @@ namespace eli
             bc.resize(m);
             for (j=0; j<=m; ++j)
             {
-              point_type p = B_v[n].row(j) - B_v[n-1].row(j);
+              point_type p;
+              if ( n <= 0 )
+              {
+                p << 0, 0, 0;
+              }
+              else
+              {
+                p = B_v[n].row(j) - B_v[n-1].row(j);
+              }
+
               data_type len = p.norm();
               if ( tol.approximately_equal(len, 0) )
               {
