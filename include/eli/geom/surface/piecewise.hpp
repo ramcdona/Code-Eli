@@ -577,6 +577,49 @@ namespace eli
             }
           }
 
+          void get_bounding_box( bounding_box_type &bb, const data_type U0, const data_type Uf, const data_type W0, const data_type Wf ) const
+          {
+              bounding_box_type bb_local;
+              index_type uk, vk;
+              typename keymap_type::const_iterator uit, vit;
+              tolerance_type tol;
+
+              if ( tol.approximately_less_than( U0, ukey.get_pmin() ) || tol.approximately_less_than( W0, vkey.get_pmin() ) ||
+                   tol.approximately_less_than( ukey.get_pmax(), Uf ) || tol.approximately_less_than( vkey.get_pmax(), Wf ) )
+                  return;
+
+              // Create a temporary copy to use for splitting
+              piecewise<surface__, data_type, dim__, tol__> s( *this );
+
+              bb.clear();
+
+              // Split to create patch borders at U/W limits. No split is performed if patch border at U/W value already exists
+              s.split_u( U0 );
+              s.split_u( Uf );
+              s.split_v( W0 );
+              s.split_v( Wf );
+
+              // cycle through ukey and vkey within input limits to get each patch bounding box
+              for ( uit = s.ukey.key.begin(); uit != s.ukey.key.end(); ++uit )
+              {
+                  if ( ( tol.approximately_equal( uit->first, U0 ) || tol.approximately_less_than( U0, uit->first ) ) && 
+                       tol.approximately_less_than( uit->first, Uf ) )
+                  {
+                      uk = uit->second;
+                      for ( vit = s.vkey.key.begin(); vit != s.vkey.key.end(); ++vit )
+                      {
+                          if ( ( tol.approximately_equal( vit->first, W0 ) || tol.approximately_less_than( W0, vit->first ) ) && 
+                               tol.approximately_less_than( vit->first, Wf ) )
+                          {
+                              vk = vit->second;
+                              s.patches[uk][vk].get_bounding_box( bb_local );
+                              bb.add( bb_local );
+                          }
+                      }
+                  }
+              }
+          }
+
           void rotate(const rotation_matrix_type &rmat)
           {
             typename patch_collection_type::iterator uit;
