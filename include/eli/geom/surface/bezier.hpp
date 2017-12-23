@@ -1257,6 +1257,54 @@ namespace eli
             return true;
           }
 
+          void planar_approx( const bezier<data_type, dim__, tol__> &a )
+          {
+            index_type n(a.degree_u()), m(a.degree_v());
+
+            // resize current surface
+            resize(1, 1);
+
+            B_u[0].row(0) = a.B_u[0].row(0);
+            B_u[0].row(1) = a.B_u[0].row(n);
+            B_u[1].row(0) = a.B_u[m].row(0);
+            B_u[1].row(1) = a.B_u[m].row(n);
+
+            invalidate_deriv();
+          }
+
+          void planar_approx()
+          {
+            index_type i, j;
+            index_type n(degree_u()), m(degree_v());
+
+            // Build jmin row.
+            j = 0;
+            point_type delta = B_u[j].row(n) - B_u[j].row(0);
+            for (i=1; i<n; ++i)
+            {
+              B_u[j].row(i) = B_u[j].row(0) + delta * i * 1.0 / n;
+            }
+
+            // Build jmax row.
+            j = m;
+            delta = B_u[j].row(n) - B_u[j].row(0);
+            for (i=1; i<n; ++i)
+            {
+              B_u[j].row(i) = B_u[j].row(0) + delta * i * 1.0 / n;
+            }
+
+            for (i=0; i<=n; ++i)
+            {
+              delta = B_u[m].row(i) - B_u[0].row(i);
+              for (j=1; j<m; ++j)
+              {
+                B_u[j].row(i) = B_u[0].row(i) + delta * j * 1.0 / m;
+              }
+            }
+
+            invalidate_deriv();
+          }
+
           void to_cubic_u()
           {
               typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
@@ -1361,6 +1409,31 @@ namespace eli
                 bs_hi.set_control_point(cp_hi.row(j), i, j);
               }
             }
+          }
+
+          data_type simple_eqp_distance_bound(const bezier<data_type, dim__, tol__> &bs) const
+          {
+            typedef bezier<data_type, dim__, tol__> surf_type;
+
+            // Find maximum common order.
+            index_type n(degree_u()), m(degree_v());
+
+            // Find maximum distance between control points.
+            index_type i, j;
+            data_type d, maxd(0);
+            for (i=0; i<=n; ++i)
+            {
+              for (j=0; j<=m; ++j)
+              {
+                d = (B_u[j].row(i) - bs.B_u[j].row(i)).norm();
+                if(d > maxd)
+                {
+                  maxd=d;
+                }
+              }
+            }
+
+            return maxd;
           }
 
           data_type eqp_distance_bound(const bezier<data_type, dim__, tol__> &bs) const
