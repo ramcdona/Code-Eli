@@ -56,7 +56,7 @@ namespace eli
         // resize the surface
         if ( match_uparm )
         {
-          vector<data_type> umap, du;
+          std::vector<data_type> umap, du;
           pc.get_pmap( umap );
 
           for ( i = 0; i < nu; i++ )
