@@ -1363,6 +1363,22 @@ namespace eli
             }
           }
 
+          void simple_split_u(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &u0) const
+          {
+            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
+
+            index_type j, m(degree_v());
+
+            // make sure have valid index
+            assert((u0>=0) && (u0<=1));
+
+            // cycle through each row and split each it
+            for (j=0; j<=m; ++j)
+            {
+              eli::geom::utility::bezier_split_control_points( bs_lo.B_u[j], bs_hi.B_u[j], B_u[j], u0);
+            }
+          }
+
           void split_v(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &v0) const
           {
             typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
@@ -1375,6 +1391,22 @@ namespace eli
             // resize the surfaces
             bs_lo.resize(n, m);
             bs_hi.resize(n, m);
+
+            // cycle through each col and split each it
+            for (i=0; i<=n; ++i)
+            {
+              eli::geom::utility::bezier_split_control_points(bs_lo.B_v[i], bs_hi.B_v[i], B_v[i], v0);
+            }
+          }
+
+          void simple_split_v(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &v0) const
+          {
+            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
+
+            index_type i, n(degree_u());
+
+            // make sure have valid index
+            assert((v0>=0) && (v0<=1));
 
             // cycle through each col and split each it
             for (i=0; i<=n; ++i)
