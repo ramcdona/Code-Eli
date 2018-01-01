@@ -1057,11 +1057,9 @@ namespace eli
             resize(n+1, m);
 
             // set the new control points
-            control_row_type tmp_cp(n+2, dim__);
             for (i=0; i<=m; ++i)
             {
-              eli::geom::utility::bezier_promote_control_points(tmp_cp, current_row[i]);
-              B_u[i]=tmp_cp;
+              eli::geom::utility::bezier_promote_control_points(B_u[i], current_row[i]);
             }
             invalidate_deriv();
           }
@@ -1089,11 +1087,9 @@ namespace eli
               resize(target_degree, m);
 
               // set the new control points
-              control_row_type tmp_cp(target_degree+1, dim__);
               for (i=0; i<=m; ++i)
               {
-                eli::geom::utility::bezier_promote_control_points_to(tmp_cp, current_row[i]);
-                B_u[i]=tmp_cp;
+                eli::geom::utility::bezier_promote_control_points_to(B_u[i], current_row[i]);
               }
               invalidate_deriv();
           }
@@ -1116,11 +1112,9 @@ namespace eli
             resize(n, m+1);
 
             // set the new control points
-            control_col_type tmp_cp(m+2, dim__);
             for (i=0; i<=n; ++i)
             {
-              eli::geom::utility::bezier_promote_control_points(tmp_cp, current_col[i]);
-              B_v[i]=tmp_cp;
+              eli::geom::utility::bezier_promote_control_points(B_v[i], current_col[i]);
             }
             invalidate_deriv();
           }
@@ -1148,11 +1142,9 @@ namespace eli
             resize(n, target_degree);
 
             // set the new control points
-            control_col_type tmp_cp(target_degree+1, dim__);
             for (i=0; i<=n; ++i)
             {
-              eli::geom::utility::bezier_promote_control_points_to(tmp_cp, current_col[i]);
-              B_v[i]=tmp_cp;
+              eli::geom::utility::bezier_promote_control_points_to(B_v[i], current_col[i]);
             }
             invalidate_deriv();
           }
@@ -1197,11 +1189,9 @@ namespace eli
             resize(n-1, m);
 
             // set the new control points
-            control_row_type tmp_cp(n, dim__);
             for (i=0; i<=m; ++i)
             {
-              eli::geom::utility::bezier_demote_control_points(tmp_cp, current_row[i], ncon);
-              B_u[i]=tmp_cp;
+              eli::geom::utility::bezier_demote_control_points(B_u[i], current_row[i], ncon);
             }
             invalidate_deriv();
             return true;
@@ -1247,11 +1237,9 @@ namespace eli
             resize(n, m-1);
 
             // set the new control points
-            control_col_type tmp_cp(m, dim__);
             for (i=0; i<=n; ++i)
             {
-              eli::geom::utility::bezier_demote_control_points(tmp_cp, current_col[i], ncon);
-              B_v[i]=tmp_cp;
+              eli::geom::utility::bezier_demote_control_points(B_v[i], current_col[i], ncon);
             }
             invalidate_deriv();
             return true;
@@ -1323,11 +1311,9 @@ namespace eli
               resize(3, m);
 
               // set the new control points
-              control_row_type tmp_cp(4, dim__);
               for (i=0; i<=m; ++i)
               {
-                eli::geom::utility::bezier_control_points_to_cubic(tmp_cp, current_row[i]);
-                B_u[i]=tmp_cp;
+                eli::geom::utility::bezier_control_points_to_cubic(B_u[i], current_row[i]);
               }
               invalidate_deriv();
           }
@@ -1350,11 +1336,9 @@ namespace eli
             resize(n, 3);
 
             // set the new control points
-            control_col_type tmp_cp(4, dim__);
             for (i=0; i<=n; ++i)
             {
-              eli::geom::utility::bezier_control_points_to_cubic(tmp_cp, current_col[i]);
-              B_v[i]=tmp_cp;
+              eli::geom::utility::bezier_control_points_to_cubic(B_v[i], current_col[i]);
             }
             invalidate_deriv();
           }
@@ -1363,8 +1347,7 @@ namespace eli
           {
             typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
 
-            index_type i, j, n(degree_u()), m(degree_v());
-            control_row_type cp_lo(n+1, dim__), cp_hi(n+1, dim__);
+            index_type j, n(degree_u()), m(degree_v());
 
             // make sure have valid index
             assert((u0>=0) && (u0<=1));
@@ -1376,12 +1359,7 @@ namespace eli
             // cycle through each row and split each it
             for (j=0; j<=m; ++j)
             {
-              eli::geom::utility::bezier_split_control_points(cp_lo, cp_hi, B_u[j], u0);
-              for (i=0; i<=n; ++i)
-              {
-                bs_lo.set_control_point(cp_lo.row(i), i, j);
-                bs_hi.set_control_point(cp_hi.row(i), i, j);
-              }
+              eli::geom::utility::bezier_split_control_points( bs_lo.B_u[j], bs_hi.B_u[j], B_u[j], u0);
             }
           }
 
@@ -1389,8 +1367,7 @@ namespace eli
           {
             typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
 
-            index_type i, j, n(degree_u()), m(degree_v());
-            control_col_type cp_lo(m+1, dim__), cp_hi(m+1, dim__);
+            index_type i, n(degree_u()), m(degree_v());
 
             // make sure have valid index
             assert((v0>=0) && (v0<=1));
@@ -1402,12 +1379,7 @@ namespace eli
             // cycle through each col and split each it
             for (i=0; i<=n; ++i)
             {
-              eli::geom::utility::bezier_split_control_points(cp_lo, cp_hi, B_v[i], v0);
-              for (j=0; j<=m; ++j)
-              {
-                bs_lo.set_control_point(cp_lo.row(j), i, j);
-                bs_hi.set_control_point(cp_hi.row(j), i, j);
-              }
+              eli::geom::utility::bezier_split_control_points(bs_lo.B_v[i], bs_hi.B_v[i], B_v[i], v0);
             }
           }
 

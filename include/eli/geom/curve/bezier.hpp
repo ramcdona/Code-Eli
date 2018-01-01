@@ -605,21 +605,14 @@ namespace eli
               return;
             }
 
-            control_point_matrix_type bl(degree()+1, dim__), br(degree()+1, dim__);
             index_type n(degree());
 
             // resize the curves
             bc_l.resize(n);
             bc_r.resize(n);
 
-            eli::geom::utility::bezier_split_control_points(bl, br, B, t0);
+            eli::geom::utility::bezier_split_control_points(bc_l.B, bc_r.B, B, t0);
 
-            // set the control points
-            for (index_type i=0; i<=n; ++i)
-            {
-              bc_l.set_control_point(bl.row(i), i);
-              bc_r.set_control_point(br.row(i), i);
-            }
           }
 
           void fit(const fit_container_type &fcon, const index_type &deg_in)
