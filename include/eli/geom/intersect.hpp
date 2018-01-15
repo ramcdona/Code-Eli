@@ -14,6 +14,7 @@
 #define eli_geom_intersect_hpp
 
 #include "eli/geom/intersect/intersect_plane.hpp"
+#include "eli/geom/intersect/intersect_surface.hpp"
 #include "eli/geom/intersect/minimum_distance.hpp"
 #include "eli/geom/intersect/minmax_dimension.hpp"
 #include "eli/geom/intersect/specified_distance.hpp"
