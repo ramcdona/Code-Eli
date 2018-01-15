@@ -294,20 +294,36 @@ namespace eli
 
       template<typename surface__>
       typename surface__::data_type minimum_distance_tan(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
-                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0, int & ret)
+                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0, int & ret,
+                                                     const typename surface__::data_type uminc = 0, const typename surface__::data_type umaxc = 0,
+                                                     const typename surface__::data_type vminc = 0, const typename surface__::data_type vmaxc = 0 )
       {
         typedef internal::tangent_plane_method<surface__, 2, 1> nonlinear_solver_type;
 
         typename surface__::data_type umin, umax, vmin, vmax;
-        s.get_parameter_min(umin,vmin);
-        s.get_parameter_max(umax,vmax);
+
+        bool user_con = false;
+
+        if ( umaxc == 0 && uminc == 0 && vmaxc == 0 && vminc == 0 )
+        {
+          s.get_parameter_min(umin,vmin);
+          s.get_parameter_max(umax,vmax);
+        }
+        else
+        {
+          umin = uminc;
+          umax = umaxc;
+          vmin = vminc;
+          vmax = vmaxc;
+          user_con = true;
+        }
 
         nonlinear_solver_type tpsolve;
 
         typename surface__::tolerance_type tol;
 
 
-        if (s.open_u())
+        if (s.open_u() || user_con )
         {
           tpsolve.set_lower_condition(0, umin, nonlinear_solver_type::IRC_EXCLUSIVE);
           tpsolve.set_upper_condition(0, umax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -317,7 +333,7 @@ namespace eli
           tpsolve.set_periodic_condition(0, umin, umax);
         }
 
-        if (s.open_v())
+        if (s.open_v() || user_con )
         {
           tpsolve.set_lower_condition(1, vmin, nonlinear_solver_type::IRC_EXCLUSIVE);
           tpsolve.set_upper_condition(1, vmax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -371,7 +387,9 @@ namespace eli
 
       template<typename surface__>
       typename surface__::data_type minimum_distance_nrm(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
-                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0, int & ret)
+                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0, int & ret,
+                                                     const typename surface__::data_type uminc = 0, const typename surface__::data_type umaxc = 0,
+                                                     const typename surface__::data_type vminc = 0, const typename surface__::data_type vmaxc = 0 )
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 2, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
@@ -380,9 +398,22 @@ namespace eli
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
+        bool user_con = false;
+
         typename surface__::data_type umin, umax, vmin, vmax;
-        s.get_parameter_min(umin,vmin);
-        s.get_parameter_max(umax,vmax);
+        if ( umaxc == 0 && uminc == 0 && vmaxc == 0 && vminc == 0 )
+        {
+          s.get_parameter_min(umin,vmin);
+          s.get_parameter_max(umax,vmax);
+        }
+        else
+        {
+          umin = uminc;
+          umax = umaxc;
+          vmin = vminc;
+          vmax = vmaxc;
+          user_con = true;
+        }
 
         // setup the functors
         g.ps=&s;
@@ -395,7 +426,7 @@ namespace eli
         nrm.set_max_iteration(20);
         nrm.set_norm_type(nonlinear_solver_type::max_norm);
 
-        if (s.open_u())
+        if (s.open_u() || user_con )
         {
           nrm.set_lower_condition(0, umin, nonlinear_solver_type::IRC_EXCLUSIVE);
           nrm.set_upper_condition(0, umax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -405,7 +436,7 @@ namespace eli
           nrm.set_periodic_condition(0, umin, umax);
         }
 
-        if (s.open_v())
+        if (s.open_v() || user_con )
         {
           nrm.set_lower_condition(1, vmin, nonlinear_solver_type::IRC_EXCLUSIVE);
           nrm.set_upper_condition(1, vmax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -459,13 +490,15 @@ namespace eli
 
       template<typename surface__>
       typename surface__::data_type minimum_distance(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
-                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0)
+                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0,
+                                                     const typename surface__::data_type uminc = 0, const typename surface__::data_type umaxc = 0,
+                                                     const typename surface__::data_type vminc = 0, const typename surface__::data_type vmaxc = 0 )
       {
         internal::tangent_plane_method<surface__, 2, 1> tan_solver;
         typename surface__::data_type dist_tan, dist_nrmt, dist_nrm0;
 
         int rett = -1;
-        dist_tan = minimum_distance_tan( u, v, s, pt, u0, v0, rett );
+        dist_tan = minimum_distance_tan( u, v, s, pt, u0, v0, rett, uminc, umaxc, vminc, vmaxc );
 
         if ( rett == tan_solver.converged || rett == tan_solver.hit_constraint )
         {
@@ -477,7 +510,7 @@ namespace eli
         v0t = v;
 
         int retn = -1;
-        dist_nrmt = minimum_distance_nrm( u, v, s, pt, u0t, v0t, retn );
+        dist_nrmt = minimum_distance_nrm( u, v, s, pt, u0t, v0t, retn, uminc, umaxc, vminc, vmaxc );
 
         if ( retn == tan_solver.converged )
         {
@@ -487,7 +520,7 @@ namespace eli
           }
         }
 
-        dist_nrm0 = minimum_distance_nrm( u, v, s, pt, u0, v0, retn );
+        dist_nrm0 = minimum_distance_nrm( u, v, s, pt, u0, v0, retn, uminc, umaxc, vminc, vmaxc );
 
 //        if ( retn != tan_solver.converged )
 //        {
