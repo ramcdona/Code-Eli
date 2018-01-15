@@ -312,6 +312,33 @@ namespace eli
         }
       }
 
+      // get the coefficients for the split curves by constructing a de Casteljau triangle scheme.
+      // The lower side is the t<t0 section, and the higher side is the t>t0 section.
+      template<typename Derived1, typename Derived2>
+      void bezier_split_control_points_half(Eigen::MatrixBase<Derived1> &cp_lo, Eigen::MatrixBase<Derived1> &cp_hi,
+                                       const Eigen::MatrixBase<Derived2> &cp_in )
+      {
+        typename Derived2::Index i, j, n(cp_in.rows()-1);
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> tri(cp_in);
+
+        // do some dimensions check
+        assert(cp_lo.rows()==cp_hi.rows());
+        assert(cp_lo.cols()==cp_hi.cols());
+        assert(cp_lo.rows()==cp_in.rows());
+        assert(cp_lo.cols()==cp_in.cols());
+
+        // set the control points using de Casteljau's algorithm
+        for (i=0; i<=n; ++i)
+        {
+          cp_lo.row(i)=tri.row(0);
+          cp_hi.row(n-i)=tri.row(n-i);
+          for (j=0; j<n-i; ++j)
+          {
+            tri.row(j) = ( tri.row(j+1) + tri.row(j) ) * 0.5;
+          }
+        }
+      }
+
       template<typename Derived>
       void bezier_coefficient_factors(Eigen::MatrixBase<Derived> &co, const typename Derived::Scalar &t, const typename Derived::Index &n)
       {
