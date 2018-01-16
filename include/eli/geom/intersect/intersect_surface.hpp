@@ -14,5 +14,6 @@
 #define eli_geom_intersect_intersect_surface_hpp
 
 #include "eli/geom/intersect/intersect_surface_surface.hpp"
+#include "eli/geom/intersect/intersect_curve_surface.hpp"
 
 #endif
