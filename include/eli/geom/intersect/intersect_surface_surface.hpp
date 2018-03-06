@@ -266,10 +266,6 @@ namespace eli
         u2=ans(2);
         v2=ans(3);
 
-        // if root is within bounds and is closer than initial guess
-        assert((u>=umin) && (u<=umax));
-        assert((v>=vmin) && (v<=vmax));
-
         dist = eli::geom::point::distance(s1.f(u1, v1), s2.f(u2,v2));
 
 //        if( dist > 1e-6 )
