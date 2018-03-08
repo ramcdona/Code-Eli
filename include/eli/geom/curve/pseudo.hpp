@@ -16,6 +16,7 @@
 #include "eli/geom/curve/pseudo/cst_airfoil.hpp"
 #include "eli/geom/curve/pseudo/cst_base.hpp"
 #include "eli/geom/curve/pseudo/four_digit.hpp"
+#include "eli/geom/curve/pseudo/four_digit_mod.hpp"
 #include "eli/geom/curve/pseudo/explicit_bezier.hpp"
 
 #endif
