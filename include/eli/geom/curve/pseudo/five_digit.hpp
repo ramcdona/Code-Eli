@@ -277,6 +277,11 @@ namespace eli
 
               xtrans = xt.real();
 
+              if ( xtrans >= 1.0 )
+              {
+                xtrans = 1.0 - 1e-6;
+              }
+
               data_type xt2 = xtrans * xtrans;
               data_type xt3 = xtrans * xt2;
               data_type xt4 = xt2 * xt2;
@@ -295,7 +300,7 @@ namespace eli
               data_type zero(0), one(1), two(2);
 
               // short circuit if no camber
-              if (cli==0)
+              if ( cli==0 || camber_loc == 0 )
               {
                 y=zero;
                 yp=zero;
