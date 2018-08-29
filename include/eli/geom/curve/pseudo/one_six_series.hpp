@@ -20,6 +20,7 @@
 #include <complex>
 
 #include "eli/code_eli.hpp"
+#include "eli/geom/curve/pseudo/naca_af.hpp"
 
 namespace eli
 {
@@ -30,23 +31,31 @@ namespace eli
       namespace pseudo
       {
         template<typename data__>
-        class one_six_series {
+        class one_six_series : public naca_af<data__> {
           public:
-            typedef data__ data_type;
-            typedef Eigen::Matrix<data_type, 1, 2> point_type;
-            typedef Eigen::Matrix<data_type, 5, 1> coefficient_type;
-            typedef typename point_type::Index index_type;
-            typedef std::complex <data_type> complex_data_type;
+            typedef naca_af<data__> base_class_type;
+            typedef typename base_class_type::data_type data_type;
+            typedef typename base_class_type::point_type point_type;
+            typedef typename base_class_type::coefficient_type coefficient_type;
+            typedef typename base_class_type::index_type index_type;
+            typedef typename base_class_type::complex_data_type complex_data_type;
 
           public:
-            one_six_series() : thickness(.12), cli(0.3), sharp_te(false)
+            one_six_series() : naca_af<data__>()
             {
+              this->thickness = 0.12;
+              cli = 0.3;
+              this->sharp_te = false;
+
               recalc_thickness_coefficients();
             }
 
-            one_six_series(const five_digit_mod <data_type> &fs)
-                    : thickness(fs.thickness), cli(fs.cli), sharp_te(fs.sharp_te)
+            one_six_series(const one_six_series <data_type> &fs)
             {
+              this->thickness = fs.thickness;
+              cli = fs.cli;
+              this->sharp_te = fs.sharp_te;
+
               recalc_thickness_coefficients();
             }
 
@@ -57,31 +66,6 @@ namespace eli
             }
 
             coefficient_type get_thickness_coefficients() const { return a; }
-
-            data_type get_t0() const { return static_cast<data_type>(-1); }
-
-            data_type get_tmax() const { return static_cast<data_type>(1); }
-
-            void set_sharp_trailing_edge(bool fl)
-            {
-              sharp_te = fl;
-              recalc_thickness_coefficients();
-            }
-
-            bool sharp_trailing_edge() const { return sharp_te; }
-
-            // Valid values of thickness are greater than 0 and less than 100
-            bool set_thickness(const data_type &t)
-            {
-              if ((t >= 0) && (t <= 1))
-              {
-                thickness = t;
-                return true;
-              }
-              return false;
-            }
-
-            data_type get_thickness() const { return thickness; }
 
             bool set_cli(const data_type &c)
             {
@@ -96,92 +80,13 @@ namespace eli
                 if ( (t < 0) || (t > 1) ) {
                     return false;
                 }
-                thickness = t;
+                this->thickness = t;
 
                 cli = c;
 
-                sharp_te = fl;
+                this->sharp_te = fl;
 
                 return true;
-            }
-
-            point_type f(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return x;
-            }
-
-            point_type fp(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return xp;
-            }
-
-            point_type fpp(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return xpp;
-            }
-
-            void evaluate(point_type &x, point_type &xp, point_type &xpp, const data_type &xi) const
-            {
-              // check to make sure given valid parametric value
-              assert((xi>=-1) && (xi<=1));
-
-              data_type xc, yc, ycp, ycpp, ycppp, delta, deltap, deltapp;
-              const data_type one(1), two(2), three(3);
-              index_type surf_sign;
-
-              // calculate the lower surface
-              if (xi<0)
-              {
-                xc=-xi;
-                surf_sign=-1;
-              }
-              // calculate the upper surface
-              else
-              {
-                xc=xi;
-                surf_sign=1;
-              }
-
-              // calculate the supporting quantities needed
-              calc_camber(yc, ycp, ycpp, ycppp, xc);
-              calc_thickness(delta, deltap, deltapp, xc);
-
-              data_type tmp1, tmp13, cos_theta, sin_theta, curv, curvp;
-
-              tmp1=std::sqrt(one+ycp*ycp);
-              tmp13=tmp1*tmp1*tmp1;
-              cos_theta=one/tmp1;
-              sin_theta=ycp/tmp1;
-              curv=ycpp/tmp13;
-              curvp=ycppp/tmp13-three*ycp*tmp1*curv*curv;
-
-              // calculate the info
-              x(0)=surf_sign*(xi-delta*sin_theta);
-              x(1)=yc+surf_sign*delta*cos_theta;
-              xp(0)=surf_sign-deltap*sin_theta-delta*curv;
-              xp(1)=ycp*(surf_sign-delta*curv)+deltap*cos_theta;
-              xpp(0)=-surf_sign*(deltapp*sin_theta+two*deltap*curv+delta*curvp);
-              xpp(1)=ycpp*(one-surf_sign*delta*curv)+surf_sign*(deltapp*cos_theta-ycp*(two*deltap*curv+delta*curvp));
-            }
-
-            point_type tangent(const data_type &xi) const
-            {
-              point_type tgt(fp(xi));
-
-              tgt.normalize();
-              return tgt;
             }
 
           protected:
@@ -220,7 +125,7 @@ namespace eli
                 rle = rle8 + di * drle;
               }
 
-              if ( !sharp_trailing_edge() ) // 'Official' airfoil has TE semi-bluntness of 1% of thickness.
+              if ( !this->sharp_trailing_edge() ) // 'Official' airfoil has TE semi-bluntness of 1% of thickness.
               {
                 d0 = 0.01 * tocref;
               }
@@ -366,10 +271,10 @@ namespace eli
               assert((xi>=0) && (xi<=1));
 
               const data_type zero(0), one(1), two(2), three(3), four(4), six(6), half(one/two), quarter(one/four);
-              const data_type trat(thickness/static_cast<data_type>(0.20));
+              const data_type trat(this->thickness/static_cast<data_type>(0.20));
 
               // short circuit for no thickness
-              if (thickness==0)
+              if (this->thickness==0)
               {
                 y=zero;
                 yp=zero;
@@ -384,7 +289,7 @@ namespace eli
                 ypp=yp;
                 return;
               }
-              else if ((xi==1) && sharp_trailing_edge())  // This is clearly wrong.
+              else if ((xi==1) && this->sharp_trailing_edge())  // This is clearly wrong.
               {
                 y=zero;
                 yp=trat*(a.sum()-half*a(0));
@@ -412,12 +317,9 @@ namespace eli
             }
 
           private:
-            data_type thickness;    // thickness index (integer [00,99] with practical limit of [00, 30].
-                                    // Index is interpreted as 100 times the maximum thickness.
             data_type cli;          // Ideal lift coefficient.
 
             data_type thickness_loc;
-            bool sharp_te; // flag to indicate if the trailing edge should be sharp
             coefficient_type a; // coefficients for thickness distribution
             coefficient_type d; // coefficients for thickness distribution
         };
