@@ -32,7 +32,7 @@ namespace eli
       namespace pseudo
       {
         template<typename data__>
-        class five_digit_mod : virtual public four_digit_mod_thickness<data__>, public three_digit_camber<data__> {
+        class five_digit_mod : virtual public four_digit_mod_thickness<data__>, virtual public three_digit_camber<data__> {
         public:
             typedef naca_af<data__> base_class_type;
             typedef typename base_class_type::data_type data_type;
