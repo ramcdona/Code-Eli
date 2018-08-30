@@ -83,16 +83,6 @@ namespace eli
             return af.get_maximum_camber_location();
           }
 
-          bool set_name(const std::string &name)
-          {
-            return af.set_name(name);
-          }
-
-          std::string get_name() const
-          {
-            return af.get_name();
-          }
-
           void set_trig_terms(index_type nt)
           {
             if ( (nt>2) && (nt<11) )
@@ -118,9 +108,9 @@ namespace eli
             coefficient_type a(af.get_thickness_coefficients());
             bool symmetric;
 
-            t=get_thickness()/100;
-            m=get_maximum_camber()/100;
-            p=get_maximum_camber_location()/10;
+            t=get_thickness();
+            m=get_maximum_camber();
+            p=get_maximum_camber_location();
             symmetric = ((m<=0) || (p<=0));
 
             // build thickness polynomial coefficients

@@ -19,6 +19,7 @@
 #include <algorithm> // std::transform
 
 #include "eli/code_eli.hpp"
+#include "eli/geom/curve/pseudo/naca_af.hpp"
 
 namespace eli
 {
@@ -29,27 +30,38 @@ namespace eli
       namespace pseudo
       {
         template<typename data__>
-        class four_digit_mod
-        {
-          public:
-            typedef data__ data_type;
-            typedef Eigen::Matrix<data_type, 1, 2> point_type;
-            typedef Eigen::Matrix<data_type, 4, 1> coefficient_type;
-            typedef typename point_type::Index index_type;
+        class four_digit_mod : public naca_af<data__> {
+        public:
+            typedef naca_af<data__> base_class_type;
+            typedef typename base_class_type::data_type data_type;
+            typedef typename base_class_type::point_type point_type;
+            typedef typename base_class_type::coefficient_type coefficient_type;
+            typedef typename base_class_type::index_type index_type;
+            typedef typename base_class_type::complex_data_type complex_data_type;
 
           public:
-            four_digit_mod() : thickness(10), camber(0), camber_loc(0), thickness_loc(3), le_radius_indx(6), sharp_te(false)
+            four_digit_mod()
             {
-              recalc_params();
-              recalc_coefficients();
+              this->thickness = 0.10;
+              this->sharp_te = false;
+              camber = 0.0;
+              camber_loc = 0.0;
+              thickness_loc = 0.3;
+              le_radius_indx = 6.0;
+
+              recalc_thickness_coefficients();
             }
 
             four_digit_mod(const four_digit_mod<data_type> &fs)
-             : thickness(fs.thickness), camber(fs.camber), camber_loc(fs.camber_loc), thickness_loc(fs.thickness_loc),
-               le_radius_indx(fs.le_radius_indx), sharp_te(fs.sharp_te)
             {
-              recalc_params();
-              recalc_coefficients();
+              this->thickness = fs.thickness;
+              this->sharp_te = fs.sharp_te;
+              camber = fs.camber;
+              camber_loc = fs.camber_loc;
+              thickness_loc =fs.thickness_loc;
+              le_radius_indx = fs.le_radius_indx;
+
+              recalc_thickness_coefficients();
             }
 
             four_digit_mod( const data_type &cam, const data_type &cam_loc, const data_type &t, const data_type &lei, const data_type &t_loc, bool fl )
@@ -58,29 +70,6 @@ namespace eli
             }
 
             coefficient_type get_thickness_coefficients_front() const {return a;}
-
-            data_type get_t0() const {return static_cast<data_type>(-1);}
-            data_type get_tmax() const {return static_cast<data_type>(1);}
-
-            void set_sharp_trailing_edge(bool fl)
-            {
-              sharp_te=fl;
-              recalc_coefficients();
-            }
-            bool sharp_trailing_edge() const {return sharp_te;}
-
-            // Valid values of thickness are greater than 0 and less than 100
-            bool set_thickness(const data_type &t)
-            {
-              if ((t>=0) && (t<=100))
-              {
-                thickness=t;
-                recalc_params();
-                return true;
-              }
-              return false;
-            }
-            data_type get_thickness() const {return thickness;}
 
             // valid camber values are greater than or equal to zero and less or equal to 9
             // valid camber location values are zero or greater than or equal to 1 and less than or equal to 9
@@ -92,22 +81,20 @@ namespace eli
               {
                 camber = 0;
                 camber_loc = 0;
-                recalc_params();
                 return true;
               }
 
-              if ((cam<=0) || (cam>=9))
+              if ((cam<=0) || (cam>=.09))
               {
                 return false;
               }
-              if ((cam_loc<1) || (cam_loc>9))
+              if ((cam_loc<.1) || (cam_loc>.9))
               {
                 return false;
               }
 
               camber=cam;
               camber_loc=cam_loc;
-              recalc_params();
               return true;
             }
             data_type get_maximum_camber() const {return camber;}
@@ -116,11 +103,9 @@ namespace eli
             // Valid values of thickness location greater than 0 and less than 100
             bool set_thickness_loc(const data_type &t_loc)
             {
-                if ((t_loc>=2) && (t_loc<=6))
+                if ((t_loc>=.2) && (t_loc<=.6))
                 {
                     thickness_loc=t_loc;
-                    recalc_params();
-                    recalc_coefficients();
                     return true;
                 }
                 return false;
@@ -133,8 +118,7 @@ namespace eli
                 if ((lei>=0) && (lei<=9))
                 {
                     le_radius_indx=lei;
-                    recalc_params();
-                    recalc_coefficients();
+                    recalc_thickness_coefficients();
                     return true;
                 }
                 return false;
@@ -144,11 +128,11 @@ namespace eli
 
             bool set(const data_type &cam, const data_type &cam_loc, const data_type &t, const data_type &lei, const data_type &t_loc, bool fl)
             {
-                if ((cam<0) || (cam>9))
+                if ((cam<0) || (cam>.09))
                 {
                     return false;
                 }
-                if ((cam_loc<1) || (cam_loc>9))
+                if ((cam_loc<.1) || (cam_loc>.9))
                 {
                     return false;
                 }
@@ -165,11 +149,11 @@ namespace eli
                     camber_loc=cam_loc;
                 }
 
-                if ((t<0) || (t>100))
+                if ((t<0) || (t>1))
                 {
                     return false;
                 }
-                thickness=t;
+                this->thickness=t;
 
                 if ((lei<0) || (lei>9))
                 {
@@ -177,111 +161,22 @@ namespace eli
                 }
                 le_radius_indx=lei;
 
-                if ((t_loc<2) || (t_loc>6))
+                if ((t_loc<.2) || (t_loc>.6))
                 {
                     return false;
                 }
                 thickness_loc=t_loc;
 
-                sharp_te=fl;
+                this->sharp_te=fl;
 
-                recalc_params();
-                recalc_coefficients();
+                recalc_thickness_coefficients();
 
                 return true;
             }
 
-            point_type f(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return x;
-            }
-
-            point_type fp(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return xp;
-            }
-
-            point_type fpp(const data_type &xi) const
-            {
-              point_type x, xp, xpp;
-
-              evaluate(x, xp, xpp, xi);
-
-              return xpp;
-            }
-
-            void evaluate(point_type &x, point_type &xp, point_type &xpp, const data_type &xi) const
-            {
-              // check to make sure given valid parametric value
-              assert((xi>=-1) && (xi<=1));
-
-              data_type xc, yc, ycp, ycpp, ycppp, delta, deltap, deltapp;
-              const data_type one(1), two(2), three(3);
-              index_type surf_sign;
-
-              // calculate the lower surface
-              if (xi<0)
-              {
-                xc=-xi;
-                surf_sign=-1;
-              }
-              // calculate the upper surface
-              else
-              {
-                xc=xi;
-                surf_sign=1;
-              }
-
-              // calculate the supporting quantities needed
-              calc_camber(yc, ycp, ycpp, ycppp, xc);
-              calc_thickness(delta, deltap, deltapp, xc);
-
-              data_type tmp1, tmp13, cos_theta, sin_theta, curv, curvp;
-
-              tmp1=std::sqrt(one+ycp*ycp);
-              tmp13=tmp1*tmp1*tmp1;
-              cos_theta=one/tmp1;
-              sin_theta=ycp/tmp1;
-              curv=ycpp/tmp13;
-              curvp=ycppp/tmp13-three*ycp*tmp1*curv*curv;
-
-              // calculate the info
-              x(0)=surf_sign*(xi-delta*sin_theta);
-              x(1)=yc+surf_sign*delta*cos_theta;
-              xp(0)=surf_sign-deltap*sin_theta-delta*curv;
-              xp(1)=ycp*(surf_sign-delta*curv)+deltap*cos_theta;
-              xpp(0)=-surf_sign*(deltapp*sin_theta+two*deltap*curv+delta*curvp);
-              xpp(1)=ycpp*(one-surf_sign*delta*curv)+surf_sign*(deltapp*cos_theta-ycp*(two*deltap*curv+delta*curvp));
-            }
-
-            point_type tangent(const data_type &xi) const
-            {
-              point_type tgt(fp(xi));
-
-              tgt.normalize();
-              return tgt;
-            }
-
           protected:
-            void recalc_params()
-            {
-              data_type ten(10), one_hundred(100);
 
-              p=camber/one_hundred;
-              m=camber_loc/ten;
-              mt=thickness_loc/ten;
-              t=thickness/one_hundred;
-            }
-
-            void recalc_coefficients()
+            void recalc_thickness_coefficients()
             {
               // Calculate 4-digit modified curve coefficients for 20% thick airfoil
               // With given maximum thickness position and leading edge radius index.
@@ -291,6 +186,8 @@ namespace eli
               data_type d0, d1, d2, d3;
 
               data_type tocref = 0.2;
+
+              data_type mt = thickness_loc;
 
               data_type xmtsq = mt * mt;
               data_type xmtcu = xmtsq * mt;
@@ -309,7 +206,7 @@ namespace eli
                   rle = rle8 + di * drle;
               }
 
-              if ( !sharp_trailing_edge() ) // 'Official' airfoil has TE semi-bluntness of 1% of thickness.
+              if ( !this->sharp_trailing_edge() ) // 'Official' airfoil has TE semi-bluntness of 1% of thickness.
               {
                   d0 = 0.01 * tocref;
               }
@@ -422,6 +319,9 @@ namespace eli
                 return;
               }
 
+              data_type p = camber;
+              data_type m = camber_loc;
+
               if (xi<=m)
               {
                 data_type pm2(p/(m*m));
@@ -448,10 +348,10 @@ namespace eli
               assert((xi>=0) && (xi<=1));
 
               const data_type zero(0), one(1), two(2), three(3), four(4), six(6), half(one/two), quarter(one/four);
-              const data_type trat(t/static_cast<data_type>(0.20));
+              const data_type trat(this->thickness/static_cast<data_type>(0.20));
 
               // short circuit for no thickness
-              if (thickness==0)
+              if (this->thickness==0)
               {
                 y=zero;
                 yp=zero;
@@ -466,7 +366,7 @@ namespace eli
                 ypp=yp;
                 return;
               }
-              else if ((xi==1) && sharp_trailing_edge())  // This is clearly wrong.
+              else if ((xi==1) && this->sharp_trailing_edge())  // This is clearly wrong.
               {
                 y=zero;
                 yp=trat*(a.sum()-half*a(0));
@@ -474,7 +374,7 @@ namespace eli
                 return;
               }
 
-              if (xi<mt)
+              if (xi<thickness_loc)
               {
                 const data_type xi2(xi*xi), xi3(xi*xi2), sqrtxi(std::sqrt(xi));
 
@@ -495,21 +395,11 @@ namespace eli
             }
 
           private:
-            data_type thickness;    // thickness index (integer [00,99] with practical limit of [00, 30].
-                                    // Index is interpreted as 100 times the maximum thickness.
-            data_type camber;       // max camber index (integer [0,9]). Index will be
-                                    // interpreted as 100 times the maximum camber.
-            data_type camber_loc;   // chord-wise location of maximum camber index (integer [0,9]).
-                                    // Index is interpreted as 10 times the maximum camber location.
-            data_type thickness_loc; // chord-wise location of maximum thickness index (integer [0,9]).
-                                    // Index is interpreted as 10 times the maximum camber location.
+            data_type camber;       // maximum camber [0,.09]
+            data_type camber_loc;   // chord-wise location of maximum camber [0,.9]
+            data_type thickness_loc; // chord-wise location of maximum thickness [0,.9]
             data_type le_radius_indx; // Leading edge radius index
 
-            data_type m;  // location of maximum camber
-            data_type mt; // location of maximum thickness
-            data_type p;  // maximum camber
-            data_type t;  // maximum thickness
-            bool sharp_te; // flag to indicate if the trailing edge should be sharp
             coefficient_type a; // coefficients for thickness distribution
             coefficient_type d; // coefficients for thickness distribution
         };
