@@ -147,7 +147,7 @@ namespace eli
               ypp=trat*(-quarter*a(0)/sqrtxi/xi+two*a(2)+six*a(3)*xi+twelve*a(4)*xi2);
             }
 
-          private:
+          protected:
 
             coefficient_type a; // coefficients for thickness distribution
         };

@@ -19,7 +19,6 @@
 #include <algorithm> // std::transform
 
 #include "eli/code_eli.hpp"
-#include "eli/geom/curve/pseudo/naca_af.hpp"
 #include "eli/geom/curve/pseudo/two_digit_camber.hpp"
 #include "eli/geom/curve/pseudo/four_digit_mod_thickness.hpp"
 
