@@ -23,6 +23,7 @@
 #include "eli/geom/curve/pseudo/explicit_bezier.hpp"
 #include "eli/geom/curve/pseudo/one_six_series.hpp"
 #include "eli/geom/curve/pseudo/two_digit_camber.hpp"
+#include "eli/geom/curve/pseudo/three_digit_camber.hpp"
 #include "eli/geom/curve/pseudo/four_digit_thickness.hpp"
 #include "eli/geom/curve/pseudo/four_digit_mod_thickness.hpp"
 
