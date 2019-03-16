@@ -307,7 +307,7 @@ namespace eli
               y.y()=x.x();
               if (dim__>2)
               {
-                y.z()=0;
+                y(2)=0;
               }
             }
             this->set_xy_directions(x, y);

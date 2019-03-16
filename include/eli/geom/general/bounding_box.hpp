@@ -205,24 +205,24 @@ namespace eli
             // set the corners for 2 or 3 dimensional cases
             if (dim__>1)
             {
-              c[1].x()=bb_max.x();
-              c[1].y()=bb_min.y();
-              c[2].x()=bb_min.x();
-              c[2].y()=bb_max.y();
+              c[1](0)=bb_max(0);
+              c[1](1)=bb_min(1);
+              c[2](0)=bb_min(0);
+              c[2](1)=bb_max(1);
               if (dim__==3)
               {
-                c[1].z()=bb_min.z();
-                c[2].z()=bb_min.z();
+                c[1](2)=bb_min(2);
+                c[2](2)=bb_min(2);
               }
             }
 
             // set the remaining corners for 3 dimensional cases
             if (dim__>2)
             {
-              c[3] << bb_max.x(), bb_max.y(), bb_min.z();
-              c[4] << bb_min.x(), bb_min.y(), bb_max.z();
-              c[5] << bb_max.x(), bb_min.y(), bb_max.z();
-              c[6] << bb_min.x(), bb_max.y(), bb_max.z();
+              c[3] << bb_max(0), bb_max(1), bb_min(2);
+              c[4] << bb_min(0), bb_min(1), bb_max(2);
+              c[5] << bb_max(0), bb_min(1), bb_max(2);
+              c[6] << bb_min(0), bb_max(1), bb_max(2);
             }
 
             // if any corner is inside this bbox, then they intersect
