@@ -35,10 +35,11 @@ namespace eli
 
         for (k=1; k<Q.rows(); ++k)
         {
-          for (i=0; i<Q.rows()-k; ++i)
-          {
-            Q.row(i)=oneminust*Q.row(i)+t*Q.row(i+1);
-          }
+          Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k+1);
+//          for (i=0; i<Q.rows()-k; ++i)
+//          {
+//            Q.row(i)=oneminust*Q.row(i)+t*Q.row(i+1);
+//          }
         }
 
         p=Q.row(0);
