@@ -1853,11 +1853,12 @@ namespace eli
             typedef std::vector < data_type > pvec_type;
 
             pvec_type uuvec( uvec.size() );
-            std::vector < index_type > ukvec( uvec.size() );
             pvec_type vvvec( vvec.size() );
-            std::vector < index_type > vkvec( vvec.size() );
 
             int i, j;
+
+            std::vector < index_type > ukbatch( nu, 0 );
+            std::vector < index_type > vkbatch( nv, 0 );
 
             for ( i = 0; i < uvec.size(); i++ )
             {
@@ -1889,7 +1890,7 @@ namespace eli
               }
 
               uuvec[i] = uu;
-              ukvec[i] = uk;
+              ukbatch[uk] += 1;
             }
 
             for ( i = 0; i < vvec.size(); i++ )
@@ -1922,20 +1923,43 @@ namespace eli
               }
 
               vvvec[i] = vv;
-              vkvec[i] = vk;
+              vkbatch[vk] += 1;
             }
+
+            std::vector < std::vector < point_type > > S_u_mat;
+            std::vector < std::vector < point_type > > S_v_mat;
 
             ptmat.resize( uvec.size() );
             normmat.resize( uvec.size() );
+            S_u_mat.resize( uvec.size() );
+            S_v_mat.resize( uvec.size() );
             for ( i = 0; i < uvec.size(); i++ )
             {
-              ptmat[i].resize( vvec.size() );
-              normmat[i].resize( vvec.size() );
+                ptmat[i].resize(vvec.size());
+                normmat[i].resize(vvec.size());
+                S_u_mat[i].resize(vvec.size());
+                S_v_mat[i].resize(vvec.size());
+            }
 
-              for ( j = 0; j < vvec.size(); j++ )
+            index_type uk, vk;
+
+            i = 0;
+            for ( uk = 0; uk < nu; uk++ )
+            {
+              if ( ukbatch[uk] > 0 )  // This patch is used
               {
-                ptmat[i][j] = patches[ukvec[i]][vkvec[j]].f(uuvec[i], vvvec[j]);
-                normmat[i][j] = patches[ukvec[i]][vkvec[j]].normal(uuvec[i], vvvec[j]);
+                j = 0;
+                for ( vk = 0; vk < nv; vk++ )
+                {
+                  if ( vkbatch[vk] > 0 )  // This patch is used
+                  {
+                    patches[uk][vk].fbatch( i, j, ukbatch[uk], vkbatch[vk], uuvec, vvvec, ptmat );
+                    patches[uk][vk].normalbatch( i, j, ukbatch[uk], vkbatch[vk], uuvec, vvvec, S_u_mat, S_v_mat, normmat );
+
+                    j += vkbatch[vk];   // Increment j
+                  }
+                }
+                i += ukbatch[uk];   // Increment i
               }
             }
           }
