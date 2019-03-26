@@ -1094,6 +1094,43 @@ namespace eli
             return deriv_v->f_vv( u, v );
           }
 
+          void normalbatch(index_type i0, index_type j0, index_type nu, index_type nv,
+                  const std::vector < data_type > &uvec, const std::vector < data_type > &vvec,
+                  std::vector < std::vector < point_type > > &S_u_mat,
+                  std::vector < std::vector < point_type > > &S_v_mat,
+                  std::vector < std::vector < point_type > > &n_mat) const
+          {
+            tolerance_type tol;
+
+            f_ubatch( i0, j0, nu, nv, uvec, vvec, S_u_mat );
+            f_vbatch( i0, j0, nu, nv, uvec, vvec, S_v_mat );
+
+            for ( index_type i = i0; i < i0 + nu; i++ )
+            {
+              for ( index_type j = j0; j < j0 + nv; j++ )
+              {
+                point_type S_u, S_v;
+                S_u = S_u_mat[i][j];
+                S_v = S_v_mat[i][j];
+
+                point_type n=S_u.cross(S_v);
+                data_type nlen(n.norm());
+
+                if (tol.approximately_equal(nlen, 0))
+                {
+                  data_type u = uvec[i];
+                  data_type v = vvec[j];
+
+                  degen_normal( u, v, S_u, S_v, n, nlen );
+                }
+
+                n/=nlen;
+
+                n_mat[i][j] = n;
+              }
+            }
+          }
+
           point_type normal(const data_type &u, const data_type &v) const
           {
             point_type S_u, S_v;
