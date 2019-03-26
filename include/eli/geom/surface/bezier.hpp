@@ -975,7 +975,10 @@ namespace eli
 
           point_type normal(const data_type &u, const data_type &v) const
           {
-            point_type n=f_u(u, v).cross(f_v(u, v));
+            point_type S_u, S_v;
+            S_u=f_u(u, v);
+            S_v=f_v(u, v);
+            point_type n=S_u.cross(S_v);
             data_type nlen(n.norm());
             tolerance_type tol;
 
@@ -986,12 +989,11 @@ namespace eli
             // see "Bezier Normal Vector Surface and Its Applications" by Yamaguchi
             if (tol.approximately_equal(nlen, 0))
             {
-              point_type S_u, S_v, S_uu, S_uv, S_vv, N_u, N_v;
+              point_type S_uu, S_uv, S_vv, N_u, N_v;
               data_type du(1), dv(1);
 
               // calculate Taylor series second term
-              S_u=f_u(u, v);
-              S_v=f_v(u, v);
+
               S_uu=f_uu(u, v);
               S_uv=f_uv(u, v);
               S_vv=f_vv(u, v);
