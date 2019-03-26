@@ -982,13 +982,24 @@ namespace eli
             data_type nlen(n.norm());
             tolerance_type tol;
 
+            if (tol.approximately_equal(nlen, 0))
+            {
+              degen_normal( u, v, S_u, S_v, n, nlen );
+            }
+
+            n/=nlen;
+            return n;
+          }
+
+          void degen_normal(const data_type &u, const data_type &v, const point_type &S_u, const point_type &S_v, point_type &n, data_type &nlen ) const
+          {
+            tolerance_type tol;
+
             // If have degenerate surface try higher order terms.
             // Since want direction and don't care about magnitude,
             // can use du=dv=1  in Taylor serier expansion:
             // N(du, dv)=N+N_u*du+N_v*dv+1/2*(N_uu*du^2+2*N_uv*du*dv+N_vv*dv^2)+H.O.T.
             // see "Bezier Normal Vector Surface and Its Applications" by Yamaguchi
-            if (tol.approximately_equal(nlen, 0))
-            {
               point_type S_uu, S_uv, S_vv, N_u, N_v;
               data_type du(1), dv(1);
 
@@ -1024,10 +1035,6 @@ namespace eli
                   nlen=1;
                 }
               }
-            }
-
-            n/=nlen;
-            return n;
           }
 
           void f_pt_normal(const data_type &u, const data_type &v, point_type &pt, point_type &norm ) const
