@@ -699,6 +699,81 @@ namespace eli
             }
           }
 
+          void fbatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &ptmat ) const
+          {
+            point_type ans, tmp;
+            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_cp;
+            index_type n(degree_u()), m(degree_v());
+
+            // check to make sure have valid curve
+            assert(n>=0);
+            assert(m>=0);
+
+            // Estimate cost to build u (or v) curves to evaluate grid.
+            index_type cu = nv * ( ( n + 1 ) * m * ( m + 1 ) + nu * n * ( n + 1 ) );
+            index_type cv = nu * ( ( m + 1 ) * n * ( n + 1 ) + nv * m * ( m + 1 ) );
+
+            if ( cu < cv ) // Building u curves expected to be cheaper.
+            {
+              temp_cp.resize(n+1, dim__);
+
+              for ( index_type j = 0; j < nv; j++ )
+              {
+                data_type v = vvec[j0+j];
+
+                // check to make sure given valid parametric value
+                assert((v>=0) && (v<=1));
+
+                // build the temporary control points
+                for (index_type i=0; i<=n; ++i)
+                {
+                  eli::geom::utility::de_casteljau(tmp, B_v[i], v);
+                  temp_cp.row(i)=tmp;
+                }
+
+                for (index_type i=0; i<nu; i++)
+                {
+                  data_type u = uvec[i0+i];
+
+                  // check to make sure given valid parametric value
+                  assert((u>=0) && (u<=1));
+
+                  eli::geom::utility::de_casteljau( ptmat[i+i0][j0+j], temp_cp, u);
+                }
+              }
+            }
+            else
+            {
+              temp_cp.resize(m+1, dim__);
+
+              for ( index_type i = 0; i < nu; i++ )
+              {
+                data_type u = uvec[i0+i];
+
+                // check to make sure given valid parametric value
+                assert((u>=0) && (u<=1));
+
+                // build the temporary control points
+                for (index_type j=0; j<=m; ++j)
+                {
+                  eli::geom::utility::de_casteljau(tmp, B_u[j], u);
+                  temp_cp.row(j)=tmp;
+                }
+
+                for (index_type j=0; j<nv; j++)
+                {
+                  data_type v = vvec[j0+j];
+
+                  // check to make sure given valid parametric value
+                  assert((v>=0) && (v<=1));
+
+                  eli::geom::utility::de_casteljau( ptmat[i+i0][j0+j], temp_cp, v);
+                }
+              }
+            }
+
+          }
+
           point_type f(const data_type &u, const data_type &v) const
           {
             point_type ans, tmp;
@@ -739,6 +814,29 @@ namespace eli
             return ans;
           }
 
+          void f_ubatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &f_umat ) const
+          {
+            // check to make sure have valid curve
+            assert(degree_u()>=0);
+            assert(degree_v()>=0);
+
+            if (this->degree_u()<1)
+            {
+              for ( index_type i = i0; i < i0 + nu; i++ )
+              {
+                for ( index_type j = j0; j < j0 + nv; j++ )
+                {
+                  f_umat[i][j].setZero();
+                  return;
+                }
+              }
+            }
+
+            validate_u();
+
+            deriv_u->fbatch( i0, j0, nu, nv, uvec, vvec, f_umat );
+          }
+
           point_type f_u(const data_type &u, const data_type &v) const
           {
             // check to make sure have valid curve
@@ -777,6 +875,29 @@ namespace eli
               // create the control points for first derivative curve
               eli::geom::utility::bezier_p_control_point(bs_fu.B_u[i], B_u[i]);
             }
+          }
+
+          void f_vbatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &f_vmat ) const
+          {
+            // check to make sure have valid curve
+            assert(degree_u()>=0);
+            assert(degree_v()>=0);
+
+            if (this->degree_v()<1)
+            {
+              for ( index_type i = i0; i < i0 + nu; i++ )
+              {
+                for ( index_type j = j0; j < j0 + nv; j++ )
+                {
+                  f_vmat[i][j].setZero();
+                  return;
+                }
+              }
+            }
+
+            validate_v();
+
+            deriv_v->fbatch( i0, j0, nu, nv, uvec, vvec, f_vmat );
           }
 
           point_type f_v(const data_type &u, const data_type &v) const
