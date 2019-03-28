@@ -29,6 +29,12 @@
 // This section is dedicated to disabling warnings from Eigen that still show up in various
 // build configurations.
 //
+
+// X11 define collides with Eigen
+#ifdef Success
+#undef Success
+#endif
+
 #include <Eigen/Core>
 #include <Eigen/src/Core/util/Macros.h>
 #define EIGEN_NUM_VERSION (EIGEN_WORLD_VERSION*10000+EIGEN_MAJOR_VERSION*100+EIGEN_MINOR_VERSION)
@@ -72,11 +78,6 @@
 #     endif
 #   endif
 # endif
-#endif
-
-// X11 define collides with Eigen
-#ifdef Success
-#undef Success
 #endif
 
 #include <Eigen/Eigen>
