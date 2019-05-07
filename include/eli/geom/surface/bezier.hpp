@@ -1512,8 +1512,6 @@ namespace eli
 
           void split_u(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &u0) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
-
             index_type j, n(degree_u()), m(degree_v());
 
             // make sure have valid index
@@ -1532,8 +1530,6 @@ namespace eli
 
           void simple_split_u(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &u0) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
-
             index_type j, m(degree_v());
 
             // make sure have valid index
@@ -1548,8 +1544,6 @@ namespace eli
 
           void simple_split_u_half(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi ) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
-
             index_type j, m(degree_v());
 
             // cycle through each row and split each it
@@ -1561,8 +1555,6 @@ namespace eli
 
           void split_v(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &v0) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
-
             index_type i, n(degree_u()), m(degree_v());
 
             // make sure have valid index
@@ -1581,8 +1573,6 @@ namespace eli
 
           void simple_split_v(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi, const data_type &v0) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
-
             index_type i, n(degree_u());
 
             // make sure have valid index
@@ -1597,8 +1587,6 @@ namespace eli
 
           void simple_split_v_half(bezier<data_type, dim__, tol__> &bs_lo, bezier<data_type, dim__, tol__> &bs_hi ) const
           {
-            typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_col_type;
-
             index_type i, n(degree_u());
 
             // cycle through each col and split each it
@@ -1610,8 +1598,6 @@ namespace eli
 
           data_type simple_eqp_distance_bound(const bezier<data_type, dim__, tol__> &bs) const
           {
-            typedef bezier<data_type, dim__, tol__> surf_type;
-
             // Find maximum common order.
             index_type n(degree_u()), m(degree_v());
 

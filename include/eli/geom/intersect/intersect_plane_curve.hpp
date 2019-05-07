@@ -297,7 +297,6 @@ namespace eli
                                                                                     const typename curve::piecewise<curve__, data__, dim__, tol__>::point_type &nvec)
       {
         typedef curve::piecewise<curve__, data__, dim__, tol__> piecewise_type;
-        typedef typename piecewise_type::curve_type curve_type;
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
 

@@ -877,7 +877,6 @@ namespace eli
           const typename surface::piecewise<surface__, data__, dim__, tol__>::point_type &pt)
       {
         typedef surface::piecewise<surface__, data__, dim__, tol__> piecewise_type;
-        typedef typename piecewise_type::surface_type surface_type;
         typedef typename piecewise_type::index_type index_type;
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;

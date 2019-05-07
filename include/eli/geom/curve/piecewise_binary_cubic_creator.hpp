@@ -115,8 +115,6 @@ namespace eli
 
           virtual bool create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
           {
-            typedef typename piecewise_curve_type::error_code error_code;
-
             data_type t0, t1;
             t0 = parent_curve.get_t0();
             t1 = parent_curve.get_tmax();
