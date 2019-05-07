@@ -252,9 +252,6 @@ namespace eli
                   //            if (fpx==0)
                   //              return iterative_root_base<data__>::no_root_found;
 
-                  //bool invertible;
-                  bool modified = false;
-
                   dx = -fpx.lu().solve( eval1 );
 
                   dx = this->calculate_delta_factor( x, dx );
