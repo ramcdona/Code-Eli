@@ -82,8 +82,6 @@ namespace eli
               typename surface__::point_type q;
               typename surface__::point_type Su, Sv, r, A, B, norm;
 
-              typename surface__::tolerance_type tol;
-
               typename surface__::data_type umin, umax, vmin, vmax;
               s->get_parameter_min(umin,vmin);
               s->get_parameter_max(umax,vmax);
@@ -107,7 +105,7 @@ namespace eli
 
                 typename surface__::data_type N = norm.dot( norm );
 
-                if( std::abs( N ) > tol.get_absolute_tolerance() )
+                if( std::abs( N ) > std::numeric_limits< typename surface__::data_type >::epsilon() )
                 {
                     dx(0) = A.dot( norm ) / N;
                     dx(1) = -B.dot( norm ) / N;

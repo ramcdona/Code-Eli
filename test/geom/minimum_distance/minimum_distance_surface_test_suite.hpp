@@ -4320,6 +4320,64 @@ class minimum_distance_surface_test_suite : public Test::Suite
     void dist_surf_test()
     {
       {
+          surface_type patch(3,3);
+          point_type pt;
+
+          // Surface and points recovered from OpenVSP failure case.
+          // Hex floating point representation used to ensure exact transfer of
+          // floating point numbers.
+          pt << 0x1.001391762278p-2, -0x1.8951f245bb4f1p-9, 0x1.00093dc6b03c1p-3;
+          patch.set_control_point( pt, 0, 0 );
+          pt << 0x1.0014bcf3232b4p-2, -0x1.76b17b575fa2ep-9, 0x1.000b94c0b1a28p-3;
+          patch.set_control_point( pt, 0, 1 );
+          pt << 0x1.0015d345ea88bp-2, -0x1.640d275e4b1d1p-9, 0x1.000dc166405d6p-3;
+          patch.set_control_point( pt, 0, 2 );
+          pt << 0x1.0016d45ddc85ep-2, -0x1.516502192361bp-9, 0x1.000fc3962457ap-3;
+          patch.set_control_point( pt, 0, 3 );
+          pt << 0x1.00e23459c48c2p-2, -0x1.8954cea87ccbp-9, 0x1.fcdabe0017de5p-4;
+          patch.set_control_point( pt, 1, 0 );
+          pt << 0x1.00e35fd8f2e9bp-2, -0x1.76b4350af5ea7p-9, 0x1.fcdf6bfcd1546p-4;
+          patch.set_control_point( pt, 1, 1 );
+          pt << 0x1.00e4762dc0886p-2, -0x1.640fbe5b84887p-9, 0x1.fce3c55007cf2p-4;
+          patch.set_control_point( pt, 1, 2 );
+          pt << 0x1.00e57747913ecp-2, -0x1.51677658e4279p-9, 0x1.fce7c9b74aa8cp-4;
+          patch.set_control_point( pt, 1, 3 );
+          pt << 0x1.01b13d852fc9p-2, -0x1.89578661e23fdp-9, 0x1.f9a14362984a2p-4;
+          patch.set_control_point( pt, 2, 0 );
+          pt << 0x1.01b269066fe68p-2, -0x1.76b6cbd1a8b9ep-9, 0x1.f9a5f16798cp-4;
+          patch.set_control_point( pt, 2, 1 );
+          pt << 0x1.01b37f5d29d51p-2, -0x1.64123428af3bp-9, 0x1.f9aa4ac2807a8p-4;
+          patch.set_control_point( pt, 2, 2 );
+          pt << 0x1.01b48078c14ep-2, -0x1.5169cb25c60c2p-9, 0x1.f9ae4f30de5e4p-4;
+          patch.set_control_point( pt, 2, 3 );
+          pt << 0x1.0280ad4595d66p-2, -0x1.895a1ac068c93p-9, 0x1.f6660bc806d5ap-4;
+          patch.set_control_point( pt, 3, 0 );
+          pt << 0x1.0281d8c8ccc82p-2, -0x1.76b940ea1df5cp-9, 0x1.f66ab9d4e29cbp-4;
+          patch.set_control_point( pt, 3, 1 );
+          pt << 0x1.0282ef215a02p-2, -0x1.641489f496994p-9, 0x1.f66f133717846p-4;
+          patch.set_control_point( pt, 3, 2 );
+          pt << 0x1.0283f03ea1216p-2, -0x1.516c019eb6b4ap-9, 0x1.f67317ac3401ep-4;
+          patch.set_control_point( pt, 3, 3 );
+
+
+          pt << 0x1.001fbc90b3d55p-2, -0x1.7ca1ba4ef9c8dp-9, 0x1.ffe7e04358342p-4;
+
+
+          data_type dist = 1.0;
+          data_type u, v;
+          dist = eli::geom::intersect::minimum_distance(u, v, patch, pt, 0.5, 0.5 );
+
+          data_type dist_ref, u_ref, v_ref;
+
+          dist_ref = 0x1.048c87d281c8ep-22;
+          u_ref = 0x1.2e0ff4d121444p-6;
+          v_ref = 0x1.d0e91354ad38dp-3;
+
+          TEST_ASSERT(tol.approximately_equal(u, u_ref));
+          TEST_ASSERT(tol.approximately_equal(v, v_ref));
+          TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
+      }
+      {
         const index_type n(3), m(3);
         surface_type s(n, m);
         point_type cp[3+1][3+1], pt_out;
