@@ -404,7 +404,7 @@ namespace eli
 
             curve_type c(seg->second);
 
-            data_type tlocal, d;
+            data_type tlocal = 0, d = 0;
             d=minimum_distance(tlocal,c,pt);
 
             if(d < dmin)
