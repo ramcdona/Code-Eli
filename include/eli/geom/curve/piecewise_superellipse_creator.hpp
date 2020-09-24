@@ -527,9 +527,9 @@ namespace eli
                 if (iseg == 0)
                 {
                   bool need_set(false);
-                  control_point_type cp_bot(crv.get_control_point(0));
+                  control_point_type cp_bot(crv.get_control_point(1));
 
-                  if (cp_bot.y() < max_width_loc)
+                  if (cp_bot.y() > max_width_loc)
                   {
                     cp_bot.y() = max_width_loc;
                     need_set = true;
@@ -548,9 +548,9 @@ namespace eli
                 if (iseg == (nseg_bot - 1))
                 {
                   bool need_set(false);
-                  control_point_type cp_bot(crv.get_control_point(max_degree));
+                  control_point_type cp_bot(crv.get_control_point(max_degree-1));
 
-                  if (cp_bot.y() < max_width_loc)
+                  if (cp_bot.y() > max_width_loc)
                   {
                     cp_bot.y() = max_width_loc;
                     need_set = true;
