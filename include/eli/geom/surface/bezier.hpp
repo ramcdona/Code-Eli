@@ -230,6 +230,20 @@ namespace eli
             return B_u[j].row(i);
           }
 
+          void zero_component( const index_type & izero )
+          {
+              index_type i, j, degu(degree_u()), degv(degree_v());
+
+              for (i=0; i<=degu; ++i)
+              {
+                  for (j=0; j<=degv; ++j)
+                  {
+                      B_u[j].row(i)(izero) = 0.0;
+                  }
+              }
+              invalidate_deriv();
+          }
+
           void get_bounding_box(bounding_box_type &bb) const
           {
             index_type i, j, degu(degree_u()), degv(degree_v());
@@ -1838,6 +1852,23 @@ namespace eli
             retsurf.sum( sq1, sq2 );
 
             return retsurf;
+          }
+
+          onedbezsurf intaxissurf( const point_type & pt, const index_type & iax ) const
+          {
+            onedbezsurf retsurf;
+            typedef bezier<data_type, dim__, tol__> surf_type;
+
+            surf_type d(*this);
+
+            d.translate( -pt );
+
+            d.zero_component( iax );
+
+            surf_type sq;
+            sq.product( d, d );
+
+            return sq.sumcompsurf();
           }
 
           bool allpos( const data_type &smallpos ) const
