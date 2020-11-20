@@ -139,6 +139,20 @@ namespace eli
             return true;
           }
 
+          bool intersect_axis( const point_type &p, const index_type iax ) const
+          {
+            for ( index_type i = 0; i < dim__; ++i )
+            {
+              if ( i != iax )  // Ignore iax direction.  Otherwise a point intersection test.
+              {
+                if ( ( p(i) < pmin(i) ) || ( p(i) > pmax(i) ) )
+                  return false;
+              }
+            }
+
+            return true;
+          }
+
           void clear()
           {
             empty=true;
