@@ -43,9 +43,19 @@ namespace eli
       typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type
         minimum_distance(
           typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type &u,
-	        typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type &v,
+	      typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type &v,
           const surface::piecewise<surface1__, data1__, dim1__, tol1__> &ps,
           const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &pt);
+
+      template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
+      typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type
+        intersect(
+          typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type &u,
+          typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type &v,
+          typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p,
+          const surface::piecewise<surface1__, data1__, dim1__, tol1__> &ps,
+          const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p0,
+          const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::index_type &iproj);
     }
 
     namespace surface
@@ -2011,6 +2021,16 @@ namespace eli
               typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &v,
               const piecewise<surface1__, data1__, dim1__, tol1__> &ps,
               const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &pt);
+
+          template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
+          friend typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type
+            eli::geom::intersect::intersect(
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &u,
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &v,
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p,
+              const piecewise<surface1__, data1__, dim1__, tol1__> &ps,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p0,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::index_type &iproj);
 
           typedef std::map< data_type, index_type > keymap_type;
 

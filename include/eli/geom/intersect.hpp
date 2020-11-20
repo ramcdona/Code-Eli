@@ -19,5 +19,6 @@
 #include "eli/geom/intersect/minmax_dimension.hpp"
 #include "eli/geom/intersect/specified_distance.hpp"
 #include "eli/geom/intersect/specified_thickness.hpp"
+#include "eli/geom/intersect/intersect_axis.hpp"
 
 #endif
