@@ -864,40 +864,6 @@ namespace eli
             invalidate_deriv();
           }
 
-          void sqrt( const bezier<data_type, dim__> &a )
-          {
-            typedef bezier<data_type, dim__> curve_type;
-
-            curve_type ca( a );
-
-            assert( ca.B.cols() == dim__ );
-
-            index_type m( ca.degree() );
-
-            if ( m % 2 ) // Promote once if odd
-            {
-              control_point_matrix_type a_new( m + 2, dim__);
-              eli::geom::utility::bezier_promote_control_points(a_new, ca.B);
-              ca.B=a_new;
-              m++;
-            }
-
-            index_type n( m/2 );
-
-            control_point_matrix_type scaleda, scaledc;
-
-            scaleda.resize( m + 1, dim__ );
-            eli::geom::utility::bezier_control_points_to_scaled_bezier( scaleda, ca.B );
-
-            scaledc.resize( n + 1, dim__ );
-            scaledc.setZero();
-            eli::geom::utility::sqrt_scaled_bezier( scaledc, scaleda );
-
-            resize( n );
-            eli::geom::utility::scaled_bezier_to_control_points_bezier( B, scaledc );
-            invalidate_deriv();
-          }
-
           void sum( const bezier<data_type, dim__> &a, const bezier<data_type, dim__> &b)
           {
             typedef bezier<data_type, dim__> curve_type;

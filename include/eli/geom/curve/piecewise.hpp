@@ -2418,34 +2418,6 @@ namespace eli
             }
           }
 
-          void sqrt(const piecewise<curve__, data_type, dim__> &a)
-          {
-            set_t0( a.get_t0() );
-
-            typename segment_collection_type::const_iterator scita;
-            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
-            {
-              curve_type c, b( scita->second );
-
-              bool flip = false;
-
-              if ( b.f(0).x() < 1e-12 )
-              {
-                b.reverse();
-                flip = true;
-              }
-
-              c.sqrt( b );
-
-              if ( flip )
-              {
-                c.reverse();
-              }
-
-              push_back( c, a.get_delta_t(scita) );
-            }
-          }
-
           void sum(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
           {
             set_t0( a.get_t0() );
