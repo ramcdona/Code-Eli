@@ -37,6 +37,7 @@ class bezier_curve_test_suite : public Test::Suite
     typedef typename bezier_type::index_type index_type;
     typedef typename bezier_type::point_type point_type;
     typedef typename bezier_type::data_type data_type;
+    typedef typename bezier_type::onedbezcurve oned_type;
 
   protected:
     void AddTests(const float &)
@@ -1804,7 +1805,7 @@ class bezier_curve_test_suite : public Test::Suite
       bc3.product( bc1, bc2 );
 
       point_type eval_out, eval_ref, a, b;
-      data_type t;
+      data_type x_ref, t;
 
       t = 0.5;
 
@@ -1822,6 +1823,54 @@ class bezier_curve_test_suite : public Test::Suite
         eval_ref = bc1.f(t).cwiseProduct( bc2.f(t) );
         TEST_ASSERT( (eval_out-eval_ref).norm() < 100*eps );
       }
+
+      bezier_type delta, deltasq;
+
+      oned_type rsq, r;
+      typename oned_type::point_type x;
+
+      bezier_type bc2neg( bc2 );
+      bc2neg.scale( -1.0 );
+      delta.sum( bc1, bc2neg );
+      deltasq.square( delta );
+      rsq = deltasq.sumcompcurve();
+
+
+      t = 0.5;
+
+      eval_out = delta.f( t );
+      eval_ref = bc1.f(t) - bc2.f(t);
+      TEST_ASSERT( (eval_out-eval_ref).norm() < 10*eps );
+
+      eval_out = deltasq.f( t );
+      eval_ref = eval_ref.cwiseProduct( eval_ref );
+      TEST_ASSERT( (eval_out-eval_ref).norm() < 10*eps );
+
+      x = rsq.f( t );
+      x_ref = eval_ref(0) + eval_ref(1) + eval_ref(2);
+      TEST_ASSERT( (x(0)-x_ref) < 10*eps );
+
+      std::cout << std::endl;
+
+      for ( i = 0; i < n; i++ )
+      {
+         t = i * 1.0 / (n-1);
+
+         eval_out = delta.f( t );
+         eval_ref = bc1.f(t) - bc2.f(t);
+         TEST_ASSERT( (eval_out-eval_ref).norm() < 100*eps );
+
+         eval_out = deltasq.f( t );
+         eval_ref = eval_ref.cwiseProduct( eval_ref );
+         TEST_ASSERT( (eval_out-eval_ref).norm() < 500*eps );
+
+         x = rsq.f( t );
+         x_ref = eval_ref(0) + eval_ref(1) + eval_ref(2);
+         TEST_ASSERT( (x(0)-x_ref) < 100*eps );
+      }
+      std::cout << std::endl;
+      std::cout << std::endl;
+      std::cout << std::endl;
 
     }
 };
