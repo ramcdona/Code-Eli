@@ -2380,6 +2380,27 @@ namespace eli
             it->second.frenet_serret_frame(t, n, b, tt);
           }
 
+          void integral(const piecewise<curve__, data_type, dim__> &a)
+          {
+            set_t0( a.get_t0() );
+            point_type C0;
+            C0.setZero();
+
+            typename segment_collection_type::const_iterator scita;
+            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
+            {
+              curve_type c;
+              data_type dt( a.get_delta_t(scita) );
+
+              scita->second.fi(c);
+              c.scale( dt );
+              c.translate( C0 );
+
+              C0 = c.get_control_point( c.degree() ); // Capture last point for next offset.
+              push_back( c, dt );
+            }
+          }
+
           void product(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
           {
             set_t0( a.get_t0() );

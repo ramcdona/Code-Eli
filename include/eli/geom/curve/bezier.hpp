@@ -430,6 +430,17 @@ namespace eli
             return rtn;
           }
 
+          void fi(bezier<data_type, dim__> &bc_fi) const
+          {
+            // check to make sure have valid curve
+            assert(degree()>=0);
+
+            bc_fi.resize( degree()+1 );
+
+            eli::geom::utility::bezier_i_control_point(bc_fi.B, B);
+            // bc_fi.deriv = *this; // too cute?
+          }
+
           point_type fp(const data_type &t) const
           {
             // check to make sure have valid curve
