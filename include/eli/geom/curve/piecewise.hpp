@@ -2368,6 +2368,21 @@ namespace eli
             it->second.frenet_serret_frame(t, n, b, tt);
           }
 
+          void integral(const piecewise<curve__, data_type, dim__> &a)
+          {
+            set_t0( a.get_t0() );
+
+            typename segment_collection_type::const_iterator scita;
+            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
+            {
+              curve_type c;
+
+              scita->second.fi(c);
+
+              push_back( c, a.get_delta_t(scita) );
+            }
+          }
+
           void product(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
           {
             set_t0( a.get_t0() );

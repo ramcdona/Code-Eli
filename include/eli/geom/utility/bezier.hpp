@@ -46,6 +46,25 @@ namespace eli
       }
 
       template<typename Derived1, typename Derived2>
+      void bezier_i_control_point(Eigen::MatrixBase<Derived1> &cp_i, const Eigen::MatrixBase<Derived2> &cp)
+      {
+        // do some checks on incoming matrix dimensions
+        assert(cp_i.rows()==cp.rows()+1);
+        assert(cp_i.cols()==cp.cols());
+
+        typename Derived2::Index i, j, n(cp.rows());
+
+        cp_i.setZero();
+        for (i=1; i<=n; ++i)
+        {
+          for (j=0; j<=i; j++)
+          {
+            cp_i.row(i)+=static_cast<typename Derived2::Scalar>(1.0/n)*cp.row(j);
+          }
+        }
+      }
+
+      template<typename Derived1, typename Derived2>
       void bezier_p_control_point(Eigen::MatrixBase<Derived1> &cp_p, const Eigen::MatrixBase<Derived2> &cp)
       {
         // do some checks on incoming matrix dimensions
