@@ -2161,6 +2161,19 @@ namespace eli
               pmax = p;
             }
 
+            void init( const std::vector<data_type> &pmap )
+            {
+              key.clear();
+              typename keymap_type::iterator itguess = key.end();
+
+              for ( index_type j = 0; j < pmap.size() - 1; j++ )
+              {
+                itguess = key.insert( itguess, std::make_pair( pmap[j], j) );
+              }
+
+              pmax = pmap.back();
+            }
+
             void parameter_report() const
             {
               printf("Parameter report:\n");
