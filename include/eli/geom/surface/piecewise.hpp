@@ -409,6 +409,16 @@ namespace eli
             vclosecache=UNKNOWN;
           }
 
+          void init_uv( const std::vector<data_type> &umap, const std::vector<data_type> &vmap )
+          {
+            patches.clear();
+            ukey.init( umap );
+            vkey.init( vmap );
+            resize_store(ukey.key.size(), vkey.key.size());
+            uclosecache=UNKNOWN;
+            vclosecache=UNKNOWN;
+          }
+
           void degree_u(index_type &mind, index_type &maxd)
           {
             typename patch_collection_type::iterator uit;
