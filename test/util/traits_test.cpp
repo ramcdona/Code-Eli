@@ -15,7 +15,7 @@
 #include <cstring>  // std::strlen, std::strncmp
 #include <string>   // std::string
 #include <fstream>  // std::fstream
-#include <memory>   // std::auto_ptr
+#include <memory>   // std::unique_ptr
 #include <ctime>    // strftime
 
 #include <cpptest.h> // CppTest Framework
@@ -151,9 +151,9 @@ int main(int argc, char *argv[])
     std::string ostr_filename("traits_test_results.html");
 
     // add the cppack test suites
-    ts.add(std::auto_ptr<Test::Suite>(new traits_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new traits_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new traits_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new traits_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new traits_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new traits_test_suite<long double>()));
 
     //
     // NOTE: End of section that should be changed

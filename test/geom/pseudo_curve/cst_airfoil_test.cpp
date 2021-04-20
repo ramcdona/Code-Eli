@@ -15,7 +15,7 @@
 #include <cstring>  // std::strlen, std::strncmp
 #include <string>   // std::string
 #include <fstream>  // std::fstream
-#include <memory>   // std::auto_ptr
+#include <memory>   // std::unique_ptr
 #include <ctime>    // strftime
 
 #include <cpptest.h> // CppTest Framework
@@ -151,12 +151,12 @@ int main(int argc, char *argv[])
     std::string ostr_filename("cst_airfoil_curve_test_results.html");
 
     // add the cppack test suites
-    ts.add(std::auto_ptr<Test::Suite>(new cst_airfoil_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new cst_airfoil_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new cst_airfoil_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new cst_airfoil_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new cst_airfoil_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new cst_airfoil_test_suite<long double>()));
 #ifdef ELI_QD_FOUND
-    ts.add(std::auto_ptr<Test::Suite>(new cst_airfoil_curve_test_suite<dd_real>()));
-    ts.add(std::auto_ptr<Test::Suite>(new cst_airfoil_curve_test_suite<qd_real>()));
+    ts.add(std::unique_ptr<Test::Suite>(new cst_airfoil_curve_test_suite<dd_real>()));
+    ts.add(std::unique_ptr<Test::Suite>(new cst_airfoil_curve_test_suite<qd_real>()));
 #endif
 
     //

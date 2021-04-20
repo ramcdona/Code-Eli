@@ -15,7 +15,7 @@
 #include <cstring>  // std::strlen, std::strncmp
 #include <string>   // std::string
 #include <fstream>  // std::fstream
-#include <memory>   // std::auto_ptr
+#include <memory>   // std::unique_ptr
 #include <ctime>    // strftime
 
 #include <cpptest.h> // CppTest Framework
@@ -156,24 +156,24 @@ int main(int argc, char *argv[])
     std::string ostr_filename("minimum_distance_test_results.html");
 
     // add the cppack test suites
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_point_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_point_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_point_test_suite<long double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<long double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_line_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_line_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_line_test_suite<long double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_plane_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_plane_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_plane_test_suite<long double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_curve_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_curve_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_curve_test_suite<long double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_surface_test_suite<float>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_surface_test_suite<double>()));
-    ts.add(std::auto_ptr<Test::Suite>(new minimum_distance_surface_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_point_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_point_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_point_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_bounding_box_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_line_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_line_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_line_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_plane_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_plane_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_plane_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_curve_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_curve_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_curve_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<long double>()));
 
     //
     // NOTE: End of section that should be changed
