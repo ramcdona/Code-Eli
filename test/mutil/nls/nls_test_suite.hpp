@@ -254,7 +254,7 @@ class nls_test_suite : public Test::Suite
       bm.set_max_iteration(200);
       bm.set_bounds(0, eli::constants::math<data__>::pi());
 
-      stat = bm.find_root(root, std::ptr_fun(my_function<data__>), rhs);
+      stat = bm.find_root(root, std::function<data__(data__)>(my_function<data__>), rhs);
       TEST_ASSERT(stat==eli::mutil::nls::bisection_method<data__>::converged);
       TEST_ASSERT_DELTA(root, std::acos(rhs), 2*delta);
 
@@ -279,17 +279,17 @@ class nls_test_suite : public Test::Suite
       nrm.set_initial_guess(static_cast<data__>(0.3)*eli::constants::math<data__>::pi_by_four());
 
       // test using user defined functions
-      stat = nrm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==eli::mutil::nls::newton_raphson_method<data__>::converged);
       TEST_ASSERT_DELTA(root, std::acos(rhs), 2*delta);
 
       nrm.set_max_iteration(2);
-      stat = nrm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==eli::mutil::nls::newton_raphson_method<data__>::max_iteration);
 
       nrm.set_max_iteration(200);
       nrm.set_initial_guess(0);
-      stat = nrm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==eli::mutil::nls::newton_raphson_method<data__>::no_root_found);
 
       // test using functor
@@ -317,7 +317,7 @@ class nls_test_suite : public Test::Suite
       sm.set_max_iteration(200);
       sm.set_initial_guesses(eli::constants::math<data__>::pi_by_four(), eli::constants::math<data__>::pi_by_two());
 
-      stat = sm.find_root(root, std::ptr_fun(my_function<data__>), rhs);
+      stat = sm.find_root(root, std::function<data__(data__)>(my_function<data__>), rhs);
       TEST_ASSERT(stat==eli::mutil::nls::secant_method<data__>::converged);
       TEST_ASSERT_DELTA(root, std::acos(rhs), 2*delta);
 
@@ -345,24 +345,24 @@ class nls_test_suite : public Test::Suite
       nrcm.set_upper_condition(eli::constants::math<data__>::pi()*3, nrcm_type::IRC_EXCLUSIVE);
 
       // test using user defined functions
-      stat = nrcm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcm_type::converged);
       TEST_ASSERT_DELTA(root, eli::constants::math<data__>::two_pi()+std::acos(rhs), 2*delta);
 
       nrcm.set_max_iteration(2);
-      stat = nrcm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcm_type::max_iteration);
 
       nrcm.set_max_iteration(100);
       nrcm.set_initial_guess(eli::constants::math<data__>::two_pi()+static_cast<data__>(0.3)*eli::constants::math<data__>::pi_by_four());
       nrcm.set_upper_condition(static_cast<data__>(0.1)+eli::constants::math<data__>::two_pi(), nrcm_type::IRC_EXCLUSIVE);
-      stat = nrcm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcm_type::hit_constraint);
 
       data__ rhs2(cos(eli::constants::math<data__>::pi()+static_cast<data__>(0.001)));
       nrcm.set_initial_guess(eli::constants::math<data__>::pi());
       nrcm.set_periodic_condition(eli::constants::math<data__>::pi(), eli::constants::math<data__>::pi()*3);
-      stat = nrcm.find_root(root, std::ptr_fun(my_function<data__>), std::ptr_fun(my_function_derivative<data__>), rhs2);
+      stat = nrcm.find_root(root, std::function<data__(data__)>(my_function<data__>), std::function<data__(data__)>(my_function_derivative<data__>), rhs2);
       TEST_ASSERT(stat==nrcm_type::converged);
 
       // test using functor
@@ -398,13 +398,13 @@ class nls_test_suite : public Test::Suite
       nrm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrm.find_root(root, std::ptr_fun(my_decoupled_system_function<data__>), std::ptr_fun(my_decoupled_system_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_decoupled_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_decoupled_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nr_system::converged);
       TEST_ASSERT(nrm.get_iteration_count()<nrm.get_max_iteration());
       TEST_ASSERT((x_exact-root).norm()<=2*delta);
 
       nrm.set_max_iteration(2);
-      stat = nrm.find_root(root, std::ptr_fun(my_decoupled_system_function<data__>), std::ptr_fun(my_decoupled_system_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_decoupled_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_decoupled_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nr_system::max_iteration);
 
       // test using functor
@@ -425,7 +425,7 @@ class nls_test_suite : public Test::Suite
       nrm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrm.find_root(root, std::ptr_fun(my_coupled_linear_system_function<data__>), std::ptr_fun(my_coupled_linear_system_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_coupled_linear_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_coupled_linear_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nr_system::converged);
       TEST_ASSERT(nrm.get_iteration_count()<2);
       TEST_ASSERT((x_exact-root).norm()<delta);
@@ -448,7 +448,7 @@ class nls_test_suite : public Test::Suite
       nrm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrm.find_root(root, std::ptr_fun(my_coupled_nonlinear_system_function<data__>), std::ptr_fun(my_coupled_nonlinear_system_function_derivative<data__>), rhs);
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_coupled_nonlinear_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_coupled_nonlinear_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nr_system::converged);
       TEST_ASSERT(nrm.get_iteration_count()<nrm.get_max_iteration());
       TEST_ASSERT((x_exact-root).norm()<delta);
@@ -487,13 +487,13 @@ class nls_test_suite : public Test::Suite
       nrcm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrcm.find_root(root, std::ptr_fun(my_decoupled_system_function<data__>), std::ptr_fun(my_decoupled_system_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<typename nrcs_type::solution_matrix(typename nrcs_type::solution_matrix)>(my_decoupled_system_function<data__>), std::function<typename nrcs_type::jacobian_matrix(typename nrcs_type::solution_matrix)>(my_decoupled_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcs_type::converged);
       TEST_ASSERT(nrcm.get_iteration_count()<nrcm.get_max_iteration());
       TEST_ASSERT((x_exact-root).norm()<=2*delta);
 
       nrcm.set_max_iteration(2);
-      stat = nrcm.find_root(root, std::ptr_fun(my_decoupled_system_function<data__>), std::ptr_fun(my_decoupled_system_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<typename nrcs_type::solution_matrix(typename nrcs_type::solution_matrix)>(my_decoupled_system_function<data__>), std::function<typename nrcs_type::jacobian_matrix(typename nrcs_type::solution_matrix)>(my_decoupled_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcs_type::max_iteration);
 
       // test using functor
@@ -514,7 +514,7 @@ class nls_test_suite : public Test::Suite
       nrcm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrcm.find_root(root, std::ptr_fun(my_coupled_linear_system_function<data__>), std::ptr_fun(my_coupled_linear_system_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<typename nrcs_type::solution_matrix(typename nrcs_type::solution_matrix)>(my_coupled_linear_system_function<data__>), std::function<typename nrcs_type::jacobian_matrix(typename nrcs_type::solution_matrix)>(my_coupled_linear_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcs_type::converged);
       TEST_ASSERT(nrcm.get_iteration_count()<2);
       TEST_ASSERT((x_exact-root).norm()<delta);
@@ -537,7 +537,7 @@ class nls_test_suite : public Test::Suite
       nrcm.set_initial_guess(x0);
 
       // test using user defined functions
-      stat = nrcm.find_root(root, std::ptr_fun(my_coupled_nonlinear_system_function<data__>), std::ptr_fun(my_coupled_nonlinear_system_function_derivative<data__>), rhs);
+      stat = nrcm.find_root(root, std::function<typename nrcs_type::solution_matrix(typename nrcs_type::solution_matrix)>(my_coupled_nonlinear_system_function<data__>), std::function<typename nrcs_type::jacobian_matrix(typename nrcs_type::solution_matrix)>(my_coupled_nonlinear_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nrcs_type::converged);
       TEST_ASSERT(nrcm.get_iteration_count()<nrcm.get_max_iteration());
       TEST_ASSERT((x_exact-root).norm()<delta);
