@@ -35,6 +35,10 @@
 #undef Success
 #endif
 
+#ifdef Status
+#undef Status
+#endif
+
 #include <Eigen/Core>
 #include <Eigen/src/Core/util/Macros.h>
 #define EIGEN_NUM_VERSION (EIGEN_WORLD_VERSION*10000+EIGEN_MAJOR_VERSION*100+EIGEN_MINOR_VERSION)
