@@ -1518,7 +1518,19 @@ namespace eli
             fpi=ci.fp(ti_split); fpi.normalize();
 
             // build round curve
-            data_type k=static_cast<data_type>(4)*(eli::constants::math<data_type>::sqrt_two()-static_cast<data_type>(1))/static_cast<data_type>(3); // use this value so that 90 deg. corners will have close circle
+            // Classical constant value
+            // k=4*(eli::constants::math<data_type>::sqrt_two()-1)/3;
+            // Numeric equivalent to 100 digits
+            // k=0.5522847498307933984022516322795974380928958338359307642355729839876433046161427184671833791035220970;
+
+            // Improved constant due to analysis similar to: http://spencermortensen.com/articles/bezier-circle/
+            // conducted symbolically in Matlab, leading to expression
+            // (3*2^(1/2)*c)/8 + 2^(1/2)/2 + (abs(3*c - 1)*(3*c^4 + 8*c^3 + 12*c^2 - 24*c + 8)^(1/2))/(3*c - 2)^2 - 2 == 0
+            // Which was solved numerically using Wolfram Alpha to 100 digits:
+            // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
+            // Improved constant value to 100 digits
+            data_type k=0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+
             arc.resize(3);
             cp[0]=fim1;
             cp[1]=fim1+fpim1*(k*r);
