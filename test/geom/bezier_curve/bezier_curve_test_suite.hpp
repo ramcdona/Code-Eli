@@ -61,6 +61,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<float>::split_test);
       TEST_ADD(bezier_curve_test_suite<float>::length_test);
       TEST_ADD(bezier_curve_test_suite<float>::math_test);
+      TEST_ADD(bezier_curve_test_suite<float>::integral_test);
     }
     void AddTests(const double &)
     {
@@ -83,6 +84,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<double>::split_test);
       TEST_ADD(bezier_curve_test_suite<double>::length_test);
       TEST_ADD(bezier_curve_test_suite<double>::math_test);
+      TEST_ADD(bezier_curve_test_suite<double>::integral_test);
     }
     void AddTests(const long double &)
     {
@@ -105,6 +107,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<long double>::split_test);
       TEST_ADD(bezier_curve_test_suite<long double>::length_test);
       TEST_ADD(bezier_curve_test_suite<long double>::math_test);
+      TEST_ADD(bezier_curve_test_suite<long double>::integral_test);
     }
 
   public:
@@ -1872,6 +1875,49 @@ class bezier_curve_test_suite : public Test::Suite
       std::cout << std::endl;
       std::cout << std::endl;
 
+    }
+
+    void integral_test()
+    {
+      point_type cntrl_in[4];
+      data_type eps(std::numeric_limits<data__>::epsilon());
+
+      // set control points
+      cntrl_in[0] << 2.0, 2.0, 0.0;
+      cntrl_in[1] << 1.0, 1.5, 0.0;
+      cntrl_in[2] << 3.5, 0.0, 0.0;
+      cntrl_in[3] << 4.0, 1.0, 0.0;
+
+      bezier_type bc(3);
+      bezier_type bi, bip;
+      bezier_type bp, bpi;
+
+      // set control points
+      for (index_type i=0; i<4; ++i)
+      {
+        bc.set_control_point(cntrl_in[i], i);
+      }
+
+      bc.fi( bi );  // Integrate bc to form bi.
+      bi.fp( bip ); // Differentiate bi to form bip -- which should equal bc.
+
+      bc.fp( bp );  // Differentiate bc to bp
+      bp.fi( bpi ); // Integrate bp to form bpi -- which should equal bc - with zero starting point...
+      bpi.translate( bc.get_control_point(0) );
+
+      TEST_ASSERT(bc.degree()==bip.degree())
+
+      TEST_ASSERT(bc.degree()==bpi.degree())
+
+      for (index_type i=0; i<4; ++i)
+      {
+        TEST_ASSERT( bip.get_control_point(i)==bc.get_control_point(i) );
+      }
+
+      for (index_type i=0; i<4; ++i)
+      {
+        TEST_ASSERT( (bpi.get_control_point(i)-bc.get_control_point(i)).norm() < 1300*eps );
+      }
     }
 };
 
