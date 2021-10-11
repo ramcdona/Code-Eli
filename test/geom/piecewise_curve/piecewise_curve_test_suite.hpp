@@ -54,6 +54,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::length_test);
       TEST_ADD(piecewise_curve_test_suite<float>::round_test);
       TEST_ADD(piecewise_curve_test_suite<float>::continuity_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::integration_test);
     }
     void AddTests(const double &)
     {
@@ -69,6 +70,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::length_test);
       TEST_ADD(piecewise_curve_test_suite<double>::round_test);
       TEST_ADD(piecewise_curve_test_suite<double>::continuity_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::integration_test);
     }
     void AddTests(const long double &)
     {
@@ -84,6 +86,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::length_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::round_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::continuity_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::integration_test);
     }
 
   public:
@@ -1995,6 +1998,82 @@ class piecewise_curve_test_suite : public Test::Suite
         TEST_ASSERT(tol.approximately_equal(disc_joints[4], disc_joints_ref[4]));
       }
     }
+
+    void integration_test()
+    {
+      data_type eps(std::numeric_limits<data__>::epsilon());
+      piecewise_curve_type c1, ci;
+      curve_type bc[3];
+      data_type dt[3];
+      index_type i, npt;
+      typename curve_type::control_point_type cntrl1_in[4], cntrl2_in[5], cntrl3_in[3], cntrl2a_in[2];
+      typename piecewise_curve_type::error_code err;
+
+      // create bezier curves
+      cntrl1_in[0] << 2.0, 2.0, 0.0;
+      cntrl1_in[1] << 1.0, 1.5, 0.0;
+      cntrl1_in[2] << 3.5, 0.0, 0.0;
+      cntrl1_in[3] << 4.0, 1.0, 0.0;
+      dt[0]=0.5;
+      bc[0].resize(3);
+      for (i=0; i<4; ++i)
+      {
+        bc[0].set_control_point(cntrl1_in[i], i);
+      }
+      cntrl2_in[0] << 4.0, 1.0, 0.0;
+      cntrl2_in[1] << 5.0, 2.5, 0.0;
+      cntrl2_in[2] << 5.5, 1.0, 0.0;
+      cntrl2_in[3] << 6.0, 0.0, 0.0;
+      cntrl2_in[4] << 6.5,-0.5, 0.0;
+      dt[1]=2.0;
+      bc[1].resize(4);
+      for (i=0; i<5; ++i)
+      {
+        bc[1].set_control_point(cntrl2_in[i], i);
+      }
+      cntrl3_in[0] << 6.5,-0.5, 0.0;
+      cntrl3_in[1] << 6.0,-1.0, 0.0;
+      cntrl3_in[2] << 5.5,-2.0, 0.0;
+      dt[2]=1.5;
+      bc[2].resize(2);
+      for (i=0; i<3; ++i)
+      {
+        bc[2].set_control_point(cntrl3_in[i], i);
+      }
+
+      err=c1.push_back(bc[0], dt[0]);
+      TEST_ASSERT(err==piecewise_curve_type::NO_ERRORS);
+      err=c1.push_back(bc[1], dt[1]);
+      TEST_ASSERT(err==piecewise_curve_type::NO_ERRORS);
+      err=c1.push_back(bc[2], dt[2]);
+      TEST_ASSERT(err==piecewise_curve_type::NO_ERRORS);
+
+      TEST_ASSERT(c1.get_t0()==0)
+
+      data_type tspan = c1.get_tmax() - c1.get_t0();
+
+      ci.integral( c1 );
+
+      TEST_ASSERT(ci.get_t0()==0);
+      TEST_ASSERT(ci.get_tmax()==c1.get_tmax());
+
+      // Verify by sampling
+      npt = 17; // Number of sample points.
+      for (i=0; i<npt; i++)
+      {
+        data_type t = i * tspan / ( npt - 1 );
+
+//        std::cout << t << std::endl;
+//        std::cout << c1.f(t) << std::endl;
+//        std::cout << ci.fp(t) << std::endl;
+//        std::cout << (c1.f(t) - ci.fp(t)).norm() / eps << std::endl;
+//        std::cout << std::endl;
+
+        TEST_ASSERT( (c1.f(t) - ci.fp(t)).norm() < 3500 * eps ); // testing integral()
+      }
+
+    }
+
 };
 #endif
 
