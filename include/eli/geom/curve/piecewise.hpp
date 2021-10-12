@@ -2506,6 +2506,39 @@ namespace eli
             return retcurve;
           }
 
+          // We build up the area integral curve here to avoid any problems that could arise when cjp is not
+          // continuous.  If we only built up the integrand, the push_back could fail because of this.
+          onedpiecewisecurve areaintegralcurve( const index_type & idim, const index_type & jdim )
+          {
+            onedpiecewisecurve retcurve;
+
+            retcurve.set_t0( get_t0() );
+
+            typename onedbezcurve::point_type C0;
+            C0.setZero();
+
+            typename segment_collection_type::const_iterator scit;
+            for ( scit = segments.begin(); scit!=segments.end(); ++scit)
+            {
+              typename curve_type::onedbezcurve c, ci, cj, cjp, area;
+
+              data_type dt = get_delta_t(scit);
+              ci = scit->second.singledimensioncurve( idim );
+              cj = scit->second.singledimensioncurve( jdim );
+
+              cj.fp( cjp );
+              c.product( ci, cjp );
+
+              c.fi( area );
+              area.translate( C0 );
+
+              retcurve.push_back( area, dt );
+              C0 = area.get_control_point( area.degree() );
+            }
+
+            return retcurve;
+          }
+
           // TODO: NEED TO IMPLEMENT
           //       * fit
           //       * interpolate
