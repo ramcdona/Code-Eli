@@ -2487,6 +2487,25 @@ namespace eli
             return retcurve;
           }
 
+          onedpiecewisecurve singledimensioncurve( const index_type & idim )
+          {
+            onedpiecewisecurve retcurve;
+
+            retcurve.set_t0( get_t0() );
+
+            typename segment_collection_type::const_iterator scit;
+            for ( scit = segments.begin(); scit!=segments.end(); ++scit)
+            {
+              typename curve_type::onedbezcurve c;
+
+              c = scit->second.singledimensioncurve( idim );
+
+              retcurve.push_back( c, get_delta_t(scit) );
+            }
+
+            return retcurve;
+          }
+
           // TODO: NEED TO IMPLEMENT
           //       * fit
           //       * interpolate
