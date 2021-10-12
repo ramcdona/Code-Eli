@@ -37,6 +37,8 @@ class piecewise_circle_creator_test_suite : public Test::Suite
     typedef typename piecewise_curve_type::tolerance_type tolerance_type;
     typedef eli::geom::curve::piecewise_circle_creator<data__, 3, tolerance_type> circle_creator_type;
     typedef eli::geom::curve::piecewise_ellipse_creator<data__, 3, tolerance_type> ellipse_creator_type;
+    typedef typename piecewise_curve_type::onedpiecewisecurve oned_type;
+    typedef typename piecewise_curve_type::onedbezcurve onedbezcurve;
 
     tolerance_type tol;
 
@@ -49,6 +51,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<float>::create_circle_start_origin_normal_test);
       TEST_ADD(piecewise_circle_creator_test_suite<float>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<float>::create_ellipse_primative_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<float>::circle_area_test);
     }
     void AddTests(const double &)
     {
@@ -58,6 +61,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<double>::create_circle_start_origin_normal_test);
       TEST_ADD(piecewise_circle_creator_test_suite<double>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<double>::create_ellipse_primative_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<double>::circle_area_test);
     }
     void AddTests(const long double &)
     {
@@ -67,6 +71,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::create_circle_start_origin_normal_test);
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::create_ellipse_primative_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<long double>::circle_area_test);
     }
 
   public:
@@ -458,6 +463,36 @@ class piecewise_circle_creator_test_suite : public Test::Suite
         TEST_ASSERT(ellipse_creator.create(pc));
       }
     }
+
+    void circle_area_test()
+    {
+      circle_creator_type circle_creator;
+      piecewise_curve_type pc;
+      point_type origin, x, y;
+      data_type radius;
+
+      oned_type acurv;
+      onedbezcurve c;
+
+      // set the parameters for circle
+      origin << 1, 1, 1;
+      x << 1, 0, 0;
+      y << 0, 1, 0;
+      radius=3;
+
+      circle_creator.set( origin, x, y, radius );
+
+      // create the circle
+      TEST_ASSERT(circle_creator.create(pc));
+
+      acurv = pc.areaintegralcurve( 0, 1 );
+
+      acurv.get( c, acurv.number_segments() - 1 );
+      data_type area = (c.get_control_point( c.degree() ))[0];
+
+      TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
+    }
+
 };
 
 #endif
