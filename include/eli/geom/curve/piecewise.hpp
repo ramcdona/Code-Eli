@@ -2539,6 +2539,19 @@ namespace eli
             return retcurve;
           }
 
+          data_type area( const index_type & idim, const index_type & jdim ) const
+          {
+            typename curve_type::onedbezcurve c;
+
+            onedpiecewisecurve acurv = areaintegralcurve( idim, jdim );
+
+            acurv.get( c, acurv.number_segments() - 1 );
+
+            data_type area = (c.get_control_point( c.degree() ))[0];
+
+            return area;
+          }
+
           // TODO: NEED TO IMPLEMENT
           //       * fit
           //       * interpolate
