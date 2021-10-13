@@ -491,6 +491,10 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       data_type area = (c.get_control_point( c.degree() ))[0];
 
       TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
+
+      area = pc.area( 0, 1 );
+      TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
+
     }
 
 };
