@@ -2364,7 +2364,7 @@ namespace eli
             }
           }
 
-          void frenet_serret_frame(point_type &t, point_type &n, point_type &b, const data_type &t0)
+          void frenet_serret_frame(point_type &t, point_type &n, point_type &b, const data_type &t0) const
           {
             // find segment that corresponds to given t
             typename segment_collection_type::const_iterator it;
@@ -2468,7 +2468,7 @@ namespace eli
             }
           }
 
-          onedpiecewisecurve sumcompcurve()
+          onedpiecewisecurve sumcompcurve() const
           {
             onedpiecewisecurve retcurve;
 
@@ -2487,7 +2487,7 @@ namespace eli
             return retcurve;
           }
 
-          onedpiecewisecurve singledimensioncurve( const index_type & idim )
+          onedpiecewisecurve singledimensioncurve( const index_type & idim ) const
           {
             onedpiecewisecurve retcurve;
 
@@ -2508,7 +2508,7 @@ namespace eli
 
           // We build up the area integral curve here to avoid any problems that could arise when cjp is not
           // continuous.  If we only built up the integrand, the push_back could fail because of this.
-          onedpiecewisecurve areaintegralcurve( const index_type & idim, const index_type & jdim )
+          onedpiecewisecurve areaintegralcurve( const index_type & idim, const index_type & jdim ) const
           {
             onedpiecewisecurve retcurve;
 
