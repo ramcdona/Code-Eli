@@ -494,18 +494,18 @@ namespace eli
 
           void parameter_report() const
           {
-            printf("Parameter report:\n");
+            std::cout << "Parameter report:" << std::endl;
             typename segment_collection_type::const_iterator it;
 
             int i = 0;
             // cycle through all segments to get each bounding box to add
             for (it=segments.begin(); it!=segments.end(); ++it)
             {
-              printf(" seg: %d \t t: %f\n", i, it->first);
+              std::cout << " seg: " << i << "    t: " << it->first << std::endl;
               ++i;
             }
-            printf(" tmax: %f\n", tmax);
-            printf("End report\n");
+            std::cout << " tmax: " << tmax << std::endl;
+            std::cout << "End report" << std::endl;
           }
 
           void octave_print(int figno) const
