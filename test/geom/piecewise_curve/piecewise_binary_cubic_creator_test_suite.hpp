@@ -86,13 +86,13 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
       bool rtn;
 
       // set airfoil thickness
-      th=24;
+      th=0.24;
       rtn=af.set_thickness(th);
       TEST_ASSERT(rtn);
 
       // set airfoil camber
-      cam=4;
-      cam_loc=2;
+      cam=.04;
+      cam_loc=.2;
       rtn=af.set_camber(cam, cam_loc);
       TEST_ASSERT(rtn);
 
