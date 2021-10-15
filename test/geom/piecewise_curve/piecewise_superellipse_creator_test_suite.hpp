@@ -178,6 +178,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_exponents(2., 2.);
       he_creator.set_max_degree(3);
+      he_creator.set_max_width_loc(0.);
 
       // create an x-degenerate ellipse
       {
@@ -243,6 +244,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(3);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
@@ -361,6 +363,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(6);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
@@ -520,6 +523,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(3);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
@@ -651,6 +655,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(6);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
@@ -841,6 +846,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(3);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
@@ -963,6 +969,7 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 
       he_creator.set_axis(2, 3);
       he_creator.set_max_degree(6);
+      he_creator.set_max_width_loc(0.);
 
       // create an ellipse
       {
