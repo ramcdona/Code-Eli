@@ -44,7 +44,10 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
 
     typedef eli::geom::curve::piecewise_binary_cubic_creator<data__, 3, tolerance_type> binary_creator_type;
     typedef eli::geom::curve::piecewise_four_digit_creator<data__, 3, tolerance_type> four_digit_type;
+    typedef eli::geom::curve::piecewise_circle_creator<data__, 3, tolerance_type> circle_creator_type;
 
+    typedef typename piecewise_curve_type::onedpiecewisecurve oned_type;
+    typedef typename piecewise_curve_type::onedbezcurve onedbezcurve;
 
 
     tolerance_type tol;
@@ -54,16 +57,19 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
     {
       // add the tests
       TEST_ADD(piecewise_binary_cubic_creator_test_suite<float>::test);
+      TEST_ADD(piecewise_binary_cubic_creator_test_suite<float>::circle_area_test);
     }
     void AddTests(const double &)
     {
       // add the tests
       TEST_ADD(piecewise_binary_cubic_creator_test_suite<double>::test);
+      TEST_ADD(piecewise_binary_cubic_creator_test_suite<double>::circle_area_test);
     }
     void AddTests(const long double &)
     {
       // add the tests
       TEST_ADD(piecewise_binary_cubic_creator_test_suite<long double>::test);
+      TEST_ADD(piecewise_binary_cubic_creator_test_suite<long double>::circle_area_test);
     }
 
   public:
@@ -121,6 +127,49 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
 //        eli::test::octave_finish(1);
 //      }
 
+    }
+
+    void circle_area_test()
+    {
+      binary_creator_type pbcc;
+      circle_creator_type circle_creator;
+      piecewise_curve_type pc, pc2;
+      point_type origin, x, y;
+      data_type radius;
+
+      oned_type acurv;
+      onedbezcurve c;
+
+      // set the parameters for circle
+      origin << 1, 1, 1;
+      x << 1, 0, 0;
+      y << 0, 1, 0;
+      radius=3;
+
+      circle_creator.set( origin, x, y, radius );
+
+      // create the circle
+      TEST_ASSERT(circle_creator.create(pc));
+
+      acurv = pc.areaintegralcurve( 0, 1 );
+
+      acurv.get( c, acurv.number_segments() - 1 );
+      data_type area = (c.get_control_point( c.degree() ))[0];
+
+      TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
+
+      area = pc.area( 0, 1 );
+      TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
+
+      pc.parameter_report();
+
+      pbcc.setup( pc, 1e-6 * sqrt(2*(2*radius)*(2*radius)), 0.01, 3, 15 );
+      pbcc.corner_create( pc2 );
+
+      pc2.parameter_report();
+
+      area = pc2.area( 0, 1 );
+      TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
     }
 
 };
