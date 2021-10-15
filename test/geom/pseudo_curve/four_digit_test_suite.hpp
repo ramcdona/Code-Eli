@@ -511,7 +511,7 @@ class four_digit_test_suite : public Test::Suite
         else
         {
           TEST_ASSERT((xp-xp_ref).norm()<1e-10);
-          TEST_ASSERT((xpp-xpp_ref).norm()<1e-10);
+          TEST_ASSERT((xpp-xpp_ref).norm()<1e-6);
         }
 
         xi=static_cast<data_type>(-0.25);
@@ -554,7 +554,7 @@ class four_digit_test_suite : public Test::Suite
         else
         {
           TEST_ASSERT((xp-xp_ref).norm()<1e-10);
-          TEST_ASSERT((xpp-xpp_ref).norm()<2e-6);
+          TEST_ASSERT((xpp-xpp_ref).norm()<4e-6);
         }
 
         xi=static_cast<data_type>(0.7);
