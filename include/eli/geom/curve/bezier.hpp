@@ -284,6 +284,89 @@ namespace eli
             eli::geom::utility::bezier_control_points_to_monomial(a, B);
           }
 
+          void octave_print(int figno) const
+          {
+            index_type i, j;
+
+            data_type tmin(get_t0()), tmax(get_tmax());
+
+            std::cout << "figure(" << figno << ");" << std::endl;
+
+            data_type ti = tmin;
+            std::cout << "t_cp=[";
+            for (i=0; i<=degree(); ++i)
+            {
+              std::cout << ti + i / degree();
+
+              if (i<degree())
+                std::cout << ", ";
+            }
+            std::cout << "];" << std::endl;
+
+            // get control points and print
+            for ( j = 0; j < dim__; j++ )
+            {
+              std::cout << "cp_" << j << "=[";
+              for (i=0; i<=degree(); ++i)
+              {
+                std::cout << get_control_point(i)[j];
+                if (i<degree())
+                  std::cout << ", ";
+              }
+              std::cout << "];" << std::endl;
+            }
+
+            // initialize the t parameters
+            std::vector<data_type> t(129);
+            std::cout << "t=[";
+            for (i=0; i<static_cast<index_type>(t.size()); ++i)
+            {
+              t[i]=tmin+(tmax-tmin)*static_cast<data_type>(i)/(t.size()-1);
+              std::cout << t[i];
+              if (i<static_cast<index_type>(t.size()-1))
+                std::cout << ", ";
+            }
+            std::cout << "];" << std::endl;
+
+            // set the surface points
+            for ( j = 0; j < dim__; j++ )
+            {
+              std::cout << "surf_" << j << "=[";
+              for (i=0; i<static_cast<index_type>(t.size()); ++i)
+              {
+                std::cout << f(t[i])[j];
+                if (i<static_cast<index_type>(t.size()-1))
+                    std::cout << ", ";
+              }
+              std::cout << "];" << std::endl;
+            }
+
+            if ( dim__ == 1 )
+            {
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot(t, surf_0, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot(t_cp, cp_0', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
+            }
+            else if ( dim__ == 2 )
+            {
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot(surf_0, surf_1, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot(cp_0', cp_1', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
+            }
+            else
+            {
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot3(surf_0, surf_1, surf_2, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot3(cp_0', cp_1', cp_2', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
+            }
+          }
+
           void reflect_xy()
           {
             B.col(2)=-B.col(2);
