@@ -510,7 +510,7 @@ namespace eli
 
           void octave_print(int figno) const
           {
-            index_type i, pp, ns;
+            index_type i, j, pp, ns;
 
             data_type tmin(get_parameter_min()), tmax(get_parameter_max());
 
@@ -518,95 +518,95 @@ namespace eli
 
             std::cout << "figure(" << figno << ");" << std::endl;
 
+            data_type ti = tmin;
+            std::cout << "t_cp=[";
+            for (pp=0; pp<ns; ++pp)
+            {
+              curve_type bez;
+              data_type dt;
+              get(bez, dt, pp);
+              for (i=0; i<=bez.degree(); ++i)
+              {
+                std::cout << ti + dt * i / bez.degree();
+
+                if (i<bez.degree())
+                  std::cout << ", ";
+                else if (pp<ns-1)
+                  std::cout << ", ";
+              }
+              ti += dt;
+            }
+            std::cout << "];" << std::endl;
+
             // get control points and print
-            std::cout << "cp_x=[";
-            for (pp=0; pp<ns; ++pp)
+            for ( j = 0; j < dim__; j++ )
             {
-              curve_type bez;
-              get(bez, pp);
-              for (i=0; i<=bez.degree(); ++i)
+              std::cout << "cp_" << j << "=[";
+              for (pp=0; pp<ns; ++pp)
               {
-                std::cout << bez.get_control_point(i).x();
-                if (i<bez.degree())
-                  std::cout << ", ";
-                else if (pp<ns-1)
-                  std::cout << ", ";
+                curve_type bez;
+                get(bez, pp);
+                for (i=0; i<=bez.degree(); ++i)
+                {
+                  std::cout << bez.get_control_point(i)[j];
+                  if (i<bez.degree())
+                    std::cout << ", ";
+                  else if (pp<ns-1)
+                    std::cout << ", ";
+                }
               }
+              std::cout << "];" << std::endl;
             }
-            std::cout << "];" << std::endl;
-
-            std::cout << "cp_y=[";
-            for (pp=0; pp<ns; ++pp)
-            {
-              curve_type bez;
-              get(bez, pp);
-              for (i=0; i<=bez.degree(); ++i)
-              {
-                std::cout << bez.get_control_point(i).y();
-                if (i<bez.degree())
-                  std::cout << ", ";
-                else if (pp<ns-1)
-                  std::cout << ", ";
-              }
-            }
-            std::cout << "];" << std::endl;
-
-            std::cout << "cp_z=[";
-            for (pp=0; pp<ns; ++pp)
-            {
-              curve_type bez;
-              get(bez, pp);
-              for (i=0; i<=bez.degree(); ++i)
-              {
-                std::cout << bez.get_control_point(i).z();
-                if (i<bez.degree())
-                  std::cout << ", ";
-                else if (pp<ns-1)
-                  std::cout << ", ";
-              }
-            }
-            std::cout << "];" << std::endl;
 
             // initialize the t parameters
             std::vector<data_type> t(129);
+            std::cout << "t=[";
             for (i=0; i<static_cast<index_type>(t.size()); ++i)
             {
               t[i]=tmin+(tmax-tmin)*static_cast<data_type>(i)/(t.size()-1);
+              std::cout << t[i];
+              if (i<static_cast<index_type>(t.size()-1))
+                std::cout << ", ";
             }
+            std::cout << "];" << std::endl;
 
             // set the surface points
-            std::cout << "surf_x=[";
-            for (i=0; i<static_cast<index_type>(t.size()); ++i)
+            for ( j = 0; j < dim__; j++ )
             {
-              std::cout << f(t[i]).x();
-              if (i<static_cast<index_type>(t.size()-1))
-                std::cout << ", ";
+              std::cout << "surf_" << j << "=[";
+              for (i=0; i<static_cast<index_type>(t.size()); ++i)
+              {
+                std::cout << f(t[i])[j];
+                if (i<static_cast<index_type>(t.size()-1))
+                    std::cout << ", ";
+              }
+              std::cout << "];" << std::endl;
             }
-            std::cout << "];" << std::endl;
 
-            std::cout << "surf_y=[";
-            for (i=0; i<static_cast<index_type>(t.size()); ++i)
+            if ( dim__ == 1 )
             {
-              std::cout << f(t[i]).y();
-              if (i<static_cast<index_type>(t.size()-1))
-                std::cout << ", ";
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot(t, surf_0, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot(t_cp, cp_0', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
             }
-            std::cout << "];" << std::endl;
-
-            std::cout << "surf_z=[";
-            for (i=0; i<static_cast<index_type>(t.size()); ++i)
+            else if ( dim__ == 2 )
             {
-              std::cout << f(t[i]).z();
-              if (i<static_cast<index_type>(t.size()-1))
-                std::cout << ", ";
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot(surf_0, surf_1, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot(cp_0', cp_1', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
             }
-            std::cout << "];" << std::endl;
-
-            std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
-            std::cout << "plot3(surf_x, surf_y, surf_z, '-k');" << std::endl;
-            std::cout << "hold on;" << std::endl;
-            std::cout << "plot3(cp_x', cp_y', cp_z', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
-            std::cout << "hold off;" << std::endl;
+            else
+            {
+              std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+              std::cout << "plot3(surf_0, surf_1, surf_2, '-k');" << std::endl;
+              std::cout << "hold on;" << std::endl;
+              std::cout << "plot3(cp_0', cp_1', cp_2', '-ok', 'MarkerFaceColor', [0 0 0]);" << std::endl;
+              std::cout << "hold off;" << std::endl;
+            }
           }
 
 
