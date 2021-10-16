@@ -682,7 +682,7 @@ class piecewise_surface_test_suite : public Test::Suite
       ps2.get(s, 2, 1);
       s.set_control_point(s.get_control_point(0, 0)+nudge, 0, 0);
       err=ps2.replace(s, 2, 1);
-      TEST_ASSERT(err==piecewise_surface_type::PATCH_NOT_CONNECTED);
+      TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
     }
 
     void transformation_test()

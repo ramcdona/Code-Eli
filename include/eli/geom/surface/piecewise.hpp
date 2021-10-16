@@ -856,55 +856,15 @@ namespace eli
               return INVALID_INDEX;
 
             // advance to desired index
-            typename surface_type::curve_type bc0, bc1;
             index_type uk, vk;
             typename keymap_type::const_iterator uit, vit;
             find_patch(uk, vk, uit, vit, ui, vi);
-
-            if (ui>0)
-            {
-              surf.get_uconst_curve(bc0, 0);
-              patches[uk][vk].get_uconst_curve(bc1, 0);
-              if (!eli::geom::curve::equivalent_curves(bc0, bc1))
-              {
-                return PATCH_NOT_CONNECTED;
-              }
-            }
-            if ((ui+1)<number_u_patches())
-            {
-              surf.get_uconst_curve(bc0, 1);
-              patches[uk][vk].get_uconst_curve(bc1, 1);
-              if (!eli::geom::curve::equivalent_curves(bc0, bc1))
-              {
-                return PATCH_NOT_CONNECTED;
-              }
-            }
-            if (vi>0)
-            {
-              surf.get_vconst_curve(bc0, 0);
-              patches[uk][vk].get_vconst_curve(bc1, 0);
-              if (!eli::geom::curve::equivalent_curves(bc0, bc1))
-              {
-                return PATCH_NOT_CONNECTED;
-              }
-            }
-            if ((vi+1)<number_v_patches())
-            {
-              surf.get_vconst_curve(bc0, 1);
-              patches[uk][vk].get_vconst_curve(bc1, 1);
-              if (!eli::geom::curve::equivalent_curves(bc0, bc1))
-              {
-                return PATCH_NOT_CONNECTED;
-              }
-            }
 
             // set the new surf
             patches[uk][vk]=surf;
 
             uclosecache=UNKNOWN;
             vclosecache=UNKNOWN;
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
