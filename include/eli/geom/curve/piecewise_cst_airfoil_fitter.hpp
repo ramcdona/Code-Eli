@@ -303,7 +303,7 @@ namespace eli
             tolerance_type tol;
 
             Eigen::Matrix<data_type, Eigen::Dynamic, dim__> fit_point;
-            index_type i, n, n_te[2], n_le_des, n_le_act;
+            index_type i, n, n_te[2], n_le_des, n_le_act, nup;
 
             // fill matrix with points
             // * store the index for lower trailing edge, upper trailing edge, and designated leading edge
@@ -316,7 +316,8 @@ namespace eli
             {
               fit_point.row(n)=lower_pt[i];
             }
-            for (i=0; i<upper_pt.size(); ++i, ++n)
+            nup = upper_pt.size();
+            for (i=0; i<nup; ++i, ++n)
             {
               fit_point.row(n)=upper_pt[i];
             }
