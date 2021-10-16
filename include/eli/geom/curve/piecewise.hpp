@@ -786,9 +786,6 @@ namespace eli
 
             // Parametric length should stay the same.
             // assert(t == tmax);
-
-            // check if still connected
-            assert(check_continuity(eli::geom::general::C0));
           }
 
 
@@ -861,8 +858,6 @@ namespace eli
               }
             }
 
-            assert(check_continuity(eli::geom::general::C0));
-
             return NO_ERRORS;
           }
 
@@ -884,8 +879,6 @@ namespace eli
               }
             }
 
-            assert(check_continuity(eli::geom::general::C0));
-
             return NO_ERRORS;
           }
 
@@ -894,22 +887,10 @@ namespace eli
             if (dt<=0)
               return INVALID_PARAM_DIFFERENCE;
 
-            // check to make sure have valid segments
-            if (!segments.empty())
-            {
-              data_type start_dt = get_delta_t(segments.begin());
-              if (!eli::geom::utility::check_point_continuity(curve, dt, segments.begin()->second, start_dt, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
-            }
-
             // add segment
             data_type t0(get_parameter_min());
             t0 -= dt;
             segments.insert(segments.begin(), std::make_pair(t0, curve));
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
@@ -936,21 +917,9 @@ namespace eli
             if (dt<=0)
               return INVALID_PARAM_DIFFERENCE;
 
-            // check to make sure have valid segments
-            if (!segments.empty())
-            {
-              data_type end_dt = get_delta_t(segments.rbegin());
-              if (!eli::geom::utility::check_point_continuity(segments.rbegin()->second, end_dt, curve, dt, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
-            }
-
             // add segment
             segments.insert(segments.end(), std::make_pair(tmax, curve));
             tmax+=dt;
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
@@ -1059,26 +1028,16 @@ namespace eli
               scito=scit;
               --scito;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(scito->second, dto, curve, dt, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
             if ((index+1)<number_segments())
             {
               scito=scit;
               ++scito;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(curve, dt, scito->second, dto, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
 
             // set the new curve
             scit->second=curve;
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
@@ -1106,19 +1065,11 @@ namespace eli
               scito=scit0;
               --scito;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(scito->second, dto, curve, dt0, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
             if ((index1+1)<number_segments())
             {
               scito=scit1;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(curve, dt1, scito->second, dto, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
 
             data_type t = scit0->first;
@@ -1129,8 +1080,6 @@ namespace eli
             itguess = segments.erase(scit0, scit1);
 
             segments.insert(itguess, std::make_pair(t, curve));
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
@@ -1209,19 +1158,11 @@ namespace eli
               scito=scit0;
               --scito;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(scito->second, dto, cs, dts*pratio, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
             if (index1<number_segments())
             {
               scito=scit1;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(ce, dte*pratio, scito->second, dto, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
 
             data_type t = scit0->first;
@@ -1239,8 +1180,6 @@ namespace eli
               dtp = p.get_delta_t(it);
               t += dtp*pratio;
             }
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
@@ -2626,8 +2565,6 @@ namespace eli
 
             itinsert = segments.insert(itnext, std::make_pair(tr, cr));
 
-            assert(check_continuity(eli::geom::general::C0));
-
             return NO_ERRORS;
           }
 
@@ -2928,10 +2865,6 @@ namespace eli
               scito=scit;
               --scito;
               dto = get_delta_t(scito);
-              if (!eli::geom::utility::check_point_continuity(scito->second, dto, cs, dts*pratio, eli::geom::general::C0, tol))
-              {
-                return SEGMENT_NOT_CONNECTED;
-              }
             }
             if (scit != segments.end() )
             {
@@ -2940,10 +2873,6 @@ namespace eli
               if (scito != segments.end() )
               {
                 dto = get_delta_t(scito);
-                if (!eli::geom::utility::check_point_continuity(ce, dte*pratio, scito->second, dto, eli::geom::general::C0, tol))
-                {
-                  return SEGMENT_NOT_CONNECTED;
-                }
               }
             }
 
@@ -2965,8 +2894,6 @@ namespace eli
               dtp = p.get_delta_t(it);
               t += dtp*pratio;
             }
-
-            assert(check_continuity(eli::geom::general::C0));
 
             return NO_ERRORS;
           }
