@@ -150,8 +150,6 @@ namespace eli
 
         data_type tmid = ( tstart + tend ) * 0.5;
 
-        data_type smallpos = 10000 * std::numeric_limits< data_type >::epsilon();
-
         onedbezcurve__ low, high;
 
         objcurve.split( low, high, 0.5 );
