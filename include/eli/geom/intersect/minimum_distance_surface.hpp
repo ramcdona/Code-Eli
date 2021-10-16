@@ -106,7 +106,7 @@ namespace eli
 
                 typename surface__::data_type N = norm.dot( norm );
 
-                if( std::abs( N ) > std::numeric_limits< typename surface__::data_type >::epsilon() )
+                if( std::abs( N ) > std::numeric_limits< typename surface__::data_type >::min() )
                 {
                     dx(0) = A.dot( norm ) / N;
                     dx(1) = -B.dot( norm ) / N;
