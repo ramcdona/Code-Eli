@@ -1388,9 +1388,10 @@ namespace eli
               im1=joint-1;
             }
 
-            curve_type cim1, ci, arc, c, ctrim;
-            data_type dtim1(0), dti(0), r, lenim1, leni, tim1_split(-1), ti_split(-1);
+            curve_type cim1, ci, arc1, arc2, c, ctrim;
+            data_type dtim1(0), dti(0), lenim1, leni, tim1_split(-1), ti_split(-1);
             point_type fim1, fi, fpim1, fpi;
+            point_type corner_pt, mid_pt;
             control_point_type cp[4];
 
             // get the two curve segments
@@ -1400,25 +1401,31 @@ namespace eli
             // check to see if joint needs to be rounded
             fpim1=cim1.fp(1); fpim1.normalize();
             fpi=ci.fp(0); fpi.normalize();
-            if (tol.approximately_equal(fpi.dot(fpim1), 1))
+            fpi = -1.0 * fpi; // Flip second vector to get acute/obtuse correct.
+            data_type dprod = fpi.dot(fpim1);
+            if (tol.approximately_equal( std::abs(dprod), 1))
             {
               return false;
             }
 
-            // determine what the actual radius will be
-            r=rad;
+            corner_pt = ( ci.f(0) + cim1.f(1) ) * 0.5; // Should be identical, but average just in case.
+
+            data_type theta, ltrim;
+            theta = acos( dprod );
+
+            ltrim = rad / tan( theta * 0.5 );
+
             eli::geom::curve::length(lenim1, cim1, tol.get_absolute_tolerance());
             eli::geom::curve::length(leni, ci, tol.get_absolute_tolerance());
-            if (lenim1<r)
+
+            // determine what the actual trim distance will be
+            if ( lenim1 < ltrim )
             {
-              tim1_split=0;
-              r=lenim1;
+              return false;
             }
-            if (leni<r)
+            if ( leni < ltrim )
             {
-              tim1_split=-1;
-              ti_split=1;
-              r=leni;
+              return false;
             }
 
             // find coordinate that corresponds to location of radius on each curve
@@ -1426,7 +1433,7 @@ namespace eli
             if (tim1_split<0)
             {
               // FIX: this is exact for straight lines and approximate for other curves
-              tim1_split=1-r/lenim1;
+              tim1_split = 1 - ltrim / lenim1;
 
               // if resulting segment is too small then make entire edge the round
               if (tim1_split<small_t)
@@ -1437,7 +1444,7 @@ namespace eli
             if (ti_split<0)
             {
               // FIX: this is exact for straight lines and approximate for other curves
-              ti_split=r/leni;
+              ti_split = ltrim / leni;
 
               // if resulting segment is too small then make entire edge the round
               if (ti_split>(1-small_t))
@@ -1448,13 +1455,32 @@ namespace eli
 
             // if resulting round is too small compared then don't round
             if ((tim1_split>(1-small_t)) || (ti_split<small_t))
-            	return false;
+            {
+              return false;
+            }
+
 
             // calculate the points & slopes for end of round
             fim1=cim1.f(tim1_split);
             fpim1=cim1.fp(tim1_split); fpim1.normalize();
             fi=ci.f(ti_split);
             fpi=ci.fp(ti_split); fpi.normalize();
+
+            mid_pt = ( fim1 + fi ) * 0.5;  // Mid-point of trimmed endpoints.
+
+            // Unit vector pointing from circle center to original corner point.
+            point_type rvec = corner_pt - mid_pt;
+            rvec.normalize();
+
+            // Circle center.
+            point_type r0 = corner_pt - rvec * ( rad / sin( theta * 0.5 ) );
+
+            // Middle of arc, split point
+            point_type circ_mid = r0 + rvec * rad;
+
+            point_type circ_dir = fi - fim1;
+            circ_dir.normalize();
+
 
             // build round curve
             // Classical constant value
@@ -1468,17 +1494,31 @@ namespace eli
             // Which was solved numerically using Wolfram Alpha to 100 digits:
             // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
             // Improved constant value to 100 digits
-            data_type k=0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+            data_type k=0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161 / (eli::constants::math<data_type>::sqrt_two()-1);
 
-            arc.resize(3);
+            data_type beta = (eli::constants::math<data__>::pi() - theta) * 0.5;
+
+            data_type f2 = k * tan( beta * 0.25 );
+
+            arc1.resize(3);
             cp[0]=fim1;
-            cp[1]=fim1+fpim1*(k*r);
-            cp[2]=fi-fpi*(k*r);
+            cp[1]=fim1+fpim1*(f2*rad);
+            cp[2]=circ_mid-circ_dir*(f2*rad);
+            cp[3]=circ_mid;
+            arc1.set_control_point(cp[0], 0);
+            arc1.set_control_point(cp[1], 1);
+            arc1.set_control_point(cp[2], 2);
+            arc1.set_control_point(cp[3], 3);
+
+            arc2.resize(3);
+            cp[0]=circ_mid;
+            cp[1]=circ_mid+circ_dir*(f2*rad);
+            cp[2]=fi-fpi*(f2*rad);
             cp[3]=fi;
-            arc.set_control_point(cp[0], 0);
-            arc.set_control_point(cp[1], 1);
-            arc.set_control_point(cp[2], 2);
-            arc.set_control_point(cp[3], 3);
+            arc2.set_control_point(cp[0], 0);
+            arc2.set_control_point(cp[1], 1);
+            arc2.set_control_point(cp[2], 2);
+            arc2.set_control_point(cp[3], 3);
 
             // split the two curves
             if (tim1_split>0)
@@ -1494,11 +1534,7 @@ namespace eli
             error_code ec;
             if (rounding_end)
             {
-              curve_type arc1, arc2;
               piecewise<curve__, data_type, dim__> pct0, pct1;
-
-              // split the arc
-              arc.split(arc1, arc2, static_cast<data_type>(0.5));
 
               // put the ith segment and arc2 onto the end of the list of curves
               if ( tim1_split > 0 )
@@ -1567,12 +1603,19 @@ namespace eli
                   return false;
                 }
               }
-              ec=pct.push_back(arc, dtim1*(1-tim1_split)+dti*ti_split);
+              ec=pct.push_back(arc1, dtim1*(1-tim1_split));
               if (ec!=NO_ERRORS)
               {
                 assert(false);
                 return false;
               }
+              ec=pct.push_back(arc2, dti*ti_split);
+              if (ec!=NO_ERRORS)
+              {
+                  assert(false);
+                  return false;
+              }
+
               if (ti_split<1)
               {
             	ec=pct.push_back(ci, dti*(1-ti_split));
