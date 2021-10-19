@@ -1773,7 +1773,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ASSERT(pwc0.number_segments()==4);
       pt0=pwc0.f(t[1]);
       pt1=pwc1.f(t[1]);
-      ptref << static_cast<data_type>(0.0291414), static_cast<data_type>(1.89247), 0;
+      ptref << static_cast<data_type>(0.0703916), static_cast<data_type>(1.7403), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
 
@@ -1782,7 +1782,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ASSERT(pwc0.round(rad, 0));
       pt0=pwc0.f(t[0]);
       pt1=pwc1.f(t[0]);
-      ptref << static_cast<data_type>(0.0414214), static_cast<data_type>(0.1), 0;
+      ptref << static_cast<data_type>(0.100047), static_cast<data_type>(0.241536), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
 
@@ -1791,7 +1791,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ASSERT(pwc0.round(rad, 3));
       pt0=pwc0.f(t[3]);
       pt1=pwc1.f(t[3]);
-      ptref << static_cast<data_type>(0.0414214), static_cast<data_type>(0.1), 0;
+      ptref << static_cast<data_type>(0.100047), static_cast<data_type>(0.241536), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
 
@@ -1800,22 +1800,22 @@ class piecewise_curve_test_suite : public Test::Suite
       pwc0.round(rad);
       pt0=pwc0.f(t[0]);
       pt1=pwc1.f(t[0]);
-      ptref << static_cast<data_type>(0.0414214), static_cast<data_type>(0.1), 0;
+      ptref << static_cast<data_type>(0.100047), static_cast<data_type>(0.241536), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
       pt0=pwc0.f(t[1]);
       pt1=pwc1.f(t[1]);
-      ptref << static_cast<data_type>(0.0291414), static_cast<data_type>(1.89247), 0;
+      ptref << static_cast<data_type>(0.0703916), static_cast<data_type>(1.7403), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
       pt0=pwc0.f(t[2]);
       pt1=pwc1.f(t[2]);
-      ptref << static_cast<data_type>(0.9171573), static_cast<data_type>(1), 0;
+      ptref << static_cast<data_type>(0.917118), static_cast<data_type>(1), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
       pt0=pwc0.f(t[3]);
       pt1=pwc1.f(t[3]);
-      ptref << static_cast<data_type>(0.0414214), static_cast<data_type>(0.1), 0;
+      ptref << static_cast<data_type>(0.100047), static_cast<data_type>(0.241536), 0;
       TEST_ASSERT(pt0!=pt1);
       TEST_ASSERT((pt0-ptref).norm()<1e-4);
     }

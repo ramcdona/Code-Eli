@@ -1389,7 +1389,7 @@ namespace eli
             }
 
             curve_type cim1, ci, arc, c, ctrim;
-            data_type dtim1(0), dti(0), r, lenim1, leni, tim1_split(-1), ti_split(-1);
+            data_type dtim1(0), dti(0), lenim1, leni, tim1_split(-1), ti_split(-1);
             point_type fim1, fi, fpim1, fpi;
             control_point_type cp[4];
 
@@ -1400,25 +1400,30 @@ namespace eli
             // check to see if joint needs to be rounded
             fpim1=cim1.fp(1); fpim1.normalize();
             fpi=ci.fp(0); fpi.normalize();
-            if (tol.approximately_equal(fpi.dot(fpim1), 1))
+            fpi = -1.0 * fpi; // Flip second vector to get acute/obtuse correct.
+            data_type dprod = fpi.dot(fpim1);
+            if (tol.approximately_equal( std::abs(dprod), 1))
             {
               return false;
             }
 
-            // determine what the actual radius will be
-            r=rad;
+            data_type theta, ltrim;
+            theta = acos( dprod );
+            ltrim = rad / tan( theta * 0.5 );
+
             eli::geom::curve::length(lenim1, cim1, tol.get_absolute_tolerance());
             eli::geom::curve::length(leni, ci, tol.get_absolute_tolerance());
-            if (lenim1<r)
+
+            // determine what the actual trim distance will be
+            if ( lenim1 < ltrim )
             {
-              tim1_split=0;
-              r=lenim1;
+              tim1_split = 0;
+              ltrim = lenim1;
             }
-            if (leni<r)
+            if ( leni < ltrim )
             {
-              tim1_split=-1;
-              ti_split=1;
-              r=leni;
+                ti_split = 1;
+                ltrim = leni;
             }
 
             // find coordinate that corresponds to location of radius on each curve
@@ -1426,7 +1431,7 @@ namespace eli
             if (tim1_split<0)
             {
               // FIX: this is exact for straight lines and approximate for other curves
-              tim1_split=1-r/lenim1;
+              tim1_split = 1 - ltrim / lenim1;
 
               // if resulting segment is too small then make entire edge the round
               if (tim1_split<small_t)
@@ -1437,7 +1442,7 @@ namespace eli
             if (ti_split<0)
             {
               // FIX: this is exact for straight lines and approximate for other curves
-              ti_split=r/leni;
+              ti_split = ltrim / leni;
 
               // if resulting segment is too small then make entire edge the round
               if (ti_split>(1-small_t))
@@ -1472,8 +1477,8 @@ namespace eli
 
             arc.resize(3);
             cp[0]=fim1;
-            cp[1]=fim1+fpim1*(k*r);
-            cp[2]=fi-fpi*(k*r);
+            cp[1]=fim1+fpim1*(k*ltrim);
+            cp[2]=fi-fpi*(k*ltrim);
             cp[3]=fi;
             arc.set_control_point(cp[0], 0);
             arc.set_control_point(cp[1], 1);
