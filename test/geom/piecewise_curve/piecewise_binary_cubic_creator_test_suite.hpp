@@ -161,12 +161,8 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
       area = pc.area( 0, 1 );
       TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
 
-      pc.parameter_report();
-
       pbcc.setup( pc, 1e-6 * sqrt(2*(2*radius)*(2*radius)), 0.01, 3, 15 );
       pbcc.corner_create( pc2 );
-
-      pc2.parameter_report();
 
       area = pc2.area( 0, 1 );
       TEST_ASSERT( std::abs( area - (eli::constants::math<data_type>::pi() * radius * radius) ) < .0025 );
