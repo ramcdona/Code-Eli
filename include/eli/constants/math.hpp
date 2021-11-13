@@ -49,6 +49,22 @@ namespace eli
 
         static float sqrt_two()        {return 1.41421356f;}
         static float sqrt_two_by_two() {return 0.70710678f;}
+
+        // Classical constant value
+        // k = 4./3.;
+        // Fraction of radius to place cubic control point
+        // f = k * tan( theta * 0.25 );
+        // Where theta is the angle of the arc.
+        //
+        // Improved constant due to analysis similar to: http://spencermortensen.com/articles/bezier-circle/
+        // conducted symbolically in Matlab, leading to expression
+        // (3*2^(1/2)*c)/8 + 2^(1/2)/2 + (abs(3*c - 1)*(3*c^4 + 8*c^3 + 12*c^2 - 24*c + 8)^(1/2))/(3*c - 2)^2 - 2 == 0
+        // Which was solved numerically using Wolfram Alpha to 100 digits:
+        // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
+        // Improved constant value to 100 digits (for 90 deg arc).
+        // c = 0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+        // k = c / ( sqrt_two()-1 );
+        static double cubic_bezier_circle_const()  {return 1.332440737409712163877261103501904586378054505346634846763928262809148692267066998533212237794404131f;}
     };
 
     template <>
@@ -95,6 +111,22 @@ namespace eli
 
         static double sqrt_two()        {return 1.41421356237309504;}
         static double sqrt_two_by_two() {return 0.70710678118654752;}
+
+        // Classical constant value
+        // k = 4./3.;
+        // Fraction of radius to place cubic control point
+        // f = k * tan( theta * 0.25 );
+        // Where theta is the angle of the arc.
+        //
+        // Improved constant due to analysis similar to: http://spencermortensen.com/articles/bezier-circle/
+        // conducted symbolically in Matlab, leading to expression
+        // (3*2^(1/2)*c)/8 + 2^(1/2)/2 + (abs(3*c - 1)*(3*c^4 + 8*c^3 + 12*c^2 - 24*c + 8)^(1/2))/(3*c - 2)^2 - 2 == 0
+        // Which was solved numerically using Wolfram Alpha to 100 digits:
+        // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
+        // Improved constant value to 100 digits (for 90 deg arc).
+        // c = 0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+        // k = c / ( sqrt_two()-1 );
+        static double cubic_bezier_circle_const()  {return 1.332440737409712163877261103501904586378054505346634846763928262809148692267066998533212237794404131;}
     };
 
     template<>
@@ -130,6 +162,22 @@ namespace eli
 
         static long double sqrt_two()        {return 1.4142135623730950488L;}
         static long double sqrt_two_by_two() {return 0.7071067811865475244L;}
+
+        // Classical constant value
+        // k = 4./3.;
+        // Fraction of radius to place cubic control point
+        // f = k * tan( theta * 0.25 );
+        // Where theta is the angle of the arc.
+        //
+        // Improved constant due to analysis similar to: http://spencermortensen.com/articles/bezier-circle/
+        // conducted symbolically in Matlab, leading to expression
+        // (3*2^(1/2)*c)/8 + 2^(1/2)/2 + (abs(3*c - 1)*(3*c^4 + 8*c^3 + 12*c^2 - 24*c + 8)^(1/2))/(3*c - 2)^2 - 2 == 0
+        // Which was solved numerically using Wolfram Alpha to 100 digits:
+        // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
+        // Improved constant value to 100 digits (for 90 deg arc).
+        // c = 0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+        // k = c / ( sqrt_two()-1 );
+        static double cubic_bezier_circle_const()  {return 1.332440737409712163877261103501904586378054505346634846763928262809148692267066998533212237794404131L;}
     };
   }
 }

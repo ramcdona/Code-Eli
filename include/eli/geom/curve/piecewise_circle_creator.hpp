@@ -95,7 +95,7 @@ namespace eli
             curve_type c(3);
             control_point_type cp[4];
             error_code err;
-            data_type k, xr, yr;
+            data_type f, xr, yr;
             index_type i;
 
             // can only handle 4 segments for now
@@ -110,26 +110,16 @@ namespace eli
 
             // set up for curve creation
             pc.clear();
-            // Classical constant value
-            // k=4*(eli::constants::math<data_type>::sqrt_two()-1)/3;
-            // Numeric equivalent to 100 digits
-            // k=0.5522847498307933984022516322795974380928958338359307642355729839876433046161427184671833791035220970;
-
-            // Improved constant due to analysis similar to: http://spencermortensen.com/articles/bezier-circle/
-            // conducted symbolically in Matlab, leading to expression
-            // (3*2^(1/2)*c)/8 + 2^(1/2)/2 + (abs(3*c - 1)*(3*c^4 + 8*c^3 + 12*c^2 - 24*c + 8)^(1/2))/(3*c - 2)^2 - 2 == 0
-            // Which was solved numerically using Wolfram Alpha to 100 digits:
-            // FindRoot[-2 + 1/Sqrt[2] + (3 c)/(4 Sqrt[2]) + (Sqrt[8 - 24 c + 12 c^2 + 8 c^3 + 3 c^4] Abs[-1 + 3 c])/(-2 + 3 c)^2 == 0, {c, 0.55166, 0.552473}, WorkingPrecision -> 100]
-            // Improved constant value to 100 digits
-            k=0.5519150244935105707435627227925666423361803947243088973369805374675870988527781759268533834535800161;
+            // f = k * tan( theta / 4 );  // Specialized for theta = 90 deg.
+            f = eli::constants::math<data_type>::cubic_bezier_circle_const() * ( eli::constants::math<data_type>::sqrt_two() - 1 );
 
             xr=get_x_radius();
             yr=get_y_radius();
 
             // set 1st quadrant curve
             cp[0]=xr*x+origin;
-            cp[1]=xr*x+yr*k*y+origin;
-            cp[2]=xr*k*x+yr*y+origin;
+            cp[1]=xr*x+yr*f*y+origin;
+            cp[2]=xr*f*x+yr*y+origin;
             cp[3]=yr*y+origin;
             for (i=0; i<4; ++i)
             {
@@ -145,8 +135,8 @@ namespace eli
 
             // set 2nd quadrant curve
             cp[0]= yr*y+origin;
-            cp[1]= yr*y-xr*k*x+origin;
-            cp[2]= yr*k*y-xr*x+origin;
+            cp[1]= yr*y-xr*f*x+origin;
+            cp[2]= yr*f*y-xr*x+origin;
             cp[3]=-xr*x+origin;
             for (i=0; i<4; ++i)
             {
@@ -162,8 +152,8 @@ namespace eli
 
             // set 3rd quadrant curve
             cp[0]=-xr*x+origin;
-            cp[1]=-xr*x-yr*k*y+origin;
-            cp[2]=-xr*k*x-yr*y+origin;
+            cp[1]=-xr*x-yr*f*y+origin;
+            cp[2]=-xr*f*x-yr*y+origin;
             cp[3]=-yr*y+origin;
             for (i=0; i<4; ++i)
             {
@@ -179,8 +169,8 @@ namespace eli
 
             // set 4th quadrant curve
             cp[0]=-yr*y+origin;
-            cp[1]=-yr*y+xr*k*x+origin;
-            cp[2]=-yr*k*y+xr*x+origin;
+            cp[1]=-yr*y+xr*f*x+origin;
+            cp[2]=-yr*f*y+xr*x+origin;
             cp[3]= xr*x+origin;
             for (i=0; i<4; ++i)
             {
