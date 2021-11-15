@@ -3461,8 +3461,13 @@ class piecewise_general_creator_test_suite : public Test::Suite
 //        std::cout << "p_test=" << p_test
 //                  << "\tp_test1=" << p_test1 << "\tdiff="
 //                  << (p_test-p_test1).norm() << std::endl;
-        p_test=c.fpp(t[3]-small_num);
-        p_test1=c.fpp(t[3]+small_num);
+        data_type small_num2 = small_num;
+        if (typeid(data_type)==typeid(float))
+        {
+          small_num2 /= 100;
+        }
+        p_test=c.fpp(t[3]-small_num2);
+        p_test1=c.fpp(t[3]+small_num2);
         TEST_ASSERT(tol.approximately_equal(p_test, p_test1));
 //        std::cout << "p_test=" << p_test
 //                  << "\tp_test1=" << p_test1 << "\tdiff="
