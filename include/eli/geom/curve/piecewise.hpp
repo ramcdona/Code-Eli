@@ -2735,13 +2735,14 @@ namespace eli
             tol__ tol;
 
             // handle the end of the piecewise curve specially
-            if(tol.approximately_equal(t_in, tmax))
+            if(t_in==tmax)
             {
               tt=static_cast<data_type>(1);
               it=segments.end();
               it--;
               return;
             }
+
             if(t_in>tmax)
             {
               tt=static_cast<data_type>(2);
@@ -2766,21 +2767,7 @@ namespace eli
               it--;
             }
 
-            // At start of segment
-            if(tol.approximately_equal(t_in, it->first))
-            {
-              tt=static_cast<data_type>(0);
-              return;
-            }
-
             data_type delta_t = get_delta_t(it);
-
-            // At end of segment
-            if(tol.approximately_equal(t_in, it->first + delta_t))
-            {
-              tt=static_cast<data_type>(1);
-              return;
-            }
 
             // Typical case
             tt=(t_in-it->first)/delta_t;
@@ -2801,13 +2788,14 @@ namespace eli
             tol__ tol;
 
             // handle the end of the piecewise curve specially
-            if(tol.approximately_equal(t_in, tmax))
+            if(t_in==tmax)
             {
               tt=static_cast<data_type>(1);
               it=segments.end();
               it--;
               return;
             }
+
             if(t_in>tmax)
             {
               tt=static_cast<data_type>(2);
@@ -2830,21 +2818,7 @@ namespace eli
             if(it != segments.begin())
               it--;
 
-            // At start of segment
-            if(tol.approximately_equal(t_in, it->first))
-            {
-              tt=static_cast<data_type>(0);
-              return;
-            }
-
             data_type delta_t = get_delta_t(it);
-
-            // At end of segment
-            if(tol.approximately_equal(t_in, it->first + delta_t))
-            {
-              tt=static_cast<data_type>(1);
-              return;
-            }
 
             // Typical case
             tt=(t_in-it->first)/delta_t;

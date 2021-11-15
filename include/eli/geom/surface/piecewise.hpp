@@ -2382,7 +2382,7 @@ namespace eli
               ikey = it->second;
 
               // At start of segment
-              if(tol.approximately_equal(p_in, it->first))
+              if(p_in==it->first)
               {
                 pp=static_cast<data_type>(0);
                 return -1;
@@ -2391,7 +2391,7 @@ namespace eli
               data_type delta_p = get_delta_parm(it);
 
               // At end of segment
-              if(tol.approximately_equal(p_in, it->first + delta_p))
+              if(p_in == (it->first + delta_p))
               {
                 pp=static_cast<data_type>(1);
                 return 1;
@@ -2439,7 +2439,7 @@ namespace eli
               ikey = it->second;
 
               // At start of segment
-              if(tol.approximately_equal(p_in, it->first))
+              if(p_in == it->first)
               {
                 pp=static_cast<data_type>(0);
                 return -1;
@@ -2448,7 +2448,7 @@ namespace eli
               data_type delta_p = get_delta_parm(it);
 
               // At end of segment
-              if(tol.approximately_equal(p_in, it->first + delta_p))
+              if(p_in == (it->first + delta_p))
               {
                 pp=static_cast<data_type>(1);
                 return 1;
