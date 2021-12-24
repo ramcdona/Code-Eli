@@ -115,6 +115,7 @@ namespace eli
             {
               point_data=bs.point_data;
               set_Bs(bs.degree_u(), bs.degree_v());
+              invalidate_deriv();
 
               if (bs.deriv_u)
               {

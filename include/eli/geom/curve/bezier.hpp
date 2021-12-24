@@ -157,6 +157,7 @@ namespace eli
             if (this != &bc)
             {
               B=bc.B;
+              invalidate_deriv();
               if (bc.deriv)
               {
                 deriv = new bezier<data_type, dim__>( *(bc.deriv) );

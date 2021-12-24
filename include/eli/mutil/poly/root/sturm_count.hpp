@@ -39,7 +39,7 @@ namespace eli
           n=f.degree()+1;
           sturm_fun.resize(n);
 
-          polynomial<data__> *ptemp(f.fp()), pjunk;
+          polynomial<data__> *ptemp, pjunk;
 
           // initialize the Sturm functions
           sturm_fun[0]=f;
