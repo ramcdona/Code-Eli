@@ -1015,27 +1015,8 @@ namespace eli
               return INVALID_INDEX;
 
             typename segment_collection_type::iterator scit;
-            data_type dt, dto;
 
             find_segment(scit, index);
-
-            dt = get_delta_t(scit);
-
-            typename segment_collection_type::iterator scito;
-
-            // check the connectivity on adjacent nodes (if available)
-            if (index>0)
-            {
-              scito=scit;
-              --scito;
-              dto = get_delta_t(scito);
-            }
-            if ((index+1)<number_segments())
-            {
-              scito=scit;
-              ++scito;
-              dto = get_delta_t(scito);
-            }
 
             // set the new curve
             scit->second=curve;
@@ -1052,26 +1033,9 @@ namespace eli
             if (index0>=index1)
               return INVALID_INDEX;
 
-            typename segment_collection_type::iterator scit0, scit1, scito;
+            typename segment_collection_type::iterator scit0, scit1;
             find_segment(scit0, index0);
             find_segment(scit1, index1);
-
-            data_type dt0, dt1, dto;
-            dt0 = get_delta_t(scit0);
-            dt1 = get_delta_t(scit1);
-
-            // check the connectivity on adjacent nodes (if available)
-            if (index0>0)
-            {
-              scito=scit0;
-              --scito;
-              dto = get_delta_t(scito);
-            }
-            if ((index1+1)<number_segments())
-            {
-              scito=scit1;
-              dto = get_delta_t(scito);
-            }
 
             data_type t = scit0->first;
 
@@ -1122,28 +1086,15 @@ namespace eli
             if (index0>=index1)
               return INVALID_INDEX;
 
-            typename segment_collection_type::iterator scit0, scit1, scito;
+            typename segment_collection_type::iterator scit0, scit1;
             find_segment(scit0, index0);
             find_segment(scit1, index1);
 
             // Find parameter span to insert
             data_type pt0(p.get_parameter_min()), ptmax(p.get_parameter_max()), ptspan(ptmax - pt0);
 
-            // get the first and last curve to insert
-            typename segment_collection_type::const_iterator itps, itpe;
-            curve_type cs, ce;
-            data_type dts, dte;
-
-            itps = p.segments.begin();
-            cs = itps->second;
-            dts = p.get_delta_t(itps);
-
-            itpe = p.segments.end(); --itpe;
-            ce = itpe->second;
-            dte = p.get_delta_t(itpe);
-
             // Find parameter span of segment to replace
-            data_type dti, dto;
+            data_type dti;
 
             if(scit1 != segments.end())
               dti = scit1->first - scit0->first;
@@ -1152,19 +1103,6 @@ namespace eli
 
             // Ratio of parameter lengths, replace/insert
             data_type pratio = dti/ptspan;
-
-            // check the connectivity on adjacent nodes (if available)
-            if (index0>0)
-            {
-              scito=scit0;
-              --scito;
-              dto = get_delta_t(scito);
-            }
-            if (index1<number_segments())
-            {
-              scito=scit1;
-              dto = get_delta_t(scito);
-            }
 
             data_type t = scit0->first;
             data_type dtp;
@@ -2837,8 +2775,6 @@ namespace eli
 
           error_code replace_it(const piecewise<curve__, data_type, dim__> &p, typename segment_collection_type::iterator &scit)
           {
-            typename segment_collection_type::iterator scito;
-
             // Find parameter span to insert
             data_type pt0(p.get_parameter_min()), ptmax(p.get_parameter_max()), ptspan(ptmax - pt0);
 
@@ -2856,28 +2792,11 @@ namespace eli
             dte = p.get_delta_t(itpe);
 
             // Find parameter span of segment to replace
-            data_type dti, dto;
+            data_type dti;
             dti = get_delta_t(scit);
 
             // Ratio of parameter lengths, replace/insert
             data_type pratio = dti/ptspan;
-
-            // check the connectivity on adjacent nodes (if available)
-            if (scit != segments.begin())
-            {
-              scito=scit;
-              --scito;
-              dto = get_delta_t(scito);
-            }
-            if (scit != segments.end() )
-            {
-              scito=scit;
-              ++scito;
-              if (scito != segments.end() )
-              {
-                dto = get_delta_t(scito);
-              }
-            }
 
             typename segment_collection_type::const_iterator it=itps;
             typename segment_collection_type::iterator itguess = scit;
