@@ -942,12 +942,6 @@ namespace eli
             return NO_ERRORS;
           }
 
-          error_code get(curve_type &curve, const index_type &index) const
-          {
-            data_type dt;
-            return get(curve, dt, index);
-          }
-
           error_code degree_promote()
           {
             typename segment_collection_type::const_iterator scit;
@@ -994,7 +988,7 @@ namespace eli
             return NO_ERRORS;
           }
 
-          error_code get(curve_type &curve, data_type &dt, const index_type &index) const
+          error_code get(curve_type &curve, data_type &t, data_type &dt, const index_type &index) const
           {
             if (index>=number_segments())
               return INVALID_INDEX;
@@ -1004,9 +998,22 @@ namespace eli
             typename segment_collection_type::const_iterator scit;
             for (i=0, scit=segments.begin(); i<index; ++i, ++scit) {}
 
+            t=scit->first;
             curve=scit->second;
             dt=get_delta_t(scit);
             return NO_ERRORS;
+          }
+
+          error_code get(curve_type &curve, data_type &dt, const index_type &index) const
+          {
+            data_type t;
+            return get(curve, t, dt, index);
+          }
+
+          error_code get(curve_type &curve, const index_type &index) const
+          {
+            data_type dt;
+            return get(curve, dt, index);
           }
 
           error_code replace(const curve_type &curve, const index_type &index)
