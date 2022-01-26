@@ -1031,6 +1031,39 @@ namespace eli
             return NO_ERRORS;
           }
 
+          error_code replace_t(const curve_type &curve, const data_type &t0, const data_type &t1)
+          {
+            typename segment_collection_type::iterator scit0, scit1;
+
+            data_type tt;
+            find_segment(scit0, tt, t0 );
+            find_segment(scit1, tt, t1 );
+
+            data_type t = scit0->first;
+            data_type tprm = scit1->first;
+
+            if ( tprm != t1 ) // failed to find target segment, at last segment
+            {
+              if ( scit1 != segments.end() ) // safely increment to end
+              {
+                scit1++;
+              }
+              else
+              {
+                return INVALID_PARAM;
+              }
+            }
+
+            typename segment_collection_type::iterator itguess;
+
+            // erase old segments
+            itguess = segments.erase(scit0, scit1);
+
+            segments.insert(itguess, std::make_pair(t, curve));
+
+            return NO_ERRORS;
+          }
+
           error_code replace(const curve_type &curve, const index_type &index0, const index_type &index1)
           {
             if (index0>=number_segments())
