@@ -22,6 +22,7 @@
 #include "eli/util/tolerance.hpp"
 
 #include "eli/geom/general/continuity.hpp"
+#include "eli/geom/intersect/specified_distance_curve.hpp"
 
 namespace eli
 {
@@ -1352,98 +1353,95 @@ namespace eli
               return false;
             }
 
-            index_type im1, i;
+            index_type i;
             bool rounding_end(false);
 
             if ((joint==0) || (joint==number_segments()))
             {
               i=0;
-              im1=number_segments()-1;
               rounding_end=true;
             }
             else
             {
               i=joint;
-              im1=joint-1;
             }
 
-            curve_type cim1, ci, arc1, arc2, c, ctrim;
-            data_type dtim1(0), dti(0), lenim1, leni, tim1_split(-1), ti_split(-1);
+            curve_type arc1, arc2;
+            data_type ti, tmin, tmax;
             point_type fim1, fi, fpim1, fpi;
+            data_type fpim1_mag, fpi_mag;
             point_type corner_pt, mid_pt;
             control_point_type cp[4];
 
             // get the two curve segments
-            get(cim1, dtim1, im1);
-            get(ci, dti, i);
+            typename segment_collection_type::const_iterator scit;
+            find_segment( scit, i );
+            ti = scit->first;
+
+            tmin = get_parameter_min();
+            tmax = get_parameter_max();
+
+            if ( rounding_end )
+            {
+                fpi = fp( tmin );
+                fpim1 = fp( tmax );
+            }
+            else
+            {
+                fps( ti, fpim1, fpi );
+            }
 
             // check to see if joint needs to be rounded
-            fpim1=cim1.fp(1); fpim1.normalize();
-            fpi=ci.fp(0); fpi.normalize();
+            fpim1_mag = fpim1.norm();
+            fpim1.normalize();
+
+            fpi_mag = fpi.norm();
+            fpi.normalize();
+
             fpi = -1.0 * fpi; // Flip second vector to get acute/obtuse correct.
+
             data_type dprod = fpi.dot(fpim1);
             if (tol.approximately_equal( std::abs(dprod), 1))
             {
               return false;
             }
 
-            corner_pt = ( ci.f(0) + cim1.f(1) ) * 0.5; // Should be identical, but average just in case.
+            corner_pt = f(ti);
 
             data_type theta, ltrim;
             theta = acos( dprod );
 
             ltrim = rad / tan( theta * 0.5 );
 
-            eli::geom::curve::length(lenim1, cim1, tol.get_absolute_tolerance());
-            eli::geom::curve::length(leni, ci, tol.get_absolute_tolerance());
+            data_type tfwd, tbkwd;
 
-            // determine what the actual trim distance will be
-            if ( lenim1 < ltrim )
+            if ( rounding_end )
             {
-              return false;
+                data_type tguessfwd, tguessbkwd;
+                tguessfwd = tmin + ltrim / fpi_mag;
+                tguessbkwd = tmax - ltrim / fpim1_mag;
+
+                eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, tmin, (tmax+tmin)/2.0 );
+                eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, (tmax+tmin)/2.0, tmax );
             }
-            if ( leni < ltrim )
+            else
             {
-              return false;
+                data_type tguessfwd, tguessbkwd;
+                tguessfwd = ti + ltrim / fpi_mag;
+                tguessbkwd = ti - ltrim / fpim1_mag;
+
+                eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, ti, tmax );
+                eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, tmin, ti );
             }
-
-            // find coordinate that corresponds to location of radius on each curve
-            double small_t(1e-3);
-            if (tim1_split<0)
-            {
-              // FIX: this is exact for straight lines and approximate for other curves
-              tim1_split = 1 - ltrim / lenim1;
-
-              // if resulting segment is too small then make entire edge the round
-              if (tim1_split<small_t)
-              {
-            	tim1_split=0;
-              }
-            }
-            if (ti_split<0)
-            {
-              // FIX: this is exact for straight lines and approximate for other curves
-              ti_split = ltrim / leni;
-
-              // if resulting segment is too small then make entire edge the round
-              if (ti_split>(1-small_t))
-              {
-            	ti_split=1;
-              }
-            }
-
-            // if resulting round is too small compared then don't round
-            if ((tim1_split>(1-small_t)) || (ti_split<small_t))
-            {
-              return false;
-            }
-
 
             // calculate the points & slopes for end of round
-            fim1=cim1.f(tim1_split);
-            fpim1=cim1.fp(tim1_split); fpim1.normalize();
-            fi=ci.f(ti_split);
-            fpi=ci.fp(ti_split); fpi.normalize();
+            fim1 = f( tbkwd );
+            fpim1 = fp( tbkwd );
+            fpim1.normalize();
+
+            fi = f( tfwd );
+            fpi = fp( tfwd );
+            fpi.normalize();
 
             mid_pt = ( fim1 + fi ) * 0.5;  // Mid-point of trimmed endpoints.
 
@@ -1484,119 +1482,19 @@ namespace eli
             arc2.set_control_point(cp[2], 2);
             arc2.set_control_point(cp[3], 3);
 
-            // split the two curves
-            if (tim1_split>0)
-            {
-              cim1.split(c, ctrim, tim1_split); cim1=c;
-            }
-            if (ti_split<1)
-            {
-              ci.split(ctrim, c, ti_split); ci=c;
-            }
+            split( tbkwd );
+            split( tfwd );
 
             // replace/add curves
-            error_code ec;
-            if (rounding_end)
+            if ( rounding_end )
             {
-              piecewise<curve__, data_type, dim__> pct0, pct1;
-
-              // put the ith segment and arc2 onto the end of the list of curves
-              if ( tim1_split > 0 )
-              {
-                ec=pct0.push_back(cim1, dtim1*tim1_split);
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-              if ( tim1_split < 1 )
-              {
-                ec=pct0.push_back(arc1, dtim1*(static_cast<data_type>(1)-tim1_split));
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-
-              ec=replace(pct0, number_segments()-1);
-              if (ec!=NO_ERRORS)
-              {
-                assert(false);
-                return false;
-              }
-
-              // put arc1 and the (i-1)st segment onto the front of the list of curves
-              if ( ti_split < 1 )
-              {
-                ec=pct1.push_front(ci, dti*(1-ti_split));
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-              if ( ti_split > 0 )
-              {
-                ec=pct1.push_front(arc2, dti*ti_split);
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-
-              ec=replace(pct1, 0);
-              if (ec!=NO_ERRORS)
-              {
-                assert(false);
-                return false;
-              }
+              replace_t( arc1, tbkwd, tmax );
+              replace_t( arc2, tmin, tfwd);
             }
             else
             {
-              piecewise<curve__, data_type, dim__> pct;
-
-              if (tim1_split>0)
-              {
-            	ec=pct.push_back(cim1, dtim1*tim1_split);
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-              ec=pct.push_back(arc1, dtim1*(1-tim1_split));
-              if (ec!=NO_ERRORS)
-              {
-                assert(false);
-                return false;
-              }
-              ec=pct.push_back(arc2, dti*ti_split);
-              if (ec!=NO_ERRORS)
-              {
-                  assert(false);
-                  return false;
-              }
-
-              if (ti_split<1)
-              {
-            	ec=pct.push_back(ci, dti*(1-ti_split));
-                if (ec!=NO_ERRORS)
-                {
-                  assert(false);
-                  return false;
-                }
-              }
-
-              // replace the two segments with the piecewise curve
-              ec=replace(pct, i-1, i+1);
-              if (ec!=NO_ERRORS)
-              {
-                assert(false);
-                return false;
-              }
+              replace_t( arc1, tbkwd, ti );
+              replace_t( arc2, ti, tfwd );
             }
 
             return true;
