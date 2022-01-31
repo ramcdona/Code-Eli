@@ -92,7 +92,7 @@ namespace eli
       }
 
       template<typename onedbezcurve__>
-      typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0 )
+      typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0, const typename onedbezcurve__::data_type &tmin, const typename onedbezcurve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename onedbezcurve__::data_type> nrm;
         internal::curve_g_functor<onedbezcurve__> g;
@@ -107,15 +107,9 @@ namespace eli
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
         nrm.set_max_iteration(10);
-        if (c.open())
-        {
-          nrm.set_lower_condition(c.get_t0(), eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
-          nrm.set_upper_condition(c.get_tmax(), eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
-        }
-        else
-        {
-          nrm.set_periodic_condition(c.get_t0(), c.get_tmax());
-        }
+
+        nrm.set_lower_condition( tmin, eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
+        nrm.set_upper_condition( tmax, eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
 
         // set the initial guess
         nrm.set_initial_guess(t0);
@@ -138,6 +132,12 @@ namespace eli
         // couldn't find better answer so return initial guess
         t=t0;
         return val0;
+      }
+
+      template<typename onedbezcurve__>
+      typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0 )
+      {
+        return find_zero( t, c, t0, c.get_t0(), c.get_tmax() );
       }
 
       template<typename onedbezcurve__>
