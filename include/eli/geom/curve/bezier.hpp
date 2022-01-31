@@ -1044,7 +1044,7 @@ namespace eli
 
           // Returns a curve containing the signed distance between this curve and a plane
           // specified in point/unit normal form.
-          onedbezcurve signeddistcurve( const point_type & pt, const point_type & nvec ) const
+          onedbezcurve signedcurveplanedistcurve(const point_type & pt, const point_type & nvec ) const
           {
             onedbezcurve retcurve;
             typedef bezier<data_type, dim__> curve_type;

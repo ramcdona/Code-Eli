@@ -230,7 +230,7 @@ namespace eli
         typedef typename curve__::data_type data_type;
 
         data_type val;
-        objcurve obj = c.signeddistcurve( pt, nvec );
+        objcurve obj = c.signedcurveplanedistcurve(pt, nvec);
 
         val = find_zero( t, obj, t0 );
 
@@ -250,7 +250,7 @@ namespace eli
         data_type start = 0;
         data_type end = 1;
 
-        objcurve obj = c.signeddistcurve( pt, nvec );
+        objcurve obj = c.signedcurveplanedistcurve(pt, nvec);
 
         int nzero = obj.numzerocrossings();
 
