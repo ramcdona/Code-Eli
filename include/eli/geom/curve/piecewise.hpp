@@ -1037,12 +1037,29 @@ namespace eli
           {
             typename segment_collection_type::iterator scit0, scit1;
 
-            data_type tt;
-            find_segment(scit0, tt, t0 );
-            find_segment(scit1, tt, t1 );
+            data_type tt0, tt1;
+            find_segment(scit0, tt0, t0 );
+            find_segment(scit1, tt1, t1 );
 
             data_type t = scit0->first;
             data_type tprm = scit1->first;
+
+            if ( t0 != t )
+            {
+              if ( tt0 > 0.5 )
+              {
+                if ( scit0 != segments.end() )
+                {
+                  scit0++;
+                  t = scit0->first;
+                }
+              }
+            }
+
+            if ( scit0 == segments.end() )
+            {
+              return INVALID_PARAM;
+            }
 
             if ( tprm != t1 ) // failed to find target segment, at last segment
             {
