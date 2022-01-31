@@ -26,7 +26,9 @@
 
 #include "eli/geom/point/distance.hpp"
 #include "eli/geom/curve/piecewise.hpp"
+
 #include "eli/geom/intersect/minimum_distance_bounding_box.hpp"
+#include "eli/geom/intersect/one_d_curve_solver.hpp"
 
 namespace eli
 {
@@ -105,7 +107,28 @@ namespace eli
       }
 
       template<typename curve__>
-      typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
+      typename curve__::data_type specified_distance_new(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
+      {
+        typedef typename curve__::onedcurve objcurve;
+        typedef typename curve__::data_type data_type;
+        typedef typename objcurve::point_type point_type;
+
+        data_type val;
+        point_type p0;
+        p0 << r0 * r0;
+        objcurve obj = c.curveptdistsqcurve( pt );
+        obj.translate( -p0 );
+
+        val = find_zero( t, obj, t0, tmin, tmax );
+
+        data_type dist;
+        dist = eli::geom::point::distance( c.f(t), pt ) - r0;
+
+        return dist;
+      }
+
+      template<typename curve__>
+      typename curve__::data_type specified_distance_old(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename curve__::data_type> nrm;
         internal::curve_spec_g_functor<curve__> g;
@@ -149,6 +172,12 @@ namespace eli
         // couldn't find better answer so return initial guess
         t=t0;
         return dist0;
+      }
+
+      template<typename curve__>
+      typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
+      {
+        return specified_distance_new( t, c, pt, r0, t0, tmin, tmax );
       }
 
       template<typename curve__>

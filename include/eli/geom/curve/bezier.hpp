@@ -1042,6 +1042,22 @@ namespace eli
             return retcurve;
           }
 
+          // Returns a curve containing the squared distance between this curve and a point
+          onedbezcurve curveptdistsqcurve( const point_type & pt ) const
+          {
+            typedef bezier<data_type, dim__> curve_type;
+
+            curve_type c(*this);
+            c.translate( -pt );
+
+            curve_type prod;
+            prod.square( c );
+
+            onedbezcurve retcurve;
+            retcurve = prod.sumcompcurve();
+            return retcurve;
+          }
+
           // Returns a curve containing the signed distance between this curve and a plane
           // specified in point/unit normal form.
           onedbezcurve signedcurveplanedistcurve(const point_type & pt, const point_type & nvec ) const

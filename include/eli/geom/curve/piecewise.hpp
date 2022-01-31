@@ -268,6 +268,7 @@ namespace eli
                               const curve::piecewise<curve1__, data1__, dim1__, tol1__> &pc,
                               const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
                               const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::point_type &nvec);
+
     }
 
     namespace curve
@@ -2350,6 +2351,25 @@ namespace eli
             return retcurve;
           }
 
+          // Returns a curve containing the squared distance between this curve and a point
+          onedpiecewisecurve curveptdistsqcurve( const point_type & pt ) const
+          {
+            onedpiecewisecurve retcurve;
+
+            retcurve.set_t0( get_t0() );
+
+            typename segment_collection_type::const_iterator scit;
+            for ( scit = segments.begin(); scit!=segments.end(); ++scit)
+            {
+              typename curve_type::onedbezcurve c;
+
+              c = scit->second.curveptdistsqcurve( pt );
+
+              retcurve.push_back( c, get_delta_t(scit) );
+            }
+            return retcurve;
+          }
+
           // We build up the area integral curve here to avoid any problems that could arise when cjp is not
           // continuous.  If we only built up the integrand, the push_back could fail because of this.
           onedpiecewisecurve areaintegralcurve( const index_type & idim, const index_type & jdim ) const
@@ -2435,7 +2455,6 @@ namespace eli
                                   const piecewise<curve1__, data1__, dim1__, tol1__> &pc,
                                   const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
                                   const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &nvec);
-
 
           typedef std::map<data_type, curve_type> segment_collection_type;
 
