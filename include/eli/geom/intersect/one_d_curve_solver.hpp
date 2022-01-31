@@ -49,18 +49,18 @@ namespace eli
 
             if ( !(tt>=pc->get_t0()) )
             {
-              std::cout << "Intersect plane curve g_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
+              std::cout << "One D Bezier curve g_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
               tt=pc->get_t0();
             }
             if ( !(tt<=pc->get_tmax()) )
             {
-              std::cout << "Intersect plane curve g_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
+              std::cout << "One D Bezier curve g_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
               tt=pc->get_tmax();
             }
 
             assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
 
-            return pc->f(tt);
+            return pc->f(tt)(0);
           }
         };
 
@@ -75,18 +75,18 @@ namespace eli
 
             if ( !(tt>=pc->get_t0()) )
             {
-              std::cout << "Intersect plane curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
+              std::cout << "One D Bezier curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
               tt=pc->get_t0();
             }
             if ( !(tt<=pc->get_tmax()) )
             {
-              std::cout << "Intersect plane curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
+              std::cout << "One D Bezier curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
               tt=pc->get_tmax();
             }
 
             assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
 
-            return pc->fp(tt);
+            return pc->fp(tt)(0);
           }
         };
       }
@@ -95,8 +95,8 @@ namespace eli
       typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0, const typename onedbezcurve__::data_type &tmin, const typename onedbezcurve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename onedbezcurve__::data_type> nrm;
-        internal::curve_g_functor<onedbezcurve__> g;
-        internal::curve_gp_functor<onedbezcurve__> gp;
+        internal::onedbezcurve_g_functor<onedbezcurve__> g;
+        internal::onedbezcurve_gp_functor<onedbezcurve__> gp;
         typename onedbezcurve__::data_type val0, val;
         typename onedbezcurve__::tolerance_type tol;
 
