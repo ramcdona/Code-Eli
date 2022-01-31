@@ -41,7 +41,7 @@ namespace eli
       namespace internal
       {
         template <typename curve__>
-        struct curve_g_functor
+        struct min_dist_curve_g_functor
         {
           const curve__ *pc;
           typename curve__::point_type pt;
@@ -68,7 +68,7 @@ namespace eli
         };
 
         template <typename curve__>
-        struct curve_gp_functor
+        struct min_dist_curve_gp_functor
         {
           const curve__ *pc;
           typename curve__::point_type pt;
@@ -96,7 +96,7 @@ namespace eli
 
             if (tol.approximately_equal(rtn, 0))
             {
-              curve_g_functor<curve__> g;
+              min_dist_curve_g_functor<curve__> g;
 
               g.pc=pc;
               g.pt=pt;
@@ -123,8 +123,8 @@ namespace eli
       typename curve__::data_type minimum_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &t0)
       {
         eli::mutil::nls::newton_raphson_method<typename curve__::data_type> nrm;
-        internal::curve_g_functor<curve__> g;
-        internal::curve_gp_functor<curve__> gp;
+        internal::min_dist_curve_g_functor<curve__> g;
+        internal::min_dist_curve_gp_functor<curve__> gp;
         typename curve__::data_type dist0, dist;
         typename curve__::tolerance_type tol;
 
