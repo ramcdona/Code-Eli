@@ -39,7 +39,7 @@ namespace eli
       namespace internal
       {
         template <typename onedbezcurve__>
-        struct onedbezcurve_g_functor
+        struct onedcurve_g_functor
         {
           const onedbezcurve__ *pc;
 
@@ -65,7 +65,7 @@ namespace eli
         };
 
         template <typename onedbezcurve__>
-        struct onedbezcurve_gp_functor
+        struct onedcurve_gp_functor
         {
           const onedbezcurve__ *pc;
 
@@ -91,14 +91,14 @@ namespace eli
         };
       }
 
-      template<typename onedbezcurve__>
-      typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0, const typename onedbezcurve__::data_type &tmin, const typename onedbezcurve__::data_type &tmax )
+      template<typename onedcurve__>
+      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0, const typename onedcurve__::data_type &tmin, const typename onedcurve__::data_type &tmax )
       {
-        eli::mutil::nls::newton_raphson_method<typename onedbezcurve__::data_type> nrm;
-        internal::onedbezcurve_g_functor<onedbezcurve__> g;
-        internal::onedbezcurve_gp_functor<onedbezcurve__> gp;
-        typename onedbezcurve__::data_type val0, val;
-        typename onedbezcurve__::tolerance_type tol;
+        eli::mutil::nls::newton_raphson_method<typename onedcurve__::data_type> nrm;
+        internal::onedcurve_g_functor<onedcurve__> g;
+        internal::onedcurve_gp_functor<onedcurve__> gp;
+        typename onedcurve__::data_type val0, val;
+        typename onedcurve__::tolerance_type tol;
 
         // setup the functors
         g.pc=&c;
@@ -108,8 +108,8 @@ namespace eli
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
         nrm.set_max_iteration(10);
 
-        nrm.set_lower_condition( tmin, eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
-        nrm.set_upper_condition( tmax, eli::mutil::nls::iterative_root_base_constrained<typename onedbezcurve__::data_type>::IRC_EXCLUSIVE);
+        nrm.set_lower_condition( tmin, eli::mutil::nls::iterative_root_base_constrained<typename onedcurve__::data_type>::IRC_EXCLUSIVE);
+        nrm.set_upper_condition( tmax, eli::mutil::nls::iterative_root_base_constrained<typename onedcurve__::data_type>::IRC_EXCLUSIVE);
 
         // set the initial guess
         nrm.set_initial_guess(t0);
@@ -134,23 +134,23 @@ namespace eli
         return val0;
       }
 
-      template<typename onedbezcurve__>
-      typename onedbezcurve__::data_type find_zero( typename onedbezcurve__::data_type &t, const onedbezcurve__ &c, const typename onedbezcurve__::data_type &t0 )
+      template<typename onedcurve__>
+      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0 )
       {
         return find_zero( t, c, t0, c.get_t0(), c.get_tmax() );
       }
 
-      template<typename onedbezcurve__>
-      void findzeros( std::vector< typename onedbezcurve__::data_type > & optpts,
-              const typename onedbezcurve__::data_type &tstart,
-              const typename onedbezcurve__::data_type &tend,
-              const onedbezcurve__ &objcurve, const typename onedbezcurve__::index_type &nsplit )
+      template<typename onedcurve__>
+      void findzeros(std::vector< typename onedcurve__::data_type > & optpts,
+                     const typename onedcurve__::data_type &tstart,
+                     const typename onedcurve__::data_type &tend,
+                     const onedcurve__ &objcurve, const typename onedcurve__::index_type &nsplit )
       {
-        typedef typename onedbezcurve__::data_type data_type;
+        typedef typename onedcurve__::data_type data_type;
 
         data_type tmid = ( tstart + tend ) * 0.5;
 
-        onedbezcurve__ low, high;
+        onedcurve__ low, high;
 
         objcurve.split( low, high, 0.5 );
 
