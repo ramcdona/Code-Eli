@@ -302,6 +302,8 @@ namespace eli
           typedef piecewise<curve__, data_type, 3, tol__> threedpiecewisecurve;
           typedef piecewise<curve__, data_type, 4, tol__> fourdpiecewisecurve;
 
+          typedef piecewise<curve__, data_type, 1, tol__> onedcurve;
+
           enum error_code
           {
             NO_ERRORS=0,
