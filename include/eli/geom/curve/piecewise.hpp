@@ -618,6 +618,7 @@ namespace eli
           void get_pmap( std::vector < data_type > &pmap ) const
           {
             pmap.clear();
+            pmap.reserve( segments.size() + 1 );
 
             typename segment_collection_type::const_iterator it;
             for (it=segments.begin(); it!=segments.end(); ++it)
