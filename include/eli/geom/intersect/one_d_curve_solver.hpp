@@ -116,12 +116,10 @@ namespace eli
         val0 = c.f(t0)(0);
 
         // find the root
-        nrm.find_root(t, g, gp, 0);
+        int ret = nrm.find_root(t, g, gp, 0);
 
-        // if root is within bounds and is closer than initial guess
+        if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
         {
-          assert((t>=c.get_t0()) && (t<=c.get_tmax()));
-
           val = c.f(t)(0);
           if ( std::abs(val) <= std::abs(val0) )
           {
