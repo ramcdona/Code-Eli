@@ -1388,7 +1388,7 @@ namespace eli
             }
 
             curve_type arc1, arc2;
-            data_type ti, tmin, tmax;
+            data_type ti, tmin, tmax, tmid;
             point_type fim1, fi, fpim1, fpi;
             data_type fpim1_mag, fpi_mag;
             point_type corner_pt, mid_pt;
@@ -1401,6 +1401,7 @@ namespace eli
 
             tmin = get_parameter_min();
             tmax = get_parameter_max();
+            tmid = ( tmax + tmin ) / 2.0;
 
             if ( rounding_end )
             {
@@ -1436,23 +1437,48 @@ namespace eli
 
             data_type tfwd, tbkwd;
 
+            bool span_fwd = false;
+            bool span_bkwd = false;
+
             if ( rounding_end )
             {
                 data_type tguessfwd, tguessbkwd;
                 tguessfwd = tmin + ltrim / fpi_mag;
                 tguessbkwd = tmax - ltrim / fpim1_mag;
 
-                eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, tmin, (tmax+tmin)/2.0 );
-                eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, (tmax+tmin)/2.0, tmax );
+                eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, tmin, tmid );
+                eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, tmid, tmax );
             }
             else
             {
                 data_type tguessfwd, tguessbkwd;
+                data_type err;
                 tguessfwd = ti + ltrim / fpi_mag;
                 tguessbkwd = ti - ltrim / fpim1_mag;
 
-                eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, ti, tmax );
-                eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, tmin, ti );
+                err = eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, ti, tmax );
+                if ( std::abs( err ) > 1e-6 )
+                {
+                    span_fwd = true;
+                    tguessfwd = tmin + tguessfwd - tmax;
+                    if ( tguessfwd < tmin )
+                    {
+                        tguessfwd = tmin;
+                    }
+                    eli::geom::intersect::specified_distance( tfwd, *this, corner_pt, ltrim, tguessfwd, tmin, tmid );
+                }
+
+                err = eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, tmin, ti );
+                if ( std::abs( err ) > 1e-6 )
+                {
+                    span_bkwd = true;
+                    tguessbkwd = tmax + tguessbkwd - tmin;
+                    if ( tguessbkwd > tmax )
+                    {
+                        tguessbkwd = tmax;
+                    }
+                    eli::geom::intersect::specified_distance( tbkwd, *this, corner_pt, ltrim, tguessbkwd, tmid, tmax );
+                }
             }
 
             // calculate the points & slopes for end of round
@@ -1510,12 +1536,39 @@ namespace eli
             if ( rounding_end )
             {
               replace_t( arc1, tbkwd, tmax );
-              replace_t( arc2, tmin, tfwd);
+              replace_t( arc2, tmin, tfwd );
             }
             else
             {
-              replace_t( arc1, tbkwd, ti );
-              replace_t( arc2, ti, tfwd );
+              if ( span_fwd )
+              {
+                split( ti );
+                curve_type arc2l, arc2r;
+                data_type s = ( tmax - ti ) / ( ( tmax - ti ) + ( tfwd - tmin ) );
+                arc2.split( arc2l, arc2r, s  );
+
+                replace_t( arc2l, ti, tmax );
+                replace_t( arc2r, tmin, tfwd );
+              }
+              else
+              {
+                replace_t( arc2, ti, tfwd );
+              }
+
+              if ( span_bkwd )
+              {
+                split( ti );
+                curve_type arc1l, arc1r;
+                data_type s = ( tmax - tbkwd ) / ( ( tmax - tbkwd ) + ( ti - tmin ) );
+                arc1.split( arc1l, arc1r, s  );
+
+                replace_t( arc1l, tbkwd, tmax );
+                replace_t( arc1r, tmin, ti );
+              }
+              else
+              {
+                replace_t( arc1, tbkwd, ti );
+              }
             }
 
             return true;
