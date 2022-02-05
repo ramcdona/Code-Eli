@@ -168,8 +168,9 @@ namespace eli
 
 
       template<typename surface__>
-      typename surface__::data_type intersect(typename surface__::data_type &u1, typename surface__::data_type &v1,
+      typename surface__::index_type intersect(typename surface__::data_type &u1, typename surface__::data_type &v1,
                                               typename surface__::data_type &u2, typename surface__::data_type &v2,
+                                              typename surface__::data_type &dist,
                                               const surface__ &s1, const surface__ &s2, const typename surface__::point_type &pt,
                                               const typename surface__::data_type &u01, const typename surface__::data_type &v01,
                                               const typename surface__::data_type &u02, const typename surface__::data_type &v02 )
@@ -178,7 +179,7 @@ namespace eli
         nonlinear_solver_type nrm;
         internal::surf_surf_g_functor<surface__> g;
         internal::surf_surf_gp_functor<surface__> gp;
-        typename surface__::data_type dist0, dist;
+        typename surface__::data_type dist0;
         typename surface__::tolerance_type tol;
 
         typename surface__::data_type u1min, u1max, v1min, v1max;
@@ -260,13 +261,16 @@ namespace eli
         dist0=eli::geom::point::distance(p1, p2);
 
         // find the root
-        nrm.find_root(ans, g, gp, rhs);
-        u1=ans(0);
-        v1=ans(1);
-        u2=ans(2);
-        v2=ans(3);
+        typename surface__::index_type ret = nrm.find_root(ans, g, gp, rhs);
 
-        dist = eli::geom::point::distance(s1.f(u1, v1), s2.f(u2,v2));
+        if ( ret == nrm.converged )
+        {
+          u1=ans(0);
+          v1=ans(1);
+          u2=ans(2);
+          v2=ans(3);
+
+          dist = eli::geom::point::distance(s1.f(u1, v1), s2.f(u2,v2));
 
 //        if( dist > 1e-6 )
 //        {
@@ -277,9 +281,11 @@ namespace eli
 //          printf(" v02: %f v2: %f\n", v02, v2 );
 //        }
 
-        if  (dist<=dist0)
-        {
-          return dist;
+          if  (dist<=dist0)
+          {
+            return ret;
+          }
+          ret = 3; // Converged, but worse answer than initial guess.
         }
 
         // couldn't find better answer so return initial guess
@@ -287,7 +293,8 @@ namespace eli
         v1=v01;
         u2=u02;
         v2=v02;
-        return dist0;
+        dist=dist0;
+        return ret;
       }
 
 
