@@ -171,7 +171,7 @@ namespace eli
       typename surface__::index_type intersect(typename surface__::data_type &u1, typename surface__::data_type &v1,
                                               typename surface__::data_type &u2, typename surface__::data_type &v2,
                                               typename surface__::data_type &dist,
-                                              const surface__ &s1, const surface__ &s2, const typename surface__::point_type &pt,
+                                              const surface__ &s1in, const surface__ &s2in, const typename surface__::point_type &pt,
                                               const typename surface__::data_type &u01, const typename surface__::data_type &v01,
                                               const typename surface__::data_type &u02, const typename surface__::data_type &v02 )
       {
@@ -184,6 +184,17 @@ namespace eli
 
         typename surface__::data_type u1min, u1max, v1min, v1max;
         typename surface__::data_type u2min, u2max, v2min, v2max;
+
+        surface__ s1 = s1in;
+        surface__ s2 = s2in;
+
+        // Shift surfaces to be centered at initial intersection point.  This forces all coordinates to be close to zero
+        // thereby increasing available precision for the calculations.
+        s1.translate( -pt );
+        s2.translate( -pt );
+
+        typename surface__::point_type p0;
+        p0 << 0.0, 0.0, 0.0;
 
         s1.get_parameter_min(u1min,v1min);
         s1.get_parameter_max(u1max,v1max);
@@ -198,10 +209,10 @@ namespace eli
         // setup the functors
         g.s1=&s1;
         g.s2=&s2;
-        g.pt=pt;
+        g.pt=p0;
         gp.s1=&s1;
         gp.s2=&s2;
-        gp.pt=pt;
+        gp.pt=p0;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
