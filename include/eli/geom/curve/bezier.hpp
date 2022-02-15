@@ -452,7 +452,8 @@ namespace eli
             {
               B.row(i)+=trans;
             }
-            invalidate_deriv();
+            // Translating a curve does not change derivatives.
+            // invalidate_deriv();
           }
 
           void scale(const data_type &s)

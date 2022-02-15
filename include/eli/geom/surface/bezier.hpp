@@ -287,7 +287,8 @@ namespace eli
                 B_u[j].row(i)+=trans;
               }
             }
-            invalidate_deriv();
+            // Translating a surface does not change derivatives.
+            // invalidate_deriv();
           }
 
           void scale(const data_type &s)
