@@ -40,6 +40,7 @@ namespace eli
           const surface__ *s1;
           const surface__ *s2;
           typename surface__::point_type pt;
+          typename surface__::data_type k;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
 
@@ -75,7 +76,7 @@ namespace eli
             rtn(0)=disp(0);
             rtn(1)=disp(1);
             rtn(2)=disp(2);
-            rtn(3)=tvec.dot(pave-pt);
+            rtn(3)=k*tvec.dot(pave-pt);
             return rtn;
           }
         };
@@ -86,6 +87,7 @@ namespace eli
           const surface__ *s1;
           const surface__ *s2;
           typename surface__::point_type pt;
+          typename surface__::data_type k;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 4> mat;
@@ -153,10 +155,10 @@ namespace eli
 
             // tvec.dot(dist);
 
-            rtn(3,0)= dist.dot( ( S1uu.cross(S1v)+S1u.cross(S1uv) ).cross(S2u.cross(S2v)) ) + tvec.dot( S1u * 0.5 );
-            rtn(3,1)= dist.dot( ( S1uv.cross(S1v)+S1u.cross(S1vv) ).cross(S2u.cross(S2v)) ) + tvec.dot( S1v * 0.5 );
-            rtn(3,2)= dist.dot( (S1u.cross(S1v)).cross( S2uu.cross(S2v)+S2u.cross(S2uv) ) ) + tvec.dot( S2u * 0.5 );
-            rtn(3,3)= dist.dot( (S1u.cross(S1v)).cross( S2uv.cross(S2v)+S2u.cross(S2vv) ) ) + tvec.dot( S2v * 0.5 );
+            rtn(3,0)= k*(dist.dot( ( S1uu.cross(S1v)+S1u.cross(S1uv) ).cross(S2u.cross(S2v)) ) + tvec.dot( S1u * 0.5 ));
+            rtn(3,1)= k*(dist.dot( ( S1uv.cross(S1v)+S1u.cross(S1vv) ).cross(S2u.cross(S2v)) ) + tvec.dot( S1v * 0.5 ));
+            rtn(3,2)= k*(dist.dot( (S1u.cross(S1v)).cross( S2uu.cross(S2v)+S2u.cross(S2uv) ) ) + tvec.dot( S2u * 0.5 ));
+            rtn(3,3)= k*(dist.dot( (S1u.cross(S1v)).cross( S2uv.cross(S2v)+S2u.cross(S2vv) ) ) + tvec.dot( S2v * 0.5 ));
 
             // TODO: What to do if matrix becomes singular?
 
@@ -206,13 +208,18 @@ namespace eli
         p1=s1.f(u01,v01);
         p2=s2.f(u02,v02);
 
+        // Relative importance of nearness to base point.
+        typename surface__::data_type k = 1.0e-3;
+
         // setup the functors
         g.s1=&s1;
         g.s2=&s2;
         g.pt=p0;
+        g.k=k;
         gp.s1=&s1;
         gp.s2=&s2;
         gp.pt=p0;
+        gp.k=k;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
