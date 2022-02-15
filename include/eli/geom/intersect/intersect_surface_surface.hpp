@@ -39,7 +39,6 @@ namespace eli
         {
           const surface__ *s1;
           const surface__ *s2;
-          typename surface__::point_type pt;
           typename surface__::data_type k;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
@@ -76,7 +75,7 @@ namespace eli
             rtn(0)=disp(0);
             rtn(1)=disp(1);
             rtn(2)=disp(2);
-            rtn(3)=k*tvec.dot(pave-pt);
+            rtn(3)=k*tvec.dot(pave);
             return rtn;
           }
         };
@@ -86,7 +85,6 @@ namespace eli
         {
           const surface__ *s1;
           const surface__ *s2;
-          typename surface__::point_type pt;
           typename surface__::data_type k;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
@@ -120,7 +118,7 @@ namespace eli
             p2=s2->f(u2,v2);
 
             pave=(p1+p2)*0.5;
-            dist=pave-pt;
+            dist=pave;
 
 
             S1u=s1->f_u(u1, v1);
@@ -195,9 +193,6 @@ namespace eli
         s1.translate( -pt );
         s2.translate( -pt );
 
-        typename surface__::point_type p0;
-        p0 << 0.0, 0.0, 0.0;
-
         s1.get_parameter_min(u1min,v1min);
         s1.get_parameter_max(u1max,v1max);
         s2.get_parameter_min(u2min,v2min);
@@ -214,11 +209,9 @@ namespace eli
         // setup the functors
         g.s1=&s1;
         g.s2=&s2;
-        g.pt=p0;
         g.k=k;
         gp.s1=&s1;
         gp.s2=&s2;
-        gp.pt=p0;
         gp.k=k;
 
         // setup the solver
