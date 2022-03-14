@@ -41,6 +41,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
     typedef typename piecewise_curve_type::tolerance_type tolerance_type;
 
     typedef eli::geom::curve::piecewise_binary_cubic_cylinder_projector<data__, 3, tolerance_type> binary_projector_type;
+    typedef eli::geom::curve::piecewise_binary_cubic_creator<data__, 3, tolerance_type> binary_creator_type;
     typedef eli::geom::curve::piecewise_four_digit_creator<data__, 3, tolerance_type> four_digit_type;
     typedef eli::geom::curve::piecewise_circle_creator<data__, 3, tolerance_type> circle_creator_type;
 
@@ -57,6 +58,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<float>::circle_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<float>::spiral_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<float>::foil_test);
+      TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<float>::circle_test2);
     }
     void AddTests(const double &)
     {
@@ -64,6 +66,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<double>::circle_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<double>::spiral_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<double>::foil_test);
+      TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<double>::circle_test2);
     }
     void AddTests(const long double &)
     {
@@ -71,6 +74,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<long double>::circle_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<long double>::spiral_test);
       TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<long double>::foil_test);
+      TEST_ADD(piecewise_binary_cubic_cylinder_projector_test_suite<long double>::circle_test2);
     }
 
   public:
@@ -93,7 +97,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
 
       data_type r(1.0);
 
-      data_type tol(1e-3);
+      data_type tol(1e-6);
 
       cp[0] << 0., 1., 0.;
       cp[1] << 0., 1., 2.*eli::constants::math<data__>::pi();
@@ -106,7 +110,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
 
       pc.push_back( c, 1.0 );
 
-      bp.setup( pc, r, tol, 1, 15 );
+      bp.setup( pc, r, tol, 2, 15 );
       bp.create( pcout );
 
       // pcout.octave_print( 1 );
@@ -233,7 +237,8 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
     void foil_test()
     {
       binary_projector_type bp;
-      piecewise_curve_type pc, pcout;
+      binary_creator_type bc;
+      piecewise_curve_type pc, pcc, pcout;
       curve_type c;
 
       four_digit_type af;
@@ -241,7 +246,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       data_type tc, cam, cam_loc;
       bool rtn;
 
-      data_type tol(1e-3);
+      data_type tol(1e-6);
 
       // set airfoil thickness
       tc = 0.24;
@@ -273,19 +278,35 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
               0, 0, 1.;
       pc.rotate( rmat );
 
+      point_type dx;
+      dx << 1.0, 0.0, 1.0;
+      pc.translate( dx );
+
+      // Convert to binary cubic curve.
+      bc.setup( pc, tol, 1, 15 );
+      index_type dpcc = bc.create( pcc );
+      TEST_ASSERT( dpcc <= 15 );
+
       data_type r(1.0);
 
-      bp.setup( pc, r, tol, 1, 15 );
+      // pcc.octave_print( 1 );
+
+      bp.setup( pcc, r, tol, 1, 15 );
       index_type d = bp.create( pcout );
 
       TEST_ASSERT( d <= 15 );
+
+      // std::cout << "Recursion depth: " << dpcc << " and " << d << std::endl;
+      // std::cout << "Planar nseg: " << pcc.number_segments() << " cylindrical nseg: " << pcout.number_segments() << std::endl;
+
+      // pcout.octave_print( 2 );
 
       // Check evenly around curve.
       index_type n(101);
       for ( index_type i = 0; i <= n; i++ )
       {
         data_type t = (data_type) i / (data_type) n;
-        point_type p0 = pc.f(t);
+        point_type p0 = pcc.f(t);
         data_type theta = p0.z() / r;
         point_type p0t;
         p0t << p0.x(), r * std::cos(theta), r * std::sin(theta);
@@ -310,7 +331,7 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       for ( index_type i = 0; i <= n; i++ )
       {
         data_type t = t0 + dt * (data_type) i / (data_type) n;
-        point_type p0 = pc.f(t);
+        point_type p0 = pcc.f(t);
         data_type theta = p0.z() / r;
         point_type p0t;
         p0t << p0.x(), r * std::cos(theta), r * std::sin(theta);
@@ -326,6 +347,55 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
         }
       }
 
+    }
+
+    void circle_test2()
+    {
+      binary_projector_type projector;
+      binary_creator_type approximator;
+      circle_creator_type circle_creator;
+      piecewise_curve_type c, pc, pc2;
+      point_type origin, x, y;
+      data_type radius;
+
+      // set the parameters for circle
+      origin << 1, 1, 1;
+      x << 0, 0, 1;
+      y << 1, 0, 0;
+      radius=1;
+
+      circle_creator.set( origin, x, y, radius );
+
+      // create the circle
+      circle_creator.create(c);
+
+      typename piecewise_curve_type::rotation_matrix_type rmat;
+
+      data_type th = 0.321 * eli::constants::math<data__>::pi();
+      // Rotate 90 about Y.
+      rmat << std::cos(th), 0, -std::sin(th),
+              0, 1., 0,
+              std::sin(th), 0, std::cos(th);
+      c.rotate( rmat );
+
+      data_type tol(1e-6);
+
+      approximator.setup( c, tol, 1, 15 );
+      index_type dpcc = approximator.create( pc );
+      TEST_ASSERT( dpcc <= 15 );
+
+      // pc.octave_print( 1 );
+
+      data_type r(1.0);
+
+      projector.setup( pc, r, tol, 1, 15 );
+      index_type d = projector.create( pc2 );
+      TEST_ASSERT( d <= 15 );
+
+      // pc2.octave_print( 2 );
+
+      // std::cout << "Recursion depth: " << d << std::endl;
+      // std::cout << "Planar nseg: " << pc.number_segments() << " cylindrical nseg: " << pc2.number_segments() << std::endl;
     }
 
 };
