@@ -61,7 +61,7 @@ namespace eli
             atol = a;
           }
 
-          virtual bool corner_create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
+          virtual index_type corner_create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
           {
             std::vector<data_type> tdisc;
 
@@ -74,8 +74,9 @@ namespace eli
             return corner_create( pc, tdisc );
           }
 
-          virtual bool corner_create(piecewise<bezier, data_type, dim__, tolerance_type> &pc, const std::vector<data_type> &tdisc ) const
+          virtual index_type corner_create(piecewise<bezier, data_type, dim__, tolerance_type> &pc, const std::vector<data_type> &tdisc ) const
           {
+            index_type d = -1;
             point_type p0, m01, m02, p1, m11, m12;
             data_type theta0, theta1;
             point_type p0t, m01t, m02t, p1t, m11t, m12t;
@@ -109,7 +110,7 @@ namespace eli
 
                 pc.push_back(c, t1-t0);
 
-                adapt_pc( pc, t0, p0t, m02t, theta0, t1, p1t, m11t, theta1 );
+                d = adapt_pc( pc, t0, p0t, m02t, theta0, t1, p1t, m11t, theta1 );
 
                 t0 = t1;
                 p0t = p1t;
@@ -118,11 +119,12 @@ namespace eli
                 m02t = m12t;
               }
             }
-            return true;
+            return d;
           }
 
-          virtual bool create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
+          virtual index_type create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
           {
+            index_type d = -1;
             data_type t0, t1;
             t0 = parent_curve.get_t0();
             t1 = parent_curve.get_tmax();
@@ -150,14 +152,14 @@ namespace eli
 
             pc.push_back(c, t1-t0);
 
-            adapt_pc( pc, t0, p0t, m0t, theta0, t1, p1t, m1t, theta1 );
+            d = adapt_pc( pc, t0, p0t, m0t, theta0, t1, p1t, m1t, theta1 );
 
-            return true;
+            return d;
           }
 
         protected:
 
-          void adapt_pc( piecewise<bezier, data_type, dim__, tolerance_type> &pc, const data_type &t0, const point_type &p0, const point_type &m0, const data_type &theta0,
+          index_type adapt_pc( piecewise<bezier, data_type, dim__, tolerance_type> &pc, const data_type &t0, const point_type &p0, const point_type &m0, const data_type &theta0,
                          const data_type &t1, const point_type &p1, const point_type &m1, const data_type &theta1, index_type depth = 0 ) const
           {
             data_type tmid = ( t0 + t1 ) / 2.0;
@@ -208,8 +210,13 @@ namespace eli
 
               pc.replace_t( insert, t0 );
 
-              adapt_pc( pc, t0, p0, m0, theta0, tmid, pmid, mmid, thetamid, depth + 1 );
-              adapt_pc( pc, tmid, pmid, mmid, thetamid, t1, p1, m1, theta1, depth + 1 );
+              index_type d1 = adapt_pc( pc, t0, p0, m0, theta0, tmid, pmid, mmid, thetamid, depth + 1 );
+              index_type d2 = adapt_pc( pc, tmid, pmid, mmid, thetamid, t1, p1, m1, theta1, depth + 1 );
+              return std::max( d1, d2 );
+            }
+            else
+            {
+              return depth;
             }
           }
 

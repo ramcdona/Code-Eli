@@ -276,7 +276,9 @@ class piecewise_binary_cubic_cylinder_projector_test_suite : public Test::Suite
       data_type r(1.0);
 
       bp.setup( pc, r, tol, 1, 15 );
-      bp.create( pcout );
+      index_type d = bp.create( pcout );
+
+      TEST_ASSERT( d <= 15 );
 
       // Check evenly around curve.
       index_type n(101);

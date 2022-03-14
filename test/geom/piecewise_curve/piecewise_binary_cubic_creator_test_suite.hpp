@@ -149,7 +149,7 @@ class piecewise_binary_cubic_creator_test_suite : public Test::Suite
       circle_creator.set( origin, x, y, radius );
 
       // create the circle
-      TEST_ASSERT(circle_creator.create(pc));
+      circle_creator.create(pc);
 
       acurv = pc.areaintegralcurve( 0, 1 );
 
