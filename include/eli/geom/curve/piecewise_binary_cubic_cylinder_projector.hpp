@@ -293,9 +293,7 @@ namespace eli
             data_type cth = std::cos(theta);
             data_type sth = std::sin(theta);
 
-            return point_type( m.x(),
-                               cth * m.y() - sth * m.z(),
-                               sth * m.y() + cth * m.z() );
+            return point_type( m.x(), - sth * m.z(), cth * m.z() );
           }
 
           void transform_point_slope( const point_type &p, const data_type &theta, const point_type &m, point_type &pt, point_type &mt ) const
@@ -303,7 +301,7 @@ namespace eli
             data_type cth = std::cos(theta);
             data_type sth = std::sin(theta);
             pt << p.x(), r * cth, r * sth;
-            mt << m.x(), cth * m.y() - sth * m.z(), sth * m.y() + cth * m.z();
+            mt << m.x(), - sth * m.z(), cth * m.z();
           }
 
           void transform_point_slopes( const point_type &p0, const data_type &theta, const point_type &m0, const point_type &m1, point_type &pt, point_type &m0t, point_type &m1t ) const
@@ -311,8 +309,8 @@ namespace eli
             data_type cth = std::cos(theta);
             data_type sth = std::sin(theta);
             pt << p0.x(), r * cth, r * sth;
-            m0t << m0.x(), cth * m0.y() - sth * m0.z(), sth * m0.y() + cth * m0.z();
-            m1t << m1.x(), cth * m1.y() - sth * m1.z(), sth * m1.y() + cth * m1.z();
+            m0t << m0.x(), - sth * m0.z(), cth * m0.z();
+            m1t << m1.x(), - sth * m1.z(), cth * m1.z();
           }
 
         private:
