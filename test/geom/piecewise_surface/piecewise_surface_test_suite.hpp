@@ -60,6 +60,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::area_test);
       TEST_ADD(piecewise_surface_test_suite<float>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<float>::continuity_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::roll_test);
     }
     void AddTests(const double &)
     {
@@ -76,6 +77,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::area_test);
       TEST_ADD(piecewise_surface_test_suite<double>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<double>::continuity_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::roll_test);
     }
     void AddTests(const long double &)
     {
@@ -92,6 +94,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::area_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::continuity_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::roll_test);
     }
 
   public:
@@ -1993,6 +1996,160 @@ class piecewise_surface_test_suite : public Test::Suite
         TEST_ASSERT(tol.approximately_equal(disc_vjoints[0], disc_vjoints_ref[0]));
       }
     }
+
+    void roll_test()
+    {
+      piecewise_surface_type ps1, ps2;
+      data_type umin1, vmin1, umin2, vmin2;
+      data_type umax1, vmax1, umax2, vmax2;
+
+      ps1.init_uv( 1, 1 );
+
+      // create piecewise surface
+      {
+        typename piecewise_surface_type::error_code err;
+        surface_type s;
+        index_type i, j, n(5), m(4);
+        point_type pt[5+1][4+1], pt_out;
+
+        // create surface with specified control points
+        pt[0][0] <<  0, 0, 15;
+        pt[1][0] <<  2, 6, 15;
+        pt[2][0] <<  3, 0, 15;
+        pt[3][0] <<  5, 4, 15;
+        pt[4][0] <<  7, 1, 15;
+        pt[5][0] <<  9, 1, 15;
+        pt[0][1] <<  0, 0, 11;
+        pt[1][1] <<  2, 6, 11;
+        pt[2][1] <<  3, 0, 11;
+        pt[3][1] <<  5, 4, 11;
+        pt[4][1] <<  7, 1, 11;
+        pt[5][1] <<  9, 1, 11;
+        pt[0][2] <<  0, 0,  3;
+        pt[1][2] <<  2, 6,  3;
+        pt[2][2] <<  3, 0,  3;
+        pt[3][2] <<  5, 4,  3;
+        pt[4][2] <<  7, 1,  3;
+        pt[5][2] <<  9, 1,  3;
+        pt[0][3] <<  0, 0,  0;
+        pt[1][3] <<  2, 6,  0;
+        pt[2][3] <<  3, 0,  0;
+        pt[3][3] <<  5, 4,  0;
+        pt[4][3] <<  7, 1,  0;
+        pt[5][3] <<  9, 1,  0;
+        pt[0][4] <<  0, 0, -5;
+        pt[1][4] <<  2, 6, -5;
+        pt[2][4] <<  3, 0, -5;
+        pt[3][4] <<  5, 4, -5;
+        pt[4][4] <<  7, 1, -5;
+        pt[5][4] <<  9, 1, -5;
+
+        s.resize( n, m );
+        for ( i=0; i<=n; ++i )
+        {
+          for ( j=0; j<=m; ++j )
+          {
+            s.set_control_point( pt[i][j], i, j );
+          }
+        }
+
+        err = ps1.set( s, 0, 0 );
+        TEST_ASSERT( err == piecewise_surface_type::NO_ERRORS );
+      }
+
+      ps1.get_parameter_min( umin1, vmin1);
+      ps1.get_parameter_max( umax1, vmax1);
+
+      // ps1.parameter_report();
+
+      ps1.split_u( 0.2 );
+      ps1.split_u( 0.5 );
+
+      ps1.split_v( 0.15 );
+      ps1.split_v( 0.55 );
+      ps1.split_v( 0.85 );
+
+      // ps1.parameter_report();
+
+      ps1.get_parameter_min( umin2, vmin2);
+      ps1.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+
+      ps2 = ps1;
+      ps2.roll_u( 0 );
+      // ps2.parameter_report();
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      ps2 = ps1;
+      ps2.roll_u( 1 );
+      // ps2.parameter_report();
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      ps2 = ps1;
+      ps2.roll_u( 2 );
+      // ps2.parameter_report();
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      ps2 = ps1;
+      ps2.roll_u( 3 );
+      // ps2.parameter_report();
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      ps2 = ps1;
+      ps2.roll_u( 4 );
+      // ps2.parameter_report();
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+    }
+
 };
 
 #endif

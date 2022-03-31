@@ -712,6 +712,16 @@ namespace eli
             vkey.reverse_keymap();
           }
 
+          void roll_u( const index_type &index )
+          {
+            ukey.roll_keymap( index );
+          }
+
+          void roll_v( const index_type &index )
+          {
+            vkey.roll_keymap( index );
+          }
+
           void scale(const data_type &s)
           {
             typename patch_collection_type::iterator uit;
@@ -2245,6 +2255,39 @@ namespace eli
               assert(tol.approximately_equal(p, pmax));
             }
 
+            void roll_keymap( const index_type &index )
+            {
+              keymap_type rollkey;
+              index_type ikey;
+              typename keymap_type::const_iterator itstart;
+              typename keymap_type::const_iterator itr;
+              typename keymap_type::const_iterator itguess = rollkey.begin();
+
+              find_segment( ikey, itstart, index );
+
+              data_type p = get_pmin();
+
+              for ( typename keymap_type::const_iterator it = itstart; it != key.end(); ++it )
+              {
+                itr = rollkey.insert( itguess, std::make_pair( p, it->second ) );
+
+                data_type delta_p = get_delta_parm( it );
+                p += delta_p;
+
+                itguess = itr;
+              }
+              for ( typename keymap_type::const_iterator it = key.begin(); it != itstart; ++it )
+              {
+                itr = rollkey.insert( itguess, std::make_pair( p, it->second ) );
+
+                data_type delta_p = get_delta_parm( it );
+                p += delta_p;
+
+                itguess = itr;
+              }
+
+              key.swap( rollkey );
+            }
 
             data_type get_delta_parm(const typename keymap_type::iterator &it) const
             {
