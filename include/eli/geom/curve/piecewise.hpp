@@ -794,6 +794,38 @@ namespace eli
             // assert(t == tmax);
           }
 
+          void roll( const index_type & index )
+          {
+            segment_collection_type rollseg;
+            typename segment_collection_type::iterator itstart;
+            typename segment_collection_type::iterator itr;
+            typename segment_collection_type::iterator itguess = rollseg.begin();
+
+            find_segment( itstart, index );
+
+            data_type t( get_parameter_min() );
+
+            for ( typename segment_collection_type::iterator it = itstart; it != segments.end(); ++it )
+            {
+              itr = rollseg.insert( itguess, std::make_pair( t, it->second ) );
+
+              data_type delta_t = get_delta_t(it);
+              t += delta_t;
+
+              itguess = itr;
+            }
+            for ( typename segment_collection_type::iterator it = segments.begin(); it != itstart; ++it )
+            {
+              itr = rollseg.insert( itguess, std::make_pair( t, it->second ) );
+
+              data_type delta_t = get_delta_t(it);
+              t += delta_t;
+
+              itguess = itr;
+            }
+
+            segments.swap( rollseg );
+          }
 
           void reflect_xy()
           {

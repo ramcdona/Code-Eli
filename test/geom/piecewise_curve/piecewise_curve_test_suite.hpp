@@ -55,6 +55,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::round_test);
       TEST_ADD(piecewise_curve_test_suite<float>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<float>::integration_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::roll_test);
     }
     void AddTests(const double &)
     {
@@ -71,6 +72,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::round_test);
       TEST_ADD(piecewise_curve_test_suite<double>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<double>::integration_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::roll_test);
     }
     void AddTests(const long double &)
     {
@@ -87,6 +89,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::round_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::integration_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::roll_test);
     }
 
   public:
@@ -2135,6 +2138,111 @@ class piecewise_curve_test_suite : public Test::Suite
         TEST_ASSERT( (c1.f(t) - ci.fp(t)).norm() < 3500 * eps ); // testing integral()
       }
 
+    }
+
+    void roll_test()
+    {
+      piecewise_curve_type c1, c2, c3, c4, c5;
+      curve_type bc[3];
+      data_type dt[3];
+      std::vector< data_type > pm1, pm2;
+      index_type i;
+      typename curve_type::control_point_type cntrl1_in[4], cntrl2_in[5], cntrl3_in[3];
+      typename piecewise_curve_type::error_code err;
+      data_type eps(std::numeric_limits<data__>::epsilon());
+      data_type tol(std::sqrt(eps));
+
+      // create bezier curves
+      cntrl1_in[0] << 2.0, 2.0, 0.0;
+      cntrl1_in[1] << 1.0, 1.5, 0.0;
+      cntrl1_in[2] << 3.5, 0.0, 0.0;
+      cntrl1_in[3] << 4.0, 1.0, 0.0;
+      dt[0]=0.5;
+      bc[0].resize(3);
+      for (i=0; i<4; ++i)
+      {
+        bc[0].set_control_point(cntrl1_in[i], i);
+      }
+      cntrl2_in[0] << 4.0, 1.0, 0.0;
+      cntrl2_in[1] << 5.0, 2.5, 0.0;
+      cntrl2_in[2] << 5.5, 1.0, 0.0;
+      cntrl2_in[3] << 6.0, 0.0, 0.0;
+      cntrl2_in[4] << 6.5,-0.5, 0.0;
+      dt[1]=2.0;
+      bc[1].resize(4);
+      for (i=0; i<5; ++i)
+      {
+        bc[1].set_control_point(cntrl2_in[i], i);
+      }
+      cntrl3_in[0] << 6.5,-0.5, 0.0;
+      cntrl3_in[1] << 6.0,-1.0, 0.0;
+      cntrl3_in[2] << 5.5,-2.0, 0.0;
+      dt[2]=1.5;
+      bc[2].resize(2);
+      for (i=0; i<3; ++i)
+      {
+        bc[2].set_control_point(cntrl3_in[i], i);
+      }
+
+      // initialize by passing iterators to curve collection
+      err = c1.set( bc, bc+3, dt );
+      TEST_ASSERT( err == piecewise_curve_type::NO_ERRORS );
+
+      // Make copies of c1 curve
+      c2 = c1; c3 = c1; c4 = c1; c5 = c1;
+
+      // Roll to various positions.
+      c2.roll(0); // Do nothing
+      c3.roll(1);
+      c4.roll(2);
+      c5.roll(3); // Roll back to start - results in do-nothing.
+
+      TEST_ASSERT( c2.number_segments() == c1.number_segments() );
+      TEST_ASSERT( c3.number_segments() == c1.number_segments() );
+      TEST_ASSERT( c4.number_segments() == c1.number_segments() );
+      TEST_ASSERT( c5.number_segments() == c1.number_segments() );
+
+      TEST_ASSERT( c2.get_t0() == c1.get_t0() );
+      TEST_ASSERT( c3.get_t0() == c1.get_t0() );
+      TEST_ASSERT( c4.get_t0() == c1.get_t0() );
+      TEST_ASSERT( c5.get_t0() == c1.get_t0() );
+
+      TEST_ASSERT( c2.get_tmax() == c1.get_tmax() );
+      TEST_ASSERT( c3.get_tmax() == c1.get_tmax() );
+      TEST_ASSERT( c4.get_tmax() == c1.get_tmax() );
+      TEST_ASSERT( c5.get_tmax() == c1.get_tmax() );
+
+      data_type len1, len2, len3, len4, len5;
+      eli::geom::curve::length( len1, c1, tol );
+      eli::geom::curve::length( len2, c2, tol );
+      eli::geom::curve::length( len3, c3, tol );
+      eli::geom::curve::length( len4, c4, tol );
+      eli::geom::curve::length( len5, c5, tol );
+
+      TEST_ASSERT( len2 == len1 );
+      TEST_ASSERT( len3 == len1 );
+      TEST_ASSERT( len4 == len1 );
+      TEST_ASSERT( len5 == len1 );
+
+      // std::cout << "C1:" << std::endl;
+      // c1.parameter_report();
+      // c1.octave_print( 1 );
+
+      // std::cout << "C2:" << std::endl;
+      // c2.parameter_report();
+      // c2.octave_print( 2 );
+
+      // std::cout << "C3:" << std::endl;
+      // c3.parameter_report();
+      // c3.octave_print( 3 );
+
+      // std::cout << "C4:" << std::endl;
+      // c4.parameter_report();
+      // c4.octave_print( 4 );
+
+      // std::cout << "C5:" << std::endl;
+      // c5.parameter_report();
+      // c5.octave_print( 5 );
     }
 
 };
