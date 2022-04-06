@@ -991,6 +991,107 @@ namespace eli
             return spliterr;
           }
 
+          void join_u( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          {
+            tolerance_type tol;
+
+            std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
+            a.get_pmap_uv( upmap1, vpmap1 );
+            b.get_pmap_uv( upmap2, vpmap2 );
+
+            index_type nu1, nv1, nu2, nv2;
+            nu1 = a.number_u_patches();
+            nv1 = a.number_v_patches();
+            nu2 = b.number_u_patches();
+            nv2 = b.number_v_patches();
+
+            upmap.resize( nu1 + nu2 + 1 );
+
+            // Append U parameter values
+            index_type j = 0;
+            for ( index_type i = 0; i < nu1 + 1; i++, j++ )
+            {
+              upmap[j] = upmap1[i];
+            }
+            for ( index_type i = 0; i < nu2; i++, j++ )
+            {
+              data_type du = upmap2[i+1] - upmap2[i];
+              upmap[j] = upmap[j-1] + du;
+            }
+
+            // V should be identical.
+            vpmap = vpmap1;
+
+            init_uv( upmap, vpmap );
+
+            index_type ju = 0;
+            for ( index_type iu = 0; iu < nu1; iu++, ju++ )
+            {
+              for ( index_type iv = 0; iv < nv1; iv++ )
+              {
+                set( *(a.get_patch( iu, iv )), ju, iv );
+              }
+            }
+
+            for ( index_type iu = 0; iu < nu2; iu++, ju++ )
+            {
+              for ( index_type iv = 0; iv < nv2; iv++ )
+              {
+                set( *(b.get_patch( iu, iv )), ju, iv );
+              }
+            }
+          }
+
+          void join_v( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          {
+            tolerance_type tol;
+
+            std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
+            a.get_pmap_uv( upmap1, vpmap1 );
+            b.get_pmap_uv( upmap2, vpmap2 );
+
+            index_type nu1, nv1, nu2, nv2;
+            nu1 = a.number_u_patches();
+            nv1 = a.number_v_patches();
+            nu2 = b.number_u_patches();
+            nv2 = b.number_v_patches();
+
+            vpmap.resize( nv1 + nv2 + 1 );
+
+            // Append U parameter values
+            index_type j = 0;
+            for ( index_type i = 0; i < nv1 + 1; i++, j++ )
+            {
+              vpmap[j] = vpmap1[i];
+            }
+            for ( index_type i = 0; i < nv2; i++, j++ )
+            {
+              data_type dv = vpmap2[i+1] - vpmap2[i];
+              vpmap[j] = vpmap[j-1] + dv;
+            }
+
+            // V should be identical.
+            upmap = upmap1;
+
+            init_uv( upmap, vpmap );
+
+
+            for ( index_type iu = 0; iu < nu1; iu++ )
+            {
+              index_type jv = 0;
+              for ( index_type iv = 0; iv < nv1; iv++, jv++ )
+              {
+                set( *(a.get_patch( iu, iv )), iu, jv );
+              }
+
+              for ( index_type iv = 0; iv < nv2; iv++, jv++ )
+              {
+                set( *(b.get_patch( iu, iv )), iu, jv );
+              }
+            }
+
+          }
+
           void to_cubic_u(const data_type &ttol)
           {
             typename keymap_type::iterator uit, vit;

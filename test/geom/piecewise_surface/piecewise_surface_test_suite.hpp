@@ -61,6 +61,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<float>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<float>::roll_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::join_test);
     }
     void AddTests(const double &)
     {
@@ -78,6 +79,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<double>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<double>::roll_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::join_test);
     }
     void AddTests(const long double &)
     {
@@ -95,6 +97,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::get_curve_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::roll_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::join_test);
     }
 
   public:
@@ -2150,6 +2153,242 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
     }
 
+    void join_test()
+    {
+      piecewise_surface_type ps1, ps2, pbefore, pafter, pjoin;
+      data_type u, v, du, dv;
+      data_type umin1, vmin1, umin2, vmin2;
+      data_type umax1, vmax1, umax2, vmax2;
+      index_type iu, iv, nu, nv;
+
+      // create 3x2 patches with unit spacing
+      ps1.init_uv(3, 2);
+
+      // create piecewise surface
+      {
+        typename piecewise_surface_type::error_code err;
+        surface_type s, s1, s2, s3, s4, s5, s6;
+        index_type i, j, n(3), m(3);
+        point_type pt[3+1][3+1], pt_out;
+
+        // create surface with specified control points
+        pt[0][0] << -15, 0,  15;
+        pt[1][0] <<  -5, 5,  15;
+        pt[2][0] <<   5, 5,  15;
+        pt[3][0] <<  15, 0,  15;
+        pt[0][1] << -15, 5,   5;
+        pt[1][1] <<  -5, 5,   5;
+        pt[2][1] <<   5, 5,   5;
+        pt[3][1] <<  15, 5,   5;
+        pt[0][2] << -15, 5,  -5;
+        pt[1][2] <<  -5, 5,  -5;
+        pt[2][2] <<   5, 5,  -5;
+        pt[3][2] <<  15, 5,  -5;
+        pt[0][3] << -15, 0, -15;
+        pt[1][3] <<  -5, 5, -15;
+        pt[2][3] <<   5, 5, -15;
+        pt[3][3] <<  15, 0, -15;
+        s.resize(n, m);
+        for (i=0; i<=n; ++i)
+        {
+          for (j=0; j<=m; ++j)
+          {
+            s.set_control_point(pt[i][j], i, j);
+          }
+        }
+
+        // create and set each surface
+        s.split_v(s1, s2, 0.5);  // this splits surface into lower and upper
+        s1.split_u(s3, s4, 0.5); // this splits lower into first segment and last two
+        err=ps1.set(s3, 0, 0);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+        s2.split_u(s5, s6, 0.5); // this splits upper into first segment and last two
+        err=ps1.set(s5, 0, 1);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+        s4.split_u(s1, s2, 0.5); // this splits lower end into final two pieces
+        err=ps1.set(s1, 1, 0);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+        err=ps1.set(s2, 2, 0);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+        s6.split_u(s1, s2, 0.5); // this splits the upper end into final two pieces
+        err=ps1.set(s1, 1, 1);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+        err=ps1.set(s2, 2, 1);
+        TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+      }
+
+      ps1.get_parameter_min( umin1, vmin1);
+      ps1.get_parameter_max( umax1, vmax1);
+
+      // ps1.parameter_report();
+
+      // split u-direction on existing patch boundary
+      ps1.split_u(pbefore, pafter, 1.0);
+      ps2.join_u(pbefore, pafter);
+
+      // ps2.parameter_report();
+
+      // ps1.octave_print( 1 );
+      // ps2.octave_print( 2 );
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+
+      // Not always true.  Only because split on pre-existing patch boundary.
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      // Always true for join_u
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      nu = 11;
+      nv = 9;
+
+      du = ( umax1 - umin1 ) / ( nu - 1 );
+      dv = ( vmax1 - vmin1) /  ( nv - 1 );
+
+      u = umin1;
+      for ( index_type iu = 0; iu < nu; iu++ )
+      {
+        v = vmin1;
+        for ( index_type iv = 0; iv < nv; iv++ )
+        {
+          TEST_ASSERT( tol.approximately_equal( ps1.f(u, v),   ps2.f(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_u(u, v), ps2.f_u(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_v(u, v), ps2.f_v(u, v)) );
+          v = v + dv;
+        }
+        u = u + du;
+      }
+
+
+      // split u-direction creating new patch boundary
+      ps1.split_u(pbefore, pafter, 1.5);
+      ps2.join_u(pbefore, pafter);
+
+      // ps2.parameter_report();
+
+      // ps2.octave_print( 3 );
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+
+      // +1 because new patch boundary created.
+      TEST_ASSERT( (ps1.number_u_patches()+1) == ps2.number_u_patches() );
+      // Always true for join_u
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      nu = 11;
+      nv = 9;
+
+      du = ( umax1 - umin1 ) / ( nu - 1 );
+      dv = ( vmax1 - vmin1) /  ( nv - 1 );
+
+      u = umin1;
+      for ( index_type iu = 0; iu < nu; iu++ )
+      {
+        v = vmin1;
+        for ( index_type iv = 0; iv < nv; iv++ )
+        {
+          TEST_ASSERT( tol.approximately_equal( ps1.f(u, v),   ps2.f(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_u(u, v), ps2.f_u(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_v(u, v), ps2.f_v(u, v)) );
+          v = v + dv;
+        }
+        u = u + du;
+      }
+
+      // split v-direction on existing patch boundary
+      ps1.split_v(pbefore, pafter, 1.0);
+      ps2.join_v(pbefore, pafter);
+
+      // ps2.parameter_report();
+
+      // ps1.octave_print( 1 );
+      // ps2.octave_print( 2 );
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+
+      // Always true for join_v
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      // Not always true.  Only because split on pre-existing patch boundary.
+      TEST_ASSERT( ps1.number_v_patches() == ps2.number_v_patches() );
+
+      nu = 11;
+      nv = 9;
+
+      du = ( umax1 - umin1 ) / ( nu - 1 );
+      dv = ( vmax1 - vmin1) /  ( nv - 1 );
+
+      u = umin1;
+      for ( index_type iu = 0; iu < nu; iu++ )
+      {
+        v = vmin1;
+        for ( index_type iv = 0; iv < nv; iv++ )
+        {
+          TEST_ASSERT( tol.approximately_equal( ps1.f(u, v),   ps2.f(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_u(u, v), ps2.f_u(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_v(u, v), ps2.f_v(u, v)) );
+          v = v + dv;
+        }
+        u = u + du;
+      }
+
+      // split v-direction creating new patch boundary
+      ps1.split_v(pbefore, pafter, 1.5);
+      ps2.join_v(pbefore, pafter);
+
+      // ps2.parameter_report();
+
+      // ps2.octave_print( 3 );
+
+      ps2.get_parameter_min( umin2, vmin2);
+      ps2.get_parameter_max( umax2, vmax2);
+
+      TEST_ASSERT( umax1 == umax2 );
+      TEST_ASSERT( vmax1 == vmax2 );
+      TEST_ASSERT( umin1 == umin2 );
+      TEST_ASSERT( vmin1 == vmin2 );
+
+      // Always true for join_v
+      TEST_ASSERT( ps1.number_u_patches() == ps2.number_u_patches() );
+      // +1 because new patch boundary created.
+      TEST_ASSERT( (ps1.number_v_patches()+1) == ps2.number_v_patches() );
+
+      nu = 11;
+      nv = 9;
+
+      du = ( umax1 - umin1 ) / ( nu - 1 );
+      dv = ( vmax1 - vmin1) /  ( nv - 1 );
+
+      u = umin1;
+      for ( index_type iu = 0; iu < nu; iu++ )
+      {
+        v = vmin1;
+        for ( index_type iv = 0; iv < nv; iv++ )
+        {
+          TEST_ASSERT( tol.approximately_equal( ps1.f(u, v),   ps2.f(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_u(u, v), ps2.f_u(u, v)) );
+          TEST_ASSERT( tol.approximately_equal( ps1.f_v(u, v), ps2.f_v(u, v)) );
+          v = v + dv;
+        }
+        u = u + du;
+      }
+    }
 };
 
 #endif
