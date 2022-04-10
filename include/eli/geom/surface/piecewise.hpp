@@ -1943,15 +1943,20 @@ namespace eli
           {
             typedef std::vector < data_type > pvec_type;
 
-            pvec_type uuvec( uvec.size() );
-            pvec_type vvvec( vvec.size() );
+            index_type nuvec( uvec.size() );
+            index_type nvvec( vvec.size() );
+
+            pvec_type uuvec( nuvec );
+            pvec_type vvvec( nvvec );
+            std::vector < index_type > ukvec( nuvec );
+            std::vector < index_type > vkvec( nvvec );
 
             int i, j;
 
             std::vector < index_type > ukbatch( nu, 0 );
             std::vector < index_type > vkbatch( nv, 0 );
 
-            for ( i = 0; i < uvec.size(); i++ )
+            for ( i = 0; i < nuvec; i++ )
             {
               typename keymap_type::const_iterator uit;
               index_type uk;
@@ -1981,10 +1986,11 @@ namespace eli
               }
 
               uuvec[i] = uu;
+              ukvec[i] = uk;
               ukbatch[uk] += 1;
             }
 
-            for ( i = 0; i < vvec.size(); i++ )
+            for ( i = 0; i < nvvec; i++ )
             {
               typename keymap_type::const_iterator vit;
               index_type vk;
@@ -2014,44 +2020,41 @@ namespace eli
               }
 
               vvvec[i] = vv;
+              vkvec[i] = vk;
               vkbatch[vk] += 1;
             }
 
             std::vector < std::vector < point_type > > S_u_mat;
             std::vector < std::vector < point_type > > S_v_mat;
 
-            ptmat.resize( uvec.size() );
-            normmat.resize( uvec.size() );
-            S_u_mat.resize( uvec.size() );
-            S_v_mat.resize( uvec.size() );
-            for ( i = 0; i < uvec.size(); i++ )
+            ptmat.resize( nuvec );
+            normmat.resize( nuvec );
+            S_u_mat.resize( nuvec );
+            S_v_mat.resize( nuvec );
+            for ( i = 0; i < nuvec; i++ )
             {
-                ptmat[i].resize(vvec.size());
-                normmat[i].resize(vvec.size());
-                S_u_mat[i].resize(vvec.size());
-                S_v_mat[i].resize(vvec.size());
+              ptmat[i].resize( nvvec );
+              normmat[i].resize( nvvec );
+              S_u_mat[i].resize( nvvec );
+              S_v_mat[i].resize( nvvec );
             }
 
-            index_type uk, vk;
-
-            i = 0;
-            for ( uk = 0; uk < nu; uk++ )
+            for ( i = 0; i < nuvec; )
             {
-              if ( ukbatch[uk] > 0 )  // This patch is used
-              {
-                j = 0;
-                for ( vk = 0; vk < nv; vk++ )
-                {
-                  if ( vkbatch[vk] > 0 )  // This patch is used
-                  {
-                    patches[uk][vk].fbatch( i, j, ukbatch[uk], vkbatch[vk], uuvec, vvvec, ptmat );
-                    patches[uk][vk].normalbatch( i, j, ukbatch[uk], vkbatch[vk], uuvec, vvvec, S_u_mat, S_v_mat, normmat );
+              index_type uk = ukvec[i];
+              index_type nuk = ukbatch[uk];
 
-                    j += vkbatch[vk];   // Increment j
-                  }
-                }
-                i += ukbatch[uk];   // Increment i
+              for ( j = 0; j < nvvec; )
+              {
+                index_type vk = vkvec[j];
+                index_type nvk = vkbatch[vk];
+
+                patches[uk][vk].fbatch( i, j, nuk, nvk, uuvec, vvvec, ptmat );
+                patches[uk][vk].normalbatch( i, j, nuk, nvk, uuvec, vvvec, S_u_mat, S_v_mat, normmat );
+
+                j += nvk;
               }
+              i += nuk;
             }
           }
 
