@@ -29,6 +29,8 @@
 // #include "eli/geom/surface/area.hpp"
 #include "eli/geom/surface/curvature.hpp"
 #include "eli/geom/surface/piecewise.hpp"
+#include "eli/geom/surface/piecewise_body_of_revolution_creator.hpp"
+#include "eli/geom/intersect/find_rst_surface.hpp"
 
 template<typename data__>
 class piecewise_surface_test_suite : public Test::Suite
@@ -62,6 +64,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<float>::roll_test);
       TEST_ADD(piecewise_surface_test_suite<float>::join_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::rst_test);
     }
     void AddTests(const double &)
     {
@@ -80,6 +83,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<double>::roll_test);
       TEST_ADD(piecewise_surface_test_suite<double>::join_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::rst_test);
     }
     void AddTests(const long double &)
     {
@@ -98,6 +102,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::continuity_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::roll_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::join_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::rst_test);
     }
 
   public:
@@ -2387,6 +2392,182 @@ class piecewise_surface_test_suite : public Test::Suite
           v = v + dv;
         }
         u = u + du;
+      }
+    }
+
+    void rst_test()
+    {
+      typedef typename piecewise_curve_type::curve_type curve_type;
+      typedef typename curve_type::control_point_type curve_control_point_type;
+
+      // create geometry with default parameterizations
+      {
+        piecewise_curve_type pc;
+        curve_type c(3);
+        curve_control_point_type cp[4];
+        data_type k=eli::constants::math<data_type>::cubic_bezier_circle_const()*(eli::constants::math<data_type>::sqrt_two()-1);
+        index_type i;
+
+        // create curve
+        cp[0] << 1, 0, 0;
+        cp[1] << 1, k, 0;
+        cp[2] << k, 1, 0;
+        cp[3] << 0, 1, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+        // set 2nd quadrant curve
+        cp[0] <<  0, 1, 0;
+        cp[1] << -k, 1, 0;
+        cp[2] << -1, k, 0;
+        cp[3] << -1, 0, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+        piecewise_surface_type ps;
+
+        TEST_ASSERT(eli::geom::surface::create_body_of_revolution(ps, pc, 0, true));
+
+        // if (typeid(data_type)==typeid(double))
+        //   ps.octave_print( 2 );
+
+        TEST_ASSERT(ps.open_u());
+        TEST_ASSERT(ps.closed_v());
+
+        point_type p, ptest;
+        point_type pref( 0, 0, 0 );
+
+        data_type r0( 0.5 ), s0( 0.25 ), t0( 0.5 );
+
+        // Should be center of sphere.
+        p = ps.fRST( r0, s0, t0 );
+        // std::cout << p << std::endl;
+        TEST_ASSERT( p == pref );
+
+        data_type small( sqrt( std::numeric_limits<data_type>::epsilon() ) );
+
+        // Also check derivatives at initial point.
+        // r0 = 0.1;
+        // s0 = 0.1;
+        // t0 = 0.1;
+
+        p = ps.fRST( 0.1, 0.1, 0.1 );
+        // std::cout << "P at (0.1,0.1,0.1) " << p << std::endl;
+
+        tolerance_type ttol( std::sqrt( std::numeric_limits<data__>::epsilon() ),
+                             std::sqrt( std::numeric_limits<data__>::epsilon() ) );
+
+        if ( typeid(data_type)==typeid(float) )
+          ttol = tolerance_type( 10 * std::sqrt( std::numeric_limits<data__>::epsilon() ),
+                                 std::sqrt( std::numeric_limits<data__>::epsilon() ) );
+
+        point_type dR = ps.f_R( r0, s0, t0 );
+        point_type dRfd = ( ps.fRST( r0 + small, s0, t0 ) - ps.fRST( r0 - small, s0, t0 ) ) / (2.0 * small);
+
+        TEST_ASSERT( ttol.approximately_equal( dR, dRfd ) );
+        // std::cout << "dR    " << dR << std::endl;
+        // std::cout << "dRfd  " << dRfd << std::endl;
+        // std::cout << "dRerr " << dR - dRfd << std::endl;
+
+        point_type dS = ps.f_S( r0, s0, t0 );
+        point_type dSfd = ( ps.fRST( r0, s0 + small, t0 ) - ps.fRST( r0, s0 - small, t0 ) ) / (2.0 * small);
+
+        TEST_ASSERT( ttol.approximately_equal( dS, dSfd ) );
+        // std::cout << "dS    " << dS << std::endl;
+        // std::cout << "dSfd  " << dSfd << std::endl;
+        // std::cout << "dSerr " << dS - dSfd << std::endl;
+
+        point_type dT = ps.f_T( r0, s0, t0 );
+        point_type dTfd = ( ps.fRST( r0, s0, t0 + small ) - ps.fRST( r0, s0, t0 - small ) ) / (2.0 * small);
+
+        TEST_ASSERT( ttol.approximately_equal( dT, dTfd ) );
+        // std::cout << "dT    " << dT << std::endl;
+        // std::cout << "dTfd  " << dTfd << std::endl;
+        // std::cout << "dTerr " << dT - dTfd << std::endl;
+
+
+        data_type r, s, t;
+        int ret;
+
+        data_type rmin( 0.0 ), rmax( 1.0 );
+        data_type smin( 0.0 ), smax( 0.5 );
+        data_type tmin( 0.0 ), tmax( 1.0 );
+
+        index_type nr = 11;
+        index_type ns = 9;
+        index_type nt = 7;
+
+        data_type dr = ( rmax - rmin ) / ( nr - 1 );
+        data_type ds = ( smax - smin) /  ( ns - 1 );
+        data_type dt = ( tmax - tmin) /  ( nt - 1 );
+
+        index_type nfail = 0;
+        index_type npass = 0;
+
+        // Find array of points, starting from center every time.
+        r0 = rmin;
+        for ( index_type ir = 0; ir < nr; ir++ )
+        {
+          s0 = smin;
+          for ( index_type is = 0; is < ns; is++ )
+          {
+            t0 = tmin;
+            for ( index_type it = 0; it < nt; it++ )
+            {
+              pref = ps.fRST( r0, s0, t0 );
+
+              data_type dist = eli::geom::intersect::find_rst( r, s, t, ps, pref, 0.5, 0.25, 0.5, ret );
+
+              if ( ir != 0 && ir != nr - 1 && is != 0 && is != ns - 1) // First and last r and s are degenerate, s & t can take any value.
+              {
+                TEST_ASSERT(ttol.approximately_equal(r, r0));
+                // std::cout << "r " << r << " rerr " << r - r0 << std::endl;
+                TEST_ASSERT(ttol.approximately_equal(s, s0));
+                // std::cout << "s " << s << " serr " << s - s0 << std::endl;
+
+                // Disable test for float.
+                if ( typeid(data_type)!=typeid(float) )
+                  TEST_ASSERT(ttol.approximately_equal(t, t0));
+                // std::cout << "t " << t << " terr " << t - t0 << std::endl;
+              }
+
+              data_type allow = 1e-6;
+
+              if (typeid(data_type)==typeid(float))
+                allow = 1.2e-3;
+
+              TEST_ASSERT( dist < allow );
+
+              if ( dist >= allow )
+              {
+                std::cout << dist << std::endl;
+                nfail++;
+                // std::cout << "fail " << r0 << " " << s0 << " " << t0 << std::endl;
+              }
+              else
+              {
+                npass++;
+              }
+
+              t0 = t0 + dt;
+              if ( t0 > tmax ) t0 = tmax;
+            }
+            s0 = s0 + ds;
+            if ( s0 > smax ) s0 = smax;
+          }
+          r0 = r0 + dr;
+          if ( r0 > rmax ) r0 = rmax;
+        }
+
+        // std::cout << "Nfail " << nfail << std::endl;
+        // std::cout << "Npass " << npass << std::endl;
+
       }
     }
 };
