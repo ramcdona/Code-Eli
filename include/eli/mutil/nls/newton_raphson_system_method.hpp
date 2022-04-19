@@ -96,20 +96,26 @@ namespace eli
 
                 if (!invertible)
                 {
-                  for (size_t i=0; i<N__; ++i)
+                  size_t itries = 0;
+                  while ( itries < N__ && !invertible )
                   {
-                    if (std::abs(fpx(i,i)) < std::sqrt(std::numeric_limits<data__>::epsilon()))
+                    size_t ismall = -1;
+                    data__ fsmall = 1;
+
+                    for (size_t i=0; i<N__; ++i)
                     {
-                      zerodx[i] = true;
-                      fpx(i,i) = 1.0;
+                      if ( std::abs( fpx( i, i ) < fsmall ) )
+                      {
+                        fsmall = std::abs( fpx ( i, i ) );
+                        ismall = i;
+                      }
                     }
-                    else
-                    {
-                      zerodx[i] = false;
-                    }
+                    zerodx[ ismall ] = true;
+                    fpx( ismall, ismall ) = 1.0;
+                    itries++;
+                    modified = true;
+                    fpx.computeInverseWithCheck(inverse, invertible);
                   }
-                  modified = true;
-                  fpx.computeInverseWithCheck(inverse, invertible);
                   assert(invertible);
                 }
 
