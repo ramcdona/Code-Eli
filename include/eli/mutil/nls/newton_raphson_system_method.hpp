@@ -111,6 +111,10 @@ namespace eli
                       }
                     }
                     zerodx[ ismall ] = true;
+                    for (size_t i=0; i<N__; ++i)
+                    {
+                      fpx( i, ismall ) = 0.0;
+                    }
                     fpx( ismall, ismall ) = 1.0;
                     itries++;
                     modified = true;
