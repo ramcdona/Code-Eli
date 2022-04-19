@@ -2129,6 +2129,89 @@ namespace eli
             }
           }
 
+          // RST is an alternate parameterization that assumes a u, v surface encloses a volume.
+          // R [0, 1] runs the length of the volume (U-direction)
+          // S [0, 0.5] runs the width of the volume (V-direction)
+          // T [0, 1] runs the thickness of the volume
+          point_type fRST(const data_type &r, const data_type &s, const data_type &t) const
+          {
+            data_type umax, umin, du, vmax, vmin, dv;
+            get_parameter_min( umin, vmin );
+            get_parameter_max( umax, vmax );
+            du = umax - umin;
+            dv = vmax - vmin;
+
+            data_type u = umin + r * du;
+            data_type vlow = vmin + s * dv;
+            data_type vup = vmax - s * dv;
+
+            point_type xup, xlow;
+
+            xup = f( u, vup );
+            xlow = f( u, vlow );
+
+            return ( 1.0 - t ) * xlow + t * xup;
+          }
+
+          point_type f_R(const data_type &r, const data_type &s, const data_type &t) const
+          {
+            data_type umax, umin, du, vmax, vmin, dv;
+            get_parameter_min( umin, vmin );
+            get_parameter_max( umax, vmax );
+            du = umax - umin;
+            dv = vmax - vmin;
+
+            data_type u = umin + r * du;
+            data_type vlow = vmin + s * dv;
+            data_type vup = vmax - s * dv;
+
+            point_type dxup_du = f_u( u, vup );
+            point_type dxlow_du = f_u( u, vlow );
+
+            point_type dx_dR = ( 1.0 - t ) * dxlow_du * du + t * dxup_du * du;
+            return dx_dR;
+          }
+
+          point_type f_S(const data_type &r, const data_type &s, const data_type &t) const
+          {
+            data_type umax, umin, du, vmax, vmin, dv;
+            get_parameter_min( umin, vmin );
+            get_parameter_max( umax, vmax );
+            du = umax - umin;
+            dv = vmax - vmin;
+
+            data_type u = umin + r * du;
+            data_type vlow = vmin + s * dv;
+            data_type vup = vmax - s * dv;
+
+            point_type dxup_dv = f_v( u, vup );
+            point_type dxlow_dv = f_v( u, vlow );
+
+            point_type dx_dS = ( 1.0 - t ) * dxlow_dv * dv - t * dxup_dv * dv;
+            return dx_dS;
+          }
+
+          point_type f_T(const data_type &r, const data_type &s, const data_type &t) const
+          {
+            data_type umax, umin, du, vmax, vmin, dv;
+            get_parameter_min( umin, vmin );
+            get_parameter_max( umax, vmax );
+            du = umax - umin;
+            dv = vmax - vmin;
+
+            data_type u = umin + r * du;
+            data_type vlow = vmin + s * dv;
+            data_type vup = vmax - s * dv;
+
+            point_type xup, xlow;
+
+            xup = f( u, vup );
+            xlow = f( u, vlow );
+
+            point_type dx_dT = xup - xlow;
+            return dx_dT;
+          }
+
           // TODO: NEED TO IMPLEMENT
           //       * fit
           //       * interpolate
