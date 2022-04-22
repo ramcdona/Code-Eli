@@ -104,7 +104,7 @@ namespace eli
 
                     for (size_t i=0; i<N__; ++i)
                     {
-                      if ( std::abs( fpx( i, i ) < fsmall ) )
+                      if ( std::abs( fpx( i, i ) ) < fsmall )
                       {
                         fsmall = std::abs( fpx ( i, i ) );
                         ismall = i;
