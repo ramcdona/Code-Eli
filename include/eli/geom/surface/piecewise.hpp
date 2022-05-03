@@ -2229,6 +2229,7 @@ namespace eli
 
           point_type f_T(const data_type &r, const data_type &s, const data_type &t) const
           {
+            (void) t; // Silence un-used parameter warning.
             data_type umax, umin, du, vmax, vmin, dv;
             get_parameter_min( umin, vmin );
             get_parameter_max( umax, vmax );
