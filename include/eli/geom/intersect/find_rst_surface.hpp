@@ -350,8 +350,12 @@ namespace eli
         {
 //          std::cout << "count " << count << " d0 " << it->first << " dist " << dist << std::endl;
 
-          // If nearest bb distance is farther than current best, we're done.
-          if( it->first <= dist )
+          // If current best is farther than the next nearest bb distance, try again
+          // Place sqrt(eps) tolerance on bb distance so we don't keep trying when we've achieved
+          // 1e-16, but the bb distance is 0.0.
+          // It is likely that the first few bb distances will be 0.0 as multiple bounding boxes
+          // may contain our point of interest.
+          if( dist > ( it->first + std::sqrt( std::numeric_limits< data_type >::epsilon() ) ) )
           {
             uvpair uv = it->second;
             data_type u = uv.first;
