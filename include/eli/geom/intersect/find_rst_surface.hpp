@@ -170,7 +170,7 @@ namespace eli
       typename surface__::data_type find_rst( typename surface__::data_type &r, typename surface__::data_type &s, typename surface__::data_type &t,
                                               const surface__ &surf, const typename surface__::point_type &pt,
                                               const typename surface__::data_type &r0, const typename surface__::data_type &s0, const typename surface__::data_type &t0,
-                                              int & ret )
+                                              typename surface__::index_type & ret )
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;

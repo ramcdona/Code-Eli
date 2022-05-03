@@ -2493,7 +2493,7 @@ class piecewise_surface_test_suite : public Test::Suite
 
 
         data_type r, s, t;
-        int ret;
+        index_type ret;
 
         data_type rmin( 0.0 ), rmax( 1.0 );
         data_type smin( 0.0 ), smax( 0.5 );
