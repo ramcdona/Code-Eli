@@ -2080,15 +2080,6 @@ namespace eli
             pt_v = patches[uk][vk].f_v(uu, vv)/delta_v;
           }
 
-          void sum( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
-          {
-            typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
-            tolerance_type tol;
-
-            piecewise_surf_type s1(a);
-            piecewise_surf_type s2(b);
-
-
           static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
