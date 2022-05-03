@@ -2088,6 +2088,9 @@ namespace eli
             piecewise_surf_type s1(a);
             piecewise_surf_type s2(b);
 
+
+          static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
             s1.get_pmap_uv( upmap1, vpmap1 );
             s2.get_pmap_uv( upmap2, vpmap2 );
@@ -2101,18 +2104,51 @@ namespace eli
 
             // Place union of 1 and 2 into pmaps
             std::set_union( upmap1.begin(), upmap1.end(), upmap2.begin(), upmap2.end(), std::back_inserter(upmap), comp );
-            std::set_union( vpmap1.begin(), vpmap1.end(), vpmap2.begin(), vpmap2.end(), std::back_inserter(vpmap), comp );
 
             for ( index_type i = 0; i < upmap.size(); i++ )
             {
               s1.split_u( upmap[i] );
               s2.split_u( upmap[i] );
             }
+          }
+
+          static void parm_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          {
+            std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
+            s1.get_pmap_uv( upmap1, vpmap1 );
+            s2.get_pmap_uv( upmap2, vpmap2 );
+
+            tolerance_type ttol;
+            // Comparison function for set_union.
+            auto comp = [&ttol](const data_type &x1, const data_type &x2)->bool
+            {
+              return ttol.approximately_less_than(x1, x2);
+            };
+
+            // Place union of 1 and 2 into pmaps
+            std::set_union( vpmap1.begin(), vpmap1.end(), vpmap2.begin(), vpmap2.end(), std::back_inserter(vpmap), comp );
+
             for ( index_type i = 0; i < vpmap.size(); i++ )
             {
               s1.split_v( vpmap[i] );
               s2.split_v( vpmap[i] );
             }
+          }
+
+          void sum( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          {
+            typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
+            tolerance_type tol;
+
+            piecewise_surf_type s1(a);
+            piecewise_surf_type s2(b);
+
+            std::vector<data_type> upmap, vpmap;
+
+            parm_match_u( s1, s2 );
+            parm_match_v( s1, s2 );
+
+            s1.get_pmap_uv( upmap, vpmap );
 
             init_uv( upmap, vpmap );
 
