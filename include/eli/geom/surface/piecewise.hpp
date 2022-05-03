@@ -39,6 +39,16 @@ namespace eli
 
     namespace intersect
     {
+      template<template<typename, unsigned short, typename> class surface__, typename data__, unsigned short dim__, typename tol__ >
+      typename surface::piecewise<surface__, data__, dim__, tol__>::data_type
+        find_rst(
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &r,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &s,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &t,
+          const surface::piecewise<surface__, data__, dim__, tol__> &ps,
+          const typename surface::piecewise<surface__, data__, dim__, tol__>::point_type &pt,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::index_type &ret );
+
       template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
       typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::data_type
         minimum_distance(
@@ -2323,6 +2333,16 @@ namespace eli
 //                            const typename piecewise<surf1__, data1__, dim1__, tol1__>::data_type &t0,
 //                            const typename piecewise<surf1__, data1__, dim1__, tol1__>::data_type &t1,
 //                            const typename piecewise<surf1__, data1__, dim1__, tol1__>::data_type &tol);
+
+          template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
+          friend typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type
+            eli::geom::intersect::find_rst(
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &r,
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &s,
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type &t,
+              const piecewise<surface1__, data1__, dim1__, tol1__> &ps,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &pt,
+              typename piecewise<surface1__, data1__, dim1__, tol1__>::index_type &ret );
 
           template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
           friend typename piecewise<surface1__, data1__, dim1__, tol1__>::data_type

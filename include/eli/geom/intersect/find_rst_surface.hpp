@@ -266,6 +266,128 @@ namespace eli
         return dist0;
       }
 
+      template<template<typename, unsigned short, typename> class surface__, typename data__, unsigned short dim__, typename tol__ >
+      typename surface::piecewise<surface__, data__, dim__, tol__>::data_type find_rst(
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &r,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &s,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &t,
+          const surface::piecewise<surface__, data__, dim__, tol__> &ps,
+          const typename surface::piecewise<surface__, data__, dim__, tol__>::point_type &pt,
+          typename surface::piecewise<surface__, data__, dim__, tol__>::index_type &ret )
+      {
+        typedef surface::piecewise<surface__, data__, dim__, tol__> piecewise_type;
+        typedef typename piecewise_type::index_type index_type;
+        typedef typename piecewise_type::data_type data_type;
+        typedef typename piecewise_type::bounding_box_type bounding_box_type;
+        typedef typename piecewise_type::surface_type patch_type;
+        typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
+
+        typedef std::pair<data_type, data_type> uvpair;
+        typedef std::vector< std::pair<data_type, uvpair > > dvec;
+        dvec minbbdist;
+
+        data_type vmin, vmid, vmax;
+        data_type umin, umax;
+        data_type urng, vrng;
+        piecewise_type lower, upper;
+
+        ps.get_parameter_min( umin, vmin );
+        ps.get_parameter_max( umax, vmax );
+        urng = umax - umin;
+        vrng = vmax - vmin;
+
+        vmid = 0.5 * ( vmin + vmax );
+
+        ps.split_v( lower, upper, vmid );
+        upper.reverse_v();
+        upper.set_v0( vmin );
+
+        piecewise_type::parm_match_u( lower, upper );
+        piecewise_type::parm_match_v( lower, upper );
+
+        // Not needed as no in-depth control point manipulations happen.
+        // piecewise_type::order_match_u( lower, upper );
+        // piecewise_type::order_match_v( lower, upper );
+
+        index_type nu = lower.number_u_patches();
+        index_type nv = lower.number_v_patches();
+
+        // Find closest corner of bounding boxes, add them to vector
+        // Simple linear search, would be more efficient with some sort of tree.
+        for( index_type i = 0; i < nu; i++ )
+        {
+          for( index_type j = 0; j < nv; j++ )
+          {
+            data_type ustart, du, vstart, dv;
+            patch_type *plow = lower.get_patch( i, j, ustart, du, vstart, dv );
+            patch_type *pup = upper.get_patch( i, j );
+
+            bounding_box_type bb_local;
+            plow->get_bounding_box( bb_local );
+            pup->get_bounding_box( bb_local );
+
+            data_type dbbmin;
+            dbbmin = minimum_distance( bb_local, pt );
+
+            minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( ustart+0.5*du, vstart+0.5*dv ) ) );
+          }
+        }
+
+        // Evaluate volume center point
+        data_type dcen = eli::geom::point::distance( ps.fRST( 0.5, 0.25, 0.5 ), pt );
+        data_type ucen = umin + 0.5 * urng;
+        data_type vcen = vmin + 0.25 * vrng;
+        minbbdist.push_back( std::make_pair( dcen, std::make_pair( ucen, vcen ) ) );
+
+        // Sort by nearest distance.
+        std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, uvpair > );
+
+        data_type dist( std::numeric_limits< data_type >::max() );
+
+        index_type count = 0;
+        typename dvec::const_iterator it;
+        for ( it = minbbdist.begin(); it != minbbdist.end(); ++it )
+        {
+//          std::cout << "count " << count << " d0 " << it->first << " dist " << dist << std::endl;
+
+          // If nearest bb distance is farther than current best, we're done.
+          if( it->first <= dist )
+          {
+            uvpair uv = it->second;
+            data_type u = uv.first;
+            data_type v = uv.second;
+
+            data_type r0 = ( u - umin ) / urng;
+            data_type s0 = ( v - vmin ) / vrng;
+            data_type t0 = 0.5;
+
+            data_type rr, ss, tt;
+            data_type d;
+            index_type rret;
+
+            d = find_rst( rr, ss, tt, ps, pt, r0, s0, t0, rret );
+
+//            std::cout << "d " << d << " rret " << rret;
+
+            if( d < dist ) // 0 means converged.
+            {
+              dist = d;
+              r = rr;
+              s = ss;
+              t = tt;
+              ret = rret;
+            }
+          }
+          else
+          {
+            break;
+          }
+          count++;
+        }
+
+        return dist;
+      }
+
     }
   }
 }
