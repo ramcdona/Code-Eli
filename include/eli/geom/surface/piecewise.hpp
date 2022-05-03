@@ -175,7 +175,7 @@ namespace eli
               return &patches[uk][vk];
           }
 
-          surface_type * get_patch( const index_type &ui, const index_type &vi, double &ustart, double &du, double &vstart, double &dv)
+          surface_type * get_patch( const index_type &ui, const index_type &vi, data_type &ustart, data_type &du, data_type &vstart, data_type &dv)
           {
               index_type uk, vk;
               typename keymap_type::const_iterator uit, vit;
@@ -191,7 +191,7 @@ namespace eli
               return &patches[uk][vk];
           }
 
-          const surface_type * get_patch( const index_type &ui, const index_type &vi, double &ustart, double &du, double &vstart, double &dv) const
+          const surface_type * get_patch( const index_type &ui, const index_type &vi, data_type &ustart, data_type &du, data_type &vstart, data_type &dv) const
           {
               index_type uk, vk;
               typename keymap_type::const_iterator uit, vit;
