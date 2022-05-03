@@ -2080,6 +2080,72 @@ namespace eli
             pt_v = patches[uk][vk].f_v(uu, vv)/delta_v;
           }
 
+          static void order_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          {
+            index_type nu1 = s1.number_u_patches();
+            index_type nu2 = s2.number_u_patches();
+
+            assert ( nu1 == nu2 );
+
+            index_type nv1 = s1.number_v_patches();
+            index_type nv2 = s2.number_v_patches();
+
+            std::vector < index_type > deg1, deg2;
+            s1.degree_u( deg1 );
+            s2.degree_u( deg2 );
+
+            for ( index_type i = 0; i < nu1; i++ )
+            {
+              if ( deg2[i] > deg1[i] )
+              {
+                for ( index_type j = 0; j < nv1; j++ )
+                {
+                  s1.get_patch( i, j )->promote_u_to( deg2[i] );
+                }
+              }
+              else if ( deg1[i] > deg2[i] )
+              {
+                for ( index_type j = 0; j < nv2; j++ )
+                {
+                  s2.get_patch( i, j )->promote_u_to( deg1[i] );
+                }
+              }
+            }
+          }
+
+          static void order_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          {
+            index_type nu1 = s1.number_u_patches();
+            index_type nu2 = s2.number_u_patches();
+
+            index_type nv1 = s1.number_v_patches();
+            index_type nv2 = s2.number_v_patches();
+
+            assert ( nv1 == nv2 );
+
+            std::vector < index_type > deg1, deg2;
+            s1.degree_v( deg1 );
+            s2.degree_v( deg2 );
+
+            for ( index_type j = 0; j < nv1; j++ )
+            {
+              if ( deg2[j] > deg1[j] )
+              {
+                for ( index_type i = 0; i < nu1; i++ )
+                {
+                  s1.get_patch( i, j )->promote_v_to( deg2[j] );
+                }
+              }
+              else if ( deg1[j] > deg2[j] )
+              {
+                for ( index_type i = 0; i < nu2; i++ )
+                {
+                  s2.get_patch( i, j )->promote_v_to( deg1[j] );
+                }
+              }
+            }
+          }
+
           static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
