@@ -322,12 +322,13 @@ namespace eli
             patch_type *plow = lower.get_patch( i, j, ustart, du, vstart, dv );
             patch_type *pup = upper.get_patch( i, j );
 
-            bounding_box_type bb_local;
-            plow->get_bounding_box( bb_local );
-            pup->get_bounding_box( bb_local );
+            bounding_box_type bb, bb_up;
+            plow->get_bounding_box( bb );
+            pup->get_bounding_box( bb_up );
+            bb.add( bb_up );
 
             data_type dbbmin;
-            dbbmin = minimum_distance( bb_local, pt );
+            dbbmin = minimum_distance( bb, pt );
 
             minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( ustart+0.5*du, vstart+0.5*dv ) ) );
           }
