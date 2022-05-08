@@ -170,6 +170,8 @@ namespace eli
       typename surface__::data_type find_rst( typename surface__::data_type &r, typename surface__::data_type &s, typename surface__::data_type &t,
                                               const surface__ &surf, const typename surface__::point_type &pt,
                                               const typename surface__::data_type &r0, const typename surface__::data_type &s0, const typename surface__::data_type &t0,
+                                              const typename surface__::data_type &rmin, const typename surface__::data_type &rmax,
+                                              const typename surface__::data_type &smin, const typename surface__::data_type &smax,
                                               typename surface__::index_type & ret )
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
@@ -179,8 +181,6 @@ namespace eli
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
-        typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
-        typename surface__::data_type smin( 0.0 ), smax( 0.5 );
         typename surface__::data_type tmin( 0.0 ), tmax( 1.0 );
 
           // setup the functors
@@ -266,6 +266,25 @@ namespace eli
         return dist0;
       }
 
+      template<typename surface__>
+      typename surface__::data_type find_rst( typename surface__::data_type &r, typename surface__::data_type &s, typename surface__::data_type &t,
+                                              const surface__ &surf, const typename surface__::point_type &pt,
+                                              const typename surface__::data_type &r0, const typename surface__::data_type &s0, const typename surface__::data_type &t0,
+                                              typename surface__::index_type & ret )
+      {
+        typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
+        nonlinear_solver_type nrm;
+        internal::rst_g_functor<surface__> g;
+        internal::rst_gp_functor<surface__> gp;
+        typename surface__::data_type dist0, dist;
+        typename surface__::tolerance_type tol;
+
+        typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
+        typename surface__::data_type smin( 0.0 ), smax( 0.5 );
+
+        return find_rst( r, s, t, surf, pt, r0, s0, t0, rmin, rmax, smin, smax, ret );
+      }
+
       template<template<typename, unsigned short, typename> class surface__, typename data__, unsigned short dim__, typename tol__ >
       typename surface::piecewise<surface__, data__, dim__, tol__>::data_type find_rst(
           typename surface::piecewise<surface__, data__, dim__, tol__>::data_type &r,
@@ -282,8 +301,9 @@ namespace eli
         typedef typename piecewise_type::surface_type patch_type;
         typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
 
-        typedef std::pair<data_type, data_type> uvpair;
-        typedef std::vector< std::pair<data_type, uvpair > > dvec;
+        typedef std::pair<data_type, data_type> pdata;
+        typedef std::pair<pdata, pdata> uvdata;
+        typedef std::vector< std::pair<data_type, uvdata > > dvec;
         dvec minbbdist;
 
         data_type vmin, vmid, vmax;
@@ -330,18 +350,20 @@ namespace eli
             data_type dbbmin;
             dbbmin = minimum_distance( bb, pt );
 
-            minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( ustart+0.5*du, vstart+0.5*dv ) ) );
+            pdata udata = std::make_pair( ustart, du );
+            pdata vdata = std::make_pair( vstart, dv );
+            minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( udata, vdata ) ) );
           }
         }
 
         // Evaluate volume center point
         data_type dcen = eli::geom::point::distance( ps.fRST( 0.5, 0.25, 0.5 ), pt );
-        data_type ucen = umin + 0.5 * urng;
-        data_type vcen = vmin + 0.25 * vrng;
+        pdata ucen = std::make_pair( umin, urng );
+        pdata vcen = std::make_pair( vmin, 0.5 * vrng );
         minbbdist.push_back( std::make_pair( dcen, std::make_pair( ucen, vcen ) ) );
 
         // Sort by nearest distance.
-        std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, uvpair > );
+        std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, uvdata > );
 
         data_type dist( std::numeric_limits< data_type >::max() );
 
@@ -358,19 +380,33 @@ namespace eli
           // may contain our point of interest.
           if( dist > ( it->first + std::sqrt( std::numeric_limits< data_type >::epsilon() ) ) )
           {
-            uvpair uv = it->second;
-            data_type u = uv.first;
-            data_type v = uv.second;
+            uvdata uv = it->second;
+            pdata udata = uv.first;
+            pdata vdata = uv.second;
+
+            data_type ustart = udata.first;
+            data_type du = udata.second;
+            data_type vstart = vdata.first;
+            data_type dv = vdata.second;
+
+            data_type u = ustart + 0.5 * du;
+            data_type v = vstart + 0.5 * dv;
 
             data_type r0 = ( u - umin ) / urng;
             data_type s0 = ( v - vmin ) / vrng;
             data_type t0 = 0.5;
 
+            data_type rmin = ( ustart - umin ) / urng;
+            data_type rmax = ( ustart + du - umin ) / urng;
+
+            data_type smin = ( vstart - vmin ) / vrng;
+            data_type smax = ( vstart + dv - vmin ) / vrng;
+
             data_type rr, ss, tt;
             data_type d;
             index_type rret;
 
-            d = find_rst( rr, ss, tt, ps, pt, r0, s0, t0, rret );
+            d = find_rst( rr, ss, tt, ps, pt, r0, s0, t0, rmin, rmax, smin, smax, rret );
 
 //            std::cout << "d " << d << " rret " << rret;
 
