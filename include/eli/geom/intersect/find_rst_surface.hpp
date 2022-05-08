@@ -332,6 +332,8 @@ namespace eli
         index_type nu = lower.number_u_patches();
         index_type nv = lower.number_v_patches();
 
+        // std::cout << "Number of patches " << nu * nv << std::endl;
+
         // Find closest corner of bounding boxes, add them to vector
         // Simple linear search, would be more efficient with some sort of tree.
         for( index_type i = 0; i < nu; i++ )
@@ -352,9 +354,14 @@ namespace eli
 
             pdata udata = std::make_pair( ustart, du );
             pdata vdata = std::make_pair( vstart, dv );
+
+            // std::cout << "i " << i << " j " << j << " d " << dbbmin << std::endl;
+
             minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( udata, vdata ) ) );
           }
         }
+
+        // std::cout << std::endl << std::endl;
 
         // Evaluate volume center point
         data_type dcen = eli::geom::point::distance( ps.fRST( 0.5, 0.25, 0.5 ), pt );
@@ -365,13 +372,16 @@ namespace eli
         // Sort by nearest distance.
         std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, uvdata > );
 
+        // std::cout << "Number of trial points " << minbbdist.size() << std::endl;
+        // std::cout << "Largest d0 " << (minbbdist.back()).first << std::endl;
+
         data_type dist( std::numeric_limits< data_type >::max() );
 
         index_type count = 0;
         typename dvec::const_iterator it;
         for ( it = minbbdist.begin(); it != minbbdist.end(); ++it )
         {
-//          std::cout << "count " << count << " d0 " << it->first << " dist " << dist << std::endl;
+          // std::cout << "count " << count << " d0 " << it->first << " dist " << dist << std::endl;
 
           // If current best is farther than the next nearest bb distance, try again
           // Place sqrt(eps) tolerance on bb distance so we don't keep trying when we've achieved
@@ -408,7 +418,7 @@ namespace eli
 
             d = find_rst( rr, ss, tt, ps, pt, r0, s0, t0, rmin, rmax, smin, smax, rret );
 
-//            std::cout << "d " << d << " rret " << rret;
+            // std::cout << "d " << d << " rret " << rret << std::endl;
 
             if( d < dist ) // 0 means converged.
             {
