@@ -302,8 +302,8 @@ namespace eli
         typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
 
         typedef std::pair<data_type, data_type> pdata;
-        typedef std::pair<pdata, pdata> uvdata;
-        typedef std::vector< std::pair<data_type, uvdata > > dvec;
+        typedef std::pair<index_type, index_type> iuivdata;
+        typedef std::vector< std::pair<data_type, iuivdata > > dvec;
         dvec minbbdist;
 
         data_type vmin, vmid, vmax;
@@ -352,25 +352,16 @@ namespace eli
             data_type dbbmin;
             dbbmin = minimum_distance( bb, pt );
 
-            pdata udata = std::make_pair( ustart, du );
-            pdata vdata = std::make_pair( vstart, dv );
-
             // std::cout << "i " << i << " j " << j << " d " << dbbmin << std::endl;
 
-            minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( udata, vdata ) ) );
+            minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( i, j ) ) );
           }
         }
 
         // std::cout << std::endl << std::endl;
 
-        // Evaluate volume center point
-        data_type dcen = eli::geom::point::distance( ps.fRST( 0.5, 0.25, 0.5 ), pt );
-        pdata ucen = std::make_pair( umin, urng );
-        pdata vcen = std::make_pair( vmin, 0.5 * vrng );
-        minbbdist.push_back( std::make_pair( dcen, std::make_pair( ucen, vcen ) ) );
-
         // Sort by nearest distance.
-        std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, uvdata > );
+        std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, iuivdata > );
 
         // std::cout << "Number of trial points " << minbbdist.size() << std::endl;
         // std::cout << "Largest d0 " << (minbbdist.back()).first << std::endl;
@@ -390,14 +381,16 @@ namespace eli
           // may contain our point of interest.
           if( dist > ( it->first + std::sqrt( std::numeric_limits< data_type >::epsilon() ) ) )
           {
-            uvdata uv = it->second;
-            pdata udata = uv.first;
-            pdata vdata = uv.second;
+            data_type dbb = it->first;
+            iuivdata iuiv = it->second;
 
-            data_type ustart = udata.first;
-            data_type du = udata.second;
-            data_type vstart = vdata.first;
-            data_type dv = vdata.second;
+            index_type iu = iuiv.first;
+            index_type iv = iuiv.second;
+
+            data_type ustart, du, vstart, dv;
+
+            patch_type *plow = lower.get_patch( iu, iv, ustart, du, vstart, dv );
+            // patch_type *pup = upper.get_patch( iu, iv );
 
             data_type u = ustart + 0.5 * du;
             data_type v = vstart + 0.5 * dv;
