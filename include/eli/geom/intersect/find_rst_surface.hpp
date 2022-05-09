@@ -306,6 +306,8 @@ namespace eli
         typedef std::vector< std::pair<data_type, iuivdata > > dvec;
         dvec minbbdist;
 
+        bool dbg = false;
+
         data_type vmin, vmid, vmax;
         data_type umin, umax;
         data_type urng, vrng;
@@ -352,7 +354,10 @@ namespace eli
             data_type dbbmin;
             dbbmin = minimum_distance( bb, pt );
 
-            // std::cout << "i " << i << " j " << j << " d " << dbbmin << std::endl;
+            if ( dbg )
+            {
+              std::cout << "i " << i << " j " << j << " d " << dbbmin << std::endl;
+            }
 
             minbbdist.push_back( std::make_pair( dbbmin, std::make_pair( i, j ) ) );
           }
@@ -363,8 +368,11 @@ namespace eli
         // Sort by nearest distance.
         std::sort( minbbdist.begin(), minbbdist.end(), pairfirstcompare< data_type, iuivdata > );
 
-        // std::cout << "Number of trial points " << minbbdist.size() << std::endl;
-        // std::cout << "Largest d0 " << (minbbdist.back()).first << std::endl;
+        if ( dbg )
+        {
+            std::cout << "Number of trial points " << minbbdist.size() << std::endl;
+            std::cout << "Largest d0 " << (minbbdist.back()).first << std::endl;
+        }
 
         data_type dist( std::numeric_limits< data_type >::max() );
 
@@ -411,7 +419,15 @@ namespace eli
 
             d = find_rst( rr, ss, tt, ps, pt, r0, s0, t0, rmin, rmax, smin, smax, rret );
 
-            // std::cout << "d " << d << " rret " << rret << std::endl;
+            if ( dbg )
+            {
+                std::cout << "iu " << iu << " iv " << iv << " dbb " << dbb << std::endl;
+                std::cout << "Target x " << pt.x() << " y " << pt.y() << " z " << pt.z() << std::endl;
+                std::cout << "rmin: " << rmin << " r0: " << r0 << " rmax: " << rmax << std::endl;
+                std::cout << "smin: " << smin << " s0: " << s0 << " smax: " << smax << std::endl;
+                std::cout << "t0: " << t0 << std::endl;
+                std::cout << "d " << d << " rret " << rret << std::endl << std::endl << std::endl;
+            }
 
             if( d < dist ) // 0 means converged.
             {
