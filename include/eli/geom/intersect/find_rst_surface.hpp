@@ -24,6 +24,8 @@
 #include "eli/mutil/nls/iterative_system_root_base_constrained.hpp"
 #include "eli/mutil/nls/newton_raphson_system_method.hpp"
 
+#include "eli/geom/intersect.hpp"
+
 #include "eli/geom/point/distance.hpp"
 
 namespace eli
@@ -443,6 +445,50 @@ namespace eli
             break;
           }
           count++;
+        }
+
+        if ( ret != 0 ) // Not converged.  Try surface projection.
+        {
+          data_type u, v, d;
+          d = minimum_distance( u, v, ps, pt );
+
+          if ( dbg )
+          {
+            std::cout << "Resorted to surface projection." << std::endl;
+          }
+
+          if( d < dist ) // Check for improvement.
+          {
+            data_type rr = ( u - umin ) / urng;
+            data_type ss = ( v - vmin ) / vrng;
+            data_type tt = 0.0; // Assume on bottom surface.
+
+            if ( ss > 0.5 ) // Actually on top surface.
+            {
+              ss = 1.0 - ss;
+              tt = 1.0;
+            }
+            index_type rret = 0;
+
+            if ( dbg )
+            {
+              std::cout << "Surface projection success." << std::endl;
+              std::cout << "d " << d << std::endl << std::endl << std::endl;
+            }
+
+            dist = d;
+            r = rr;
+            s = ss;
+            t = tt;
+            ret = rret;
+          }
+          else
+          {
+            if ( dbg )
+            {
+              std::cout << "Surface projection failure." << std::endl;
+            }
+          }
         }
 
         return dist;
