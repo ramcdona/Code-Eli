@@ -348,8 +348,8 @@ namespace eli
           {
             curve_type bc0, bc1;
 
-            get_uconst_curve(bc0, 0);
-            get_uconst_curve(bc1, 1);
+            get_umin_bndy_curve(bc0);
+            get_umax_bndy_curve(bc1);
 
             return eli::geom::curve::equivalent_curves(bc0, bc1);
           }
@@ -358,8 +358,8 @@ namespace eli
           {
             curve_type bc0, bc1;
 
-            get_vconst_curve(bc0, 0);
-            get_vconst_curve(bc1, 1);
+            get_vmin_bndy_curve(bc0);
+            get_vmax_bndy_curve(bc1);
 
             return eli::geom::curve::equivalent_curves(bc0, bc1);
           }

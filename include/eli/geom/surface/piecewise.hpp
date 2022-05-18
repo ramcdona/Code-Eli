@@ -541,8 +541,8 @@ namespace eli
 
             for (j=0; j<nv; ++j)
             {
-              patches[ifirst][j].get_uconst_curve(bc0, 0);
-              patches[ilast][j].get_uconst_curve(bc1, 1);
+              patches[ifirst][j].get_umin_bndy_curve(bc0);
+              patches[ilast][j].get_umax_bndy_curve(bc1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 uclosecache = OPEN;
@@ -575,8 +575,8 @@ namespace eli
 
             for (i=0; i<nu; ++i)
             {
-              patches[i][jfirst].get_vconst_curve(bc0, 0);
-              patches[i][jlast].get_vconst_curve(bc1, 1);
+              patches[i][jfirst].get_vmin_bndy_curve(bc0);
+              patches[i][jlast].get_vmax_bndy_curve(bc1);
               if (!eli::geom::curve::equivalent_curves(bc0, bc1))
               {
                 vclosecache = OPEN;

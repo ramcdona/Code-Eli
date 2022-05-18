@@ -630,7 +630,7 @@ namespace eli
         typename surface__::curve_type bc;
         if(u<=(umin+std::abs(umin)*2*std::numeric_limits<typename surface__::data_type>::epsilon()))
         {
-          s.get_uconst_curve(bc, umin);
+          s.get_umin_bndy_curve(bc);
           dd=eli::geom::intersect::minimum_distance(vv, bc, pt, v);
 
           if (dd<dist)
@@ -643,7 +643,7 @@ namespace eli
 
         if(u>=(umax-std::abs(umax)*2*std::numeric_limits<typename surface__::data_type>::epsilon()))
         {
-          s.get_uconst_curve(bc, umax);
+          s.get_umax_bndy_curve(bc);
           dd=eli::geom::intersect::minimum_distance(vv, bc, pt, v);
 
           if (dd<dist)
@@ -656,7 +656,7 @@ namespace eli
 
         if(v<=(vmin+std::abs(vmin)*2*std::numeric_limits<typename surface__::data_type>::epsilon()))
         {
-          s.get_vconst_curve(bc, vmin);
+          s.get_vmin_bndy_curve(bc);
           dd=eli::geom::intersect::minimum_distance(uu, bc, pt, u);
 
           if (dd<dist)
@@ -669,7 +669,7 @@ namespace eli
 
         if(v>=(vmax-std::abs(vmax)*2*std::numeric_limits<typename surface__::data_type>::epsilon()))
         {
-          s.get_vconst_curve(bc, vmax);
+          s.get_vmax_bndy_curve(bc);
           dd=eli::geom::intersect::minimum_distance(uu, bc, pt, u);
 
           if (dd<dist)
@@ -724,15 +724,11 @@ namespace eli
         }
 
         // next check edges
-        // Since these are always edges, we could implement an edge curve extraction routine
-        // that returned the control points directly instead of performing an arbitrary curve
-        // extraction calculation.
-
         typename surface__::data_type umin(0), umax(1), vmin(0), vmax(1);
 
         typename surface__::curve_type bc;
 
-        s.get_uconst_curve(bc, umin);
+        s.get_umin_bndy_curve(bc);
         dd=eli::geom::intersect::minimum_distance(vv, bc, pt);
 
         if ( dd < dist )
@@ -742,7 +738,7 @@ namespace eli
           dist = dd;
         }
 
-        s.get_uconst_curve(bc, umax);
+        s.get_umax_bndy_curve(bc);
         dd=eli::geom::intersect::minimum_distance(vv, bc, pt);
 
         if ( dd < dist )
@@ -752,7 +748,7 @@ namespace eli
           dist = dd;
         }
 
-        s.get_vconst_curve(bc, vmin);
+        s.get_vmin_bndy_curve(bc);
         dd=eli::geom::intersect::minimum_distance(uu, bc, pt);
 
         if ( dd < dist )
@@ -762,7 +758,7 @@ namespace eli
           dist = dd;
         }
 
-        s.get_vconst_curve(bc, vmax);
+        s.get_vmax_bndy_curve(bc);
         dd=eli::geom::intersect::minimum_distance(uu, bc, pt);
 
         if ( dd < dist )
