@@ -174,8 +174,8 @@ namespace eli
       typename curve__::data_type minimum_distance_old(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt)
       {
         typename curve__::tolerance_type tol;
-        std::list<std::pair<typename curve__::data_type, typename curve__::data_type>> tinit;
-        typename std::list<std::pair<typename curve__::data_type, typename curve__::data_type>>::iterator it;
+        std::list<std::pair<typename curve__::data_type, typename curve__::data_type> > tinit;
+        typename std::list<std::pair<typename curve__::data_type, typename curve__::data_type> >::iterator it;
         std::pair<typename curve__::data_type, typename curve__::data_type> cand_pair;
 
         // possible that end points are closest, so start by checking them

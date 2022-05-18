@@ -927,7 +927,7 @@ namespace eli
           void set_closed_cubic_spline(point_it__ itb)
           {
             index_type i, nseg(this->get_number_segments());
-            std::vector<point_type, Eigen::aligned_allocator<point_type>> pt(nseg+1);
+            std::vector<point_type, Eigen::aligned_allocator<point_type> > pt(nseg+1);
             point_it__ it;
 
             // copy over points
@@ -990,7 +990,7 @@ namespace eli
           }
 
         private:
-          typedef std::vector<point_type, Eigen::aligned_allocator<point_type>> point_collection_type;
+          typedef std::vector<point_type, Eigen::aligned_allocator<point_type> > point_collection_type;
 
           template< typename Derived2__, typename point_it__>
           void create_cubic_spline_base_matrix( std::vector< Eigen::Triplet< data_type, index_type > > &tripletList, Eigen::MatrixBase<Derived2__> &b, point_it__ itb)

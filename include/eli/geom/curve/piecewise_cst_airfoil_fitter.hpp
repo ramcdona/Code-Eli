@@ -564,13 +564,13 @@ namespace eli
 
 //            std::cout << "A=" << A << std::endl;
 //            {
-//              Eigen::JacobiSVD<Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic>> svd(A);
+//              Eigen::JacobiSVD<Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > svd(A);
 //              std::cout << "Cond(A)=" << svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1) << std::endl;
 //            }
 //            std::cout << "b_rhs=" << b_rhs << std::endl;
 //            std::cout << "B=" << B << std::endl;
 //            {
-//              Eigen::JacobiSVD<Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic>> svd(B);
+//              Eigen::JacobiSVD<Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > svd(B);
 //              std::cout << "Cond(B)=" << svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1) << std::endl;
 //            }
 //            std::cout << "d_rhs=" << d_rhs << std::endl;

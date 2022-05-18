@@ -118,7 +118,7 @@ namespace eli
           }
 
         private:
-          std::vector<point_type, Eigen::aligned_allocator<point_type>> corner;
+          std::vector<point_type, Eigen::aligned_allocator<point_type> > corner;
       };
     }
   }
