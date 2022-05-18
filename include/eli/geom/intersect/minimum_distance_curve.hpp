@@ -100,18 +100,26 @@ namespace eli
 
               g.pc=pc;
               g.pt=pt;
-              if (t>=pc->get_tmax())
+              typename curve__::data_type delta = 0.001;
+              if ( t >= pc->get_tmax() - delta )
               {
-                rtn=(g(pc->get_tmax())-g(static_cast<typename curve__::data_type>(pc->get_tmax()-.01)))/static_cast<typename curve__::data_type>(0.01);
+                rtn = ( g( pc->get_tmax() ) - g( pc->get_tmax() - delta ) ) / delta;
               }
-              else if (t<=pc->get_t0())
+              else if ( t <= pc->get_t0() + delta )
               {
-                rtn=(g(pc->get_t0()+static_cast<typename curve__::data_type>(0.01))-g(pc->get_t0()))/static_cast<typename curve__::data_type>(0.01);
+                rtn = ( g( pc->get_t0() + delta ) - g( pc->get_t0() ) ) / delta;
               }
               else
               {
-                rtn=(g(t+static_cast<typename curve__::data_type>(0.01))-g(t))/static_cast<typename curve__::data_type>(0.01);
+                rtn = ( g ( t + delta ) - g( t - delta ) ) / ( delta + delta );
               }
+
+              // if (tol.approximately_equal(rtn, 0))
+              //   std::cout << "rtn still zero " << std::endl;
+              // This often happens.  Consequently, it seems likely that the finite difference fallback is not worth
+              // the trouble.  Instead, the geometry is likely singular and all points on the boundary curve are
+              // equidistant.  After the Newton's method search on the line, a further test of the endpoints is
+              // performed that does not rely on gradients at all.
             }
 
             return rtn;
