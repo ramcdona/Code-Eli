@@ -981,7 +981,7 @@ namespace eli
 
           error_code degree_promote()
           {
-            typename segment_collection_type::const_iterator scit;
+            typename segment_collection_type::iterator scit;
             for (scit=segments.begin(); scit!=segments.end(); ++scit)
             {
               scit->second.degree_promote();
@@ -1004,7 +1004,7 @@ namespace eli
 
           error_code degree_promote_to(const index_type &deg)
           {
-            typename segment_collection_type::const_iterator scit;
+            typename segment_collection_type::iterator scit;
             for (scit=segments.begin(); scit!=segments.end(); ++scit)
             {
               scit->second.degree_promote_to(deg);
