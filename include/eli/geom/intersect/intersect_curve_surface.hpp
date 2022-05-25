@@ -233,7 +233,7 @@ namespace eli
         // couldn't find better answer so return initial guess
         u=u0;
         v=v0;
-        t=t;
+        t=t0;
 
         return dist0;
       }
