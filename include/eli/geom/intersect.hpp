@@ -21,5 +21,6 @@
 #include "eli/geom/intersect/specified_distance.hpp"
 #include "eli/geom/intersect/specified_thickness.hpp"
 #include "eli/geom/intersect/intersect_axis.hpp"
+#include "eli/geom/intersect/intersect_segment_triangle.hpp"
 
 #endif
