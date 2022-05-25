@@ -14,6 +14,7 @@ project(GEOM)
 
 add_subdirectory(bounding_box)
 add_subdirectory(fit_container)
+add_subdirectory(intersect_segment)
 add_subdirectory(bezier_curve)
 add_subdirectory(piecewise_curve)
 add_subdirectory(bezier_surface)
