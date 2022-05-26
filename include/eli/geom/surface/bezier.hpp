@@ -1625,6 +1625,21 @@ namespace eli
             }
           }
 
+          void simple_split_uv_quarter(bezier<data_type, dim__, tol__> &bs_0,
+                                       bezier<data_type, dim__, tol__> &bs_1,
+                                       bezier<data_type, dim__, tol__> &bs_2,
+                                       bezier<data_type, dim__, tol__> &bs_3) const
+          {
+            typedef bezier<data_type, dim__, tol__> surf_type;
+            index_type n(degree_u()), m(degree_v());
+
+            surf_type u0(n, m), u1(n, m);
+
+            simple_split_u_half( u0, u1 );
+            u0.simple_split_v_half( bs_0, bs_1 );
+            u1.simple_split_v_half( bs_2, bs_3 );
+          }
+
           data_type simple_eqp_distance_bound(const bezier<data_type, dim__, tol__> &bs) const
           {
             // Find maximum common order.
