@@ -207,48 +207,18 @@ namespace eli
             return true;
           }
 
-          bool intersect(const bounding_box<data_type, dim__> &bb) const
+          bool intersect( const bounding_box<data_type, dim__> &bb ) const
           {
-            const index_type nc(1<<dim__);
-            point_type c[nc], bb_min(bb.get_min()), bb_max(bb.get_max());
+            point_type bmin = bb.get_min();
+            point_type bmax = bb.get_max();
 
-            // set the first and last corner
-            c[0]=bb_min;
-            c[nc-1]=bb_max;
+            bool res = true;
 
-            // set the corners for 2 or 3 dimensional cases
-            if (dim__>1)
+            for ( index_type i = 0; i < dim__; i++ )
             {
-              c[1](0)=bb_max(0);
-              c[1](1)=bb_min(1);
-              c[2](0)=bb_min(0);
-              c[2](1)=bb_max(1);
-              if (dim__==3)
-              {
-                c[1](2)=bb_min(2);
-                c[2](2)=bb_min(2);
-              }
+              res = res && ( pmin(i) <= bmax(i) && pmax(i) >= bmin(i) );
             }
-
-            // set the remaining corners for 3 dimensional cases
-            if (dim__>2)
-            {
-              c[3] << bb_max(0), bb_max(1), bb_min(2);
-              c[4] << bb_min(0), bb_min(1), bb_max(2);
-              c[5] << bb_max(0), bb_min(1), bb_max(2);
-              c[6] << bb_min(0), bb_max(1), bb_max(2);
-            }
-
-            // if any corner is inside this bbox, then they intersect
-            for (index_type i=0; i<nc; ++i)
-            {
-              if (inside(c[i]))
-                return true;
-            }
-
-            // at this point know that no bb edge crosses this bbox, but need
-            // to check if this bbox in entirely inside bb
-            return bb.inside(pmin);
+            return res;
           }
 
         private:
