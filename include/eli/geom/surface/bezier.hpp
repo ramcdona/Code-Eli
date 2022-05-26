@@ -1476,6 +1476,19 @@ namespace eli
             invalidate_deriv();
           }
 
+          bool test_planar( const data_type &tol ) const
+          {
+            typedef bezier<data_type, dim__, tol__> surf_type;
+            data_type dst;
+            surf_type approx( *this );
+
+            approx.planar_approx();
+
+            dst = simple_eqp_distance_bound( approx );
+
+            return dst < tol;
+          }
+
           void to_cubic_u()
           {
               typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;
