@@ -16,6 +16,7 @@ project(INTERSECT_SEGMENT_TEST)
 set (INTERSECT_SEGMENT_TEST_EXE IntersectSegmentTest)
 set (INTERSECT_SEGMENT_TEST_SOURCE ${PROJECT_SOURCE_DIR}/intersect_segment_test.cpp)
 set (INTERSECT_SEGMENT_TEST_HEADER ${PROJECT_SOURCE_DIR}/intersect_segment_triangle_test_suite.hpp
+                                  ${PROJECT_SOURCE_DIR}/intersect_segment_surface_test_suite.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/constants/math.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/util/tolerance.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/mutil/nls/newton_raphson_method.hpp
