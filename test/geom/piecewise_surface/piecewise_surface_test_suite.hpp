@@ -67,6 +67,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<float>::lmn_test);
     }
     void AddTests(const double &)
     {
@@ -88,6 +89,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<double>::lmn_test);
     }
     void AddTests(const long double &)
     {
@@ -109,6 +111,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<long double>::lmn_test);
     }
 
   public:
@@ -2900,6 +2903,143 @@ class piecewise_surface_test_suite : public Test::Suite
           std::cout << "Npass " << npass << std::endl;
         }
 
+      }
+    }
+
+    void lmn_test()
+    {
+      typedef typename piecewise_curve_type::curve_type curve_type;
+      typedef typename curve_type::control_point_type curve_control_point_type;
+
+      piecewise_surface_type ps;
+      tolerance_type tol;
+
+      // create geometry with default parameterizations
+      {
+        piecewise_curve_type pc;
+        curve_type c(3);
+        curve_control_point_type cp[4];
+        data_type k=eli::constants::math<data_type>::cubic_bezier_circle_const()*(eli::constants::math<data_type>::sqrt_two()-1);
+        index_type i;
+
+        // create curve
+        cp[0] << 1, 0, 0;
+        cp[1] << 1, k, 0;
+        cp[2] << k, 1, 0;
+        cp[3] << 0, 1, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+        // set 2nd quadrant curve
+        cp[0] <<  0, 1, 0;
+        cp[1] << -k, 1, 0;
+        cp[2] << -1, k, 0;
+        cp[3] << -1, 0, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+
+        TEST_ASSERT(eli::geom::surface::create_body_of_revolution(ps, pc, 0, true));
+      }
+
+      data_type r, s, t, l, m, n;
+      data_type r0, s0, t0, l0, m0, n0;
+
+      // Valid parameter ranges...
+      // r [0, 1.0]  s [0, 0.5]  t [0, 1.0]
+      // l [0, 1.0]  m [0, 1.0]  n [0, 1.0]
+
+      r0 = 0.25;
+      s0 = 0.2;
+      t0 = 0.2;
+
+      ps.ConvertRSTtoLMN( r0, s0, t0, l, m, n );
+      ps.ConvertLMNtoRST( l, m, n, r, s, t );
+
+      TEST_ASSERT( tol.approximately_equal( r0, r ) );
+      TEST_ASSERT( tol.approximately_equal( s0, s ) );
+      TEST_ASSERT( tol.approximately_equal( t0, t ) );
+
+      data_type rmin( 0.0 ), rmax( 1.0 );
+      data_type smin( 0.0 ), smax( 0.5 );
+      data_type tmin( 0.0 ), tmax( 1.0 );
+
+      index_type nr = 6;
+      index_type ns = 5;
+      index_type nt = 4;
+
+      data_type dr = ( rmax - rmin ) / ( nr - 1 );
+      data_type ds = ( smax - smin) /  ( ns - 1 );
+      data_type dt = ( tmax - tmin) /  ( nt - 1 );
+
+      index_type pass = 0;
+      index_type fail = 0;
+
+      // Loosen tolerance for floats.
+      if ( typeid(data_type) == typeid(float) )
+      {
+        tol = tolerance_type( 0.005, std::numeric_limits< data_type >::epsilon() );
+      }
+
+      // Find array of points, starting from center every time.
+      r0 = rmin;
+      for ( index_type ir = 0; ir < nr; ir++ )
+      {
+        s0 = smin;
+        for ( index_type is = 0; is < ns; is++ )
+        {
+          t0 = tmin;
+          for ( index_type it = 0; it < nt; it++ )
+          {
+            ps.ConvertRSTtoLMN( r0, s0, t0, l, m, n );
+            ps.ConvertLMNtoRST( l, m, n, r, s, t );
+
+            point_type pref = ps.fRST( r0, s0, t0 );
+            point_type p = ps.fRST( r, s, t );
+
+            // Compare round-trip on point coordinate.  Although the coordinate checks r0==r etc. should work,
+            // they are subject to degeneracies in the coordinates -- many to one in terms of RST to LMN.  This
+            // ambiguity is avoided by checking the final point-distance error.
+            data_type dist = eli::geom::point::distance( pref, p );
+
+            if ( !tol.approximately_equal( dist, 0.0 ) )
+            {
+              fail++;
+              std::cout << ir << " " << is << " " << it << std::endl;
+              std::cout << dist << std::endl;
+              std::cout << "Pref " << pref << std::endl;
+              std::cout << "P    " << p << std::endl;
+              std::cout << "r0 " << r0 << " s0 " << s0 << " t0 " << t0 << std::endl;
+              std::cout << "l  " << l << " m  " << m << " n  " << n << std::endl;
+              std::cout << "r  " << r << " s  " << s << " t  " << t << std::endl << std::endl;
+            }
+            else
+            {
+              pass++;
+            }
+
+            TEST_ASSERT( tol.approximately_equal( dist, 0.0 ) );
+
+            t0 = t0 + dt;
+            if ( t0 > tmax ) t0 = tmax;
+          }
+          s0 = s0 + ds;
+          if ( s0 > smax ) s0 = smax;
+        }
+        r0 = r0 + dr;
+        if ( r0 > rmax ) r0 = rmax;
+      }
+
+      if ( fail > 0 )
+      {
+        std::cout << "Npass " << pass << std::endl;
+        std::cout << "Nfail " << fail << std::endl;
       }
     }
 
