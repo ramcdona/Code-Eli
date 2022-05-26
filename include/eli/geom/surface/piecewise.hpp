@@ -66,6 +66,14 @@ namespace eli
           const surface::piecewise<surface1__, data1__, dim1__, tol1__> &ps,
           const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p0,
           const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::index_type &iproj);
+
+      template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
+      void
+        intersect_segment( std::vector<data1__> &tvec,
+          const surface::piecewise<surface1__, data1__, dim1__, tol1__> &ps,
+          const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &pt,
+          const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::point_type &vec,
+          const typename surface::piecewise<surface1__, data1__, dim1__, tol1__>::bounding_box_type &bbox);
     }
 
     namespace surface
@@ -2361,6 +2369,14 @@ namespace eli
               const piecewise<surface1__, data1__, dim1__, tol1__> &ps,
               const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &p0,
               const typename piecewise<surface1__, data1__, dim1__, tol1__>::index_type &iproj);
+
+          template<template<typename, unsigned short, typename> class surface1__, typename data1__, unsigned short dim1__, typename tol1__ >
+          friend void
+            eli::geom::intersect::intersect_segment( std::vector<data1__> &tvec,
+              const piecewise<surface1__, data1__, dim1__, tol1__> &ps,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &pt,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::point_type &vec,
+              const typename piecewise<surface1__, data1__, dim1__, tol1__>::bounding_box_type &bbox);
 
           typedef std::map< data_type, index_type > keymap_type;
 
