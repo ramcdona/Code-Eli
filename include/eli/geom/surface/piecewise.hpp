@@ -25,6 +25,7 @@
 
 #include "eli/geom/general/continuity.hpp"
 #include "eli/geom/curve/equivalent_curves.hpp"
+#include "eli/geom/intersect/specified_distance_curve.hpp"
 
 namespace eli
 {
@@ -2238,6 +2239,86 @@ namespace eli
                 p->sum( *p1, *p2 );
               }
             }
+          }
+
+          void ConvertRSTtoLMN( const data_type &r, const data_type &s, const data_type &t, data_type &l, data_type &m, data_type &n ) const
+          {
+            tolerance_type tol;
+            point_type pnose = fRST( 0, 0.25, 0.5 );
+            point_type ptail = fRST( 1, 0.25, 0.5 );
+            data_type len = eli::geom::point::distance( ptail, pnose );
+
+            point_type pr = fRST( r, 0.25, 0.5 );
+            data_type dr = eli::geom::point::distance( pr, pnose );
+            if ( tol.approximately_equal( len, 0.0 ) )
+            {
+              l = 0;
+            }
+            else
+            {
+              l = dr / len;
+            }
+
+            point_type ps0 = fRST( r, 0, 0.5 );
+            point_type ps1 = fRST( r, 0.5, 0.5 );
+            data_type wid = eli::geom::point::distance( ps1, ps0 );
+
+            point_type ps = fRST( r, s, 0.5 );
+            data_type ds = eli::geom::point::distance( ps, ps0 );
+            if ( tol.approximately_equal( wid, 0.0 ) )
+            {
+              m = 0;
+            }
+            else
+            {
+              m = ds / wid;
+            }
+
+            n = t;
+          }
+
+          void ConvertLMNtoRST( const data_type &l, const data_type &m, const data_type &n, data_type &r, data_type &s, data_type &t ) const
+          {
+            typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
+            data_type umax, umin, du, vmax, vmin, dv, vmid, u, v;
+            piecewise_surf_type sup, slow, smid;
+            piecewise_curve_type spine, scross;
+
+            get_parameter_min( umin, vmin );
+            get_parameter_max( umax, vmax );
+            du = umax - umin;
+            dv = vmax - vmin;
+
+            vmid = 0.5 * ( vmin + vmax );
+
+            split_v( slow, sup, vmid );
+            sup.reverse_v();
+            smid.sum( slow, sup );
+            smid.scale( 0.5 );
+
+            smid.get_vconst_curve( spine, vmin + 0.25 * dv );
+
+            point_type pnose = spine.f( umin );
+            point_type ptail = spine.f( umax );
+            data_type len = eli::geom::point::distance( ptail, pnose );
+            data_type dr = l * len;
+
+            // Find u at dr distance from pnose along spine, using l to inform initial guess.
+            eli::geom::intersect::specified_distance( u, spine, pnose, dr, umin + l * du );
+            r = ( u - umin ) / du;
+
+            smid.get_uconst_curve( scross, u );
+
+            point_type ps0 = scross.f( vmin );
+            point_type ps1 = scross.f( vmid );
+            data_type wid = eli::geom::point::distance( ps1, ps0 );
+            data_type ds = m * wid;
+
+            // Find v at ds distance from ps0 along scross, using m to inform initial guess.
+            eli::geom::intersect::specified_distance( v, scross, ps0, ds, vmin + m * dv * 0.5 );
+            s = ( v - vmin ) / dv;
+
+            t = n;
           }
 
           // RST is an alternate parameterization that assumes a u, v surface encloses a volume.
