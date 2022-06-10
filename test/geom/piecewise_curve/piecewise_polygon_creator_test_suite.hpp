@@ -45,18 +45,21 @@ class piecewise_polygon_creator_test_suite : public Test::Suite
       // add the tests
       TEST_ADD(piecewise_polygon_creator_test_suite<float>::create_triangle_test);
       TEST_ADD(piecewise_polygon_creator_test_suite<float>::create_box_test);
+      TEST_ADD(piecewise_polygon_creator_test_suite<float>::triangle_centroid_test);
     }
     void AddTests(const double &)
     {
       // add the tests
       TEST_ADD(piecewise_polygon_creator_test_suite<double>::create_triangle_test);
       TEST_ADD(piecewise_polygon_creator_test_suite<double>::create_box_test);
+      TEST_ADD(piecewise_polygon_creator_test_suite<double>::triangle_centroid_test);
     }
     void AddTests(const long double &)
     {
       // add the tests
       TEST_ADD(piecewise_polygon_creator_test_suite<long double>::create_triangle_test);
       TEST_ADD(piecewise_polygon_creator_test_suite<long double>::create_box_test);
+      TEST_ADD(piecewise_polygon_creator_test_suite<long double>::triangle_centroid_test);
     }
 
   public:
@@ -252,6 +255,69 @@ class piecewise_polygon_creator_test_suite : public Test::Suite
 
         // create the polygon
         TEST_ASSERT(poly_creator.create(pc));
+      }
+    }
+
+    void triangle_centroid_test()
+    {
+      // create triangle with specified parameterization
+      {
+        piecewise_curve_type pc;
+        polygon_creator_type poly_creator(3);
+        data_type dt0(3), dt1(2), dt2(3), t0(-1), dt;
+        point_type p0, p1, p2, pave;
+
+        // set the corners
+        p0 << 1, 2, 3;
+        p1 << 2, 1, 1;
+        p2 << 1, 1, 4;
+        poly_creator.set_corner(p0, 0);
+        poly_creator.set_corner(p1, 1);
+        poly_creator.set_corner(p2, 2);
+
+        pave = ( p0 + p1 + p2 ) / 3.0;
+
+        // create the polygon
+        TEST_ASSERT(poly_creator.create(pc));
+
+        data_type xm, ym, zm;
+        xm = pc.centroidij( 0, 1 );
+        ym = pc.centroidij( 1, 0 );
+        zm = pc.centroidij( 2, 1 );
+
+        // std::cout << "xm " << xm << std::endl;
+        // std::cout << "ym " << ym << std::endl;
+        // std::cout << "zm " << zm << std::endl;
+
+        TEST_ASSERT( tol.approximately_equal( xm, pave[0] ) );
+        TEST_ASSERT( tol.approximately_equal( ym, pave[1] ) );
+        TEST_ASSERT( tol.approximately_equal( zm, pave[2] ) );
+
+        xm = pc.centroidij( 0, 2 );
+        ym = pc.centroidij( 1, 2 );
+        zm = pc.centroidij( 2, 0 );
+
+        // std::cout << "xm " << xm << std::endl;
+        // std::cout << "ym " << ym << std::endl;
+        // std::cout << "zm " << zm << std::endl;
+
+        TEST_ASSERT( tol.approximately_equal( xm, pave[0] ) );
+        TEST_ASSERT( tol.approximately_equal( ym, pave[1] ) );
+        TEST_ASSERT( tol.approximately_equal( zm, pave[2] ) );
+
+        // data_type a;
+        // a = pc.area( 0, 1);
+        // std::cout << "a01 " << a << std::endl;
+        // a = pc.area( 0, 2);
+        // std::cout << "a02 " << a << std::endl;
+        // a = pc.area( 1, 2);
+        // std::cout << "a12 " << a << std::endl;
+        // a = pc.area( 1, 0);
+        // std::cout << "a10 " << a << std::endl;
+        // a = pc.area( 2, 0);
+        // std::cout << "a20 " << a << std::endl;
+        // a = pc.area( 2, 1);
+        // std::cout << "a21 " << a << std::endl;
       }
     }
 

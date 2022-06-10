@@ -52,6 +52,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<float>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<float>::create_ellipse_primative_test);
       TEST_ADD(piecewise_circle_creator_test_suite<float>::circle_area_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<float>::circle_centroid_test);
     }
     void AddTests(const double &)
     {
@@ -62,6 +63,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<double>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<double>::create_ellipse_primative_test);
       TEST_ADD(piecewise_circle_creator_test_suite<double>::circle_area_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<double>::circle_centroid_test);
     }
     void AddTests(const long double &)
     {
@@ -72,6 +74,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::create_circle_3_point_test);
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::create_ellipse_primative_test);
       TEST_ADD(piecewise_circle_creator_test_suite<long double>::circle_area_test);
+      TEST_ADD(piecewise_circle_creator_test_suite<long double>::circle_centroid_test);
     }
 
   public:
@@ -497,6 +500,98 @@ class piecewise_circle_creator_test_suite : public Test::Suite
 
     }
 
+    void circle_centroid_test()
+    {
+      {
+        circle_creator_type circle_creator;
+        piecewise_curve_type pc;
+        point_type origin, x, y;
+        data_type radius;
+
+        onedbezcurve c;
+
+        // set the parameters for circle
+        origin << 1, 1, 1;
+        x << 1, 0, 0;
+        y << 0, 1, 0;
+        radius=3;
+
+        circle_creator.set( origin, x, y, radius );
+
+        // create the circle
+        TEST_ASSERT(circle_creator.create(pc));
+
+        data_type xm, ym;
+        xm = pc.centroidij( 0, 1 );
+        ym = pc.centroidij( 1, 0 );
+
+        TEST_ASSERT( tol.approximately_equal( xm, origin[0] ) );
+        TEST_ASSERT( tol.approximately_equal( ym, origin[1] ) );
+      }
+      // test 2D
+      {
+        typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, 2> piecewise_curve2_type;
+        typedef typename piecewise_curve2_type::point_type point2_type;
+        typedef typename piecewise_curve2_type::curve_type curve2_type;
+
+        index_type i;
+        point2_type cp[4];
+        data_type k ( eli::constants::math<data_type>::cubic_bezier_circle_const()*(eli::constants::math<data_type>::sqrt_two()-1) );
+        data_type pi( eli::constants::math<data__>::pi() );
+
+        point2_type origin(2, 4);
+        data_type radius(2);
+
+        curve2_type c(3), c1(1), c2(1);
+
+        // create curve
+        cp[0] << 1, 0;
+        cp[1] << 1, k;
+        cp[2] << k, 1;
+        cp[3] << 0, 1;
+        for (i=0; i<4; ++i)
+        {
+          cp[i] = origin + cp[i] * radius;
+          c.set_control_point(cp[i], i);
+        }
+
+        piecewise_curve2_type pc;
+
+        TEST_ASSERT( pc.push_back( c ) == piecewise_curve_type::NO_ERRORS );
+
+        c1.set_control_point( cp[3], 0 );
+        c1.set_control_point( origin, 1 );
+        c2.set_control_point( origin, 0 );
+        c2.set_control_point( cp[0], 1 );
+
+        pc.push_back( c1 );
+        pc.push_back( c2 );
+
+        // pc.octave_print( 1 );
+
+        data_type a, xm, ym;
+        a = pc.area( 0, 1 );
+
+        // Quarter circle.  Tolerance because Bezier is not perfect circle.
+        TEST_ASSERT( std::abs( a - pi * radius * radius / 4.0 ) < 0.001 );
+
+        // std::cout << "a " << a << " area " << pi*radius*radius/4.0 << std::endl;
+
+        // Compare to analytical result for quarter circle centroid.
+        data_type delta_ref = 4.0 * radius / (3.0 * pi );
+
+        xm = pc.centroidij( 0, 1 );
+        ym = pc.centroidij( 1, 0 );
+
+        TEST_ASSERT( std::abs( xm - ( origin[0] + delta_ref ) ) < 0.001 );
+        TEST_ASSERT( std::abs( ym - ( origin[1] + delta_ref ) ) < 0.001 );
+
+        // std::cout << "xm " << xm << std::endl;
+        // std::cout << "ym " << ym << std::endl;
+
+      }
+
+    }
 };
 
 #endif
