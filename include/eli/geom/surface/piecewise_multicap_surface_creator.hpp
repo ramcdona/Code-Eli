@@ -54,7 +54,8 @@ namespace eli
             FLAT,
             ROUND,
             EDGE,
-            SHARP
+            SHARP,
+            POINT
           };
 
           typedef piecewise_creator_base<data__, dim__, tol__> base_class_type;
@@ -325,6 +326,13 @@ namespace eli
             second_half.reverse();
             second_half.set_t0(first_half.get_t0());
 
+            piecewise_curve_type seam;
+            seam.sum( first_half, second_half );
+            seam.scale( 0.5 );
+
+            data_type tmidseam = ( seam.get_t0() + seam.get_tmax() ) * 0.5;
+            point_type porigin = seam.f( tmidseam );
+
             // Split the ndelta pseudocurve.  Since this isn't really a curve, it only works because the split
             // point already exists and this becomes reordering and manipulating of existing values, and should
             // not change any values of control points.
@@ -333,6 +341,12 @@ namespace eli
             nd_second_half.reverse();
             nd_second_half.set_t0(nd_first_half.get_t0());
 
+            piecewise_curve_type nd_seam;
+            nd_seam.sum( nd_first_half, nd_second_half );
+            // nd_seam.scale( 0.5 ); // Not needed because normalization to follow.
+
+            point_type norigin = nd_seam.f( tmidseam );
+            norigin.normalize();
 
             std::vector<data_type> pmap, dvcap, ducap(2);
             // Get edge parameter map
@@ -410,6 +424,28 @@ namespace eli
                       s2.set_control_point( psplit, 0, j );
                       s2.set_control_point( pdn, 1, j );
 
+                    }
+                  }
+                  break;
+                case POINT:
+                  {
+                    s1.resize( 1, deg );
+                    s2.resize( 1, deg );
+
+                    for ( int j = 0; j <= deg; j++ )
+                    {
+                      point_type pup, pdn;
+
+                      pup = clast.get_control_point( j );
+                      pdn = cfirst.get_control_point( j );
+
+                      // Build linear upper side curve
+                      s1.set_control_point( pup, 0, j );
+                      s1.set_control_point( porigin + norigin * off_factor, 1, j );
+
+                      // Build linear lower side curve
+                      s2.set_control_point( porigin + norigin * off_factor, 0, j );
+                      s2.set_control_point( pdn, 1, j );
                     }
                   }
                   break;
