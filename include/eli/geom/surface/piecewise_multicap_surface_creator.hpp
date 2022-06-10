@@ -82,7 +82,7 @@ namespace eli
           {
           }
 
-          bool set_conditions(const piecewise_surface_type &os, const index_type & typ, const data_type &dp, edge_cap_identifier ec, const data_type &lf, const data_type &of, const data_type &sf, const bool &sc )
+          bool set_conditions(const piecewise_surface_type &os, const index_type & typ, const data_type &dp, edge_cap_identifier ec, const data_type &lf, const data_type &of, const data_type &sf, const point_type & pnt, const bool &sc )
           {
             // all deltas are positive, even on the min edges
             if (dp<=0)
@@ -94,6 +94,7 @@ namespace eli
             delta_param = dp;
             len_factor = lf;
             off_factor = of;
+            pnt_offset = pnt;
             str_factor = sf;
             sweep_correct = sc;
 
@@ -341,13 +342,6 @@ namespace eli
             nd_second_half.reverse();
             nd_second_half.set_t0(nd_first_half.get_t0());
 
-            piecewise_curve_type nd_seam;
-            nd_seam.sum( nd_first_half, nd_second_half );
-            // nd_seam.scale( 0.5 ); // Not needed because normalization to follow.
-
-            point_type norigin = nd_seam.f( tmidseam );
-            norigin.normalize();
-
             std::vector<data_type> pmap, dvcap, ducap(2);
             // Get edge parameter map
             first_half.get_pmap( pmap );
@@ -441,10 +435,10 @@ namespace eli
 
                       // Build linear upper side curve
                       s1.set_control_point( pup, 0, j );
-                      s1.set_control_point( porigin + norigin * off_factor, 1, j );
+                      s1.set_control_point( porigin + pnt_offset, 1, j );
 
                       // Build linear lower side curve
-                      s2.set_control_point( porigin + norigin * off_factor, 0, j );
+                      s2.set_control_point( porigin + pnt_offset, 0, j );
                       s2.set_control_point( pdn, 1, j );
                     }
                   }
@@ -909,6 +903,7 @@ namespace eli
           data_type off_factor;
           data_type str_factor;
           bool sweep_correct;
+          point_type pnt_offset;
           index_type cap_type;
       };
     }
