@@ -2475,6 +2475,60 @@ namespace eli
             return retcurve;
           }
 
+          onedpiecewisecurve area1stmomintegralcurve( const index_type & idim, const index_type & jdim ) const
+          {
+            onedpiecewisecurve retcurve;
+
+            retcurve.set_t0( get_t0() );
+
+            typename onedbezcurve::point_type C0;
+            C0.setZero();
+
+            typename segment_collection_type::const_iterator scit;
+            for ( scit = segments.begin(); scit!=segments.end(); ++scit)
+            {
+              typename curve_type::onedbezcurve c, ci, cisq, cj, cjp, area1stmom;
+
+              data_type dt = get_delta_t(scit);
+              ci = scit->second.singledimensioncurve( idim );
+              cj = scit->second.singledimensioncurve( jdim );
+
+              cj.fp( cjp );
+              cisq.product( ci, ci );
+              c.product( cisq, cjp );
+
+              c.fi( area1stmom );
+              area1stmom.translate( C0 );
+
+              retcurve.push_back( area1stmom, dt );
+              C0 = area1stmom.get_control_point( area1stmom.degree() );
+            }
+
+            return retcurve;
+          }
+
+          data_type area1stmom( const index_type & idim, const index_type & jdim ) const
+          {
+            typename curve_type::onedbezcurve c;
+
+            onedpiecewisecurve a1curv = area1stmomintegralcurve( idim, jdim );
+
+            a1curv.get( c, a1curv.number_segments() - 1 );
+
+            data_type area1m = (c.get_control_point( c.degree() ))[0];
+
+            return area1m;
+          }
+
+          data_type centroidij( const index_type & idim, const index_type & jdim ) const
+          {
+            tolerance_type tol;
+            data_type a = area( idim, jdim );
+            data_type a1m = area1stmom( idim, jdim );
+
+            return a1m / ( 2.0 * a );
+          }
+
           // We build up the area integral curve here to avoid any problems that could arise when cjp is not
           // continuous.  If we only built up the integrand, the push_back could fail because of this.
           onedpiecewisecurve areaintegralcurve( const index_type & idim, const index_type & jdim ) const
