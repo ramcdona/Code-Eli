@@ -926,13 +926,13 @@ namespace eli
             before.clear();
             after.clear();
 
-            if (u_in < ukey.get_pmin())
+            if (u_in <= ukey.get_pmin())
             {
               after=(*this);
               return NO_ERRORS;
             }
 
-            if (u_in > ukey.get_pmax())
+            if (u_in >= ukey.get_pmax())
             {
               before=(*this);
               return NO_ERRORS;
@@ -982,13 +982,13 @@ namespace eli
             before.clear();
             after.clear();
 
-            if (v_in < vkey.get_pmin())
+            if (v_in <= vkey.get_pmin())
             {
               after=(*this);
               return NO_ERRORS;
             }
 
-            if (v_in > vkey.get_pmax())
+            if (v_in >= vkey.get_pmax())
             {
               before=(*this);
               return NO_ERRORS;
