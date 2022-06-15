@@ -144,6 +144,11 @@ namespace eli
             // record where the joints need to be for create()
             index_type njoints(static_cast<index_type>(joints.size()));
 
+            if ( njoints < 2 )
+            {
+              return false;
+            }
+
             // set the v-parameterization
             this->set_number_v_segments(njoints-1);
             this->set_initial_v(joints[0]);
