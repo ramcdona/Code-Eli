@@ -657,7 +657,7 @@ class poly_root_test_suite : public Test::Suite
       {
         TEST_ASSERT_DELTA(root[0], root_val[0], 2*std::numeric_limits<data__>::epsilon());
         TEST_ASSERT_DELTA(root[1], root_val[2], 2*std::numeric_limits<data__>::epsilon());
-        TEST_ASSERT_DELTA(root[2], root_val[1], 2*std::numeric_limits<data__>::epsilon());
+        TEST_ASSERT_DELTA(root[2], root_val[1], 4*std::numeric_limits<data__>::epsilon());
       }
       root.resize(0);
 

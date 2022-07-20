@@ -644,7 +644,7 @@ class bezier_surface_test_suite : public Test::Suite
         u=1; v=0;
         pt_out=bez2.f(u, v);
         pt_ref=rorig+(pt[n][0]-rorig)*rmat.transpose();
-        TEST_ASSERT(pt_out==pt_ref);
+        TEST_ASSERT(tol.approximately_equal(pt_out, pt_ref));
         u=0; v=1;
         pt_out=bez2.f(u, v);
         pt_ref=rorig+(pt[0][m]-rorig)*rmat.transpose();

@@ -151,8 +151,13 @@ namespace eli
 		static long double cbrt_pi()        {return 1.4645918875615231L;}
 # endif
 #else
+#ifdef __aarch64__
+        static long double pi_cubed()       {return 31.0062766802998162063L;}
+        static long double sqrt_pi()        {return 1.7724538509055158819L;}
+#else
         static long double pi_cubed()       {return 31.0062766802998201763L;}
         static long double sqrt_pi()        {return 1.7724538509055160273L;}
+#endif
         static long double cbrt_pi()        {return 1.464591887561523263L;}
 #endif
         static long double one_by_pi()      {return 0.31830988618379067154L;}

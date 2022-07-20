@@ -408,6 +408,8 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # else
           fref << static_cast<data_type>(47.022247), static_cast<data_type>(3.483002), 0;
 # endif
+#elif defined(__aarch64__)
+          fref << static_cast<data_type>(46.4727363586), static_cast<data_type>(3.44075703621), 0;
 #elif defined(__GNUC__) && defined(__clang__)
 //          fref << static_cast<data_type>(47.022247), static_cast<data_type>(3.483002), 0;
           fref << static_cast<data_type>(46.970375061), static_cast<data_type>(3.4790019989), 0;
@@ -458,7 +460,11 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # endif
 #else
 //          fref << static_cast<data_type>(1.351337), static_cast<data_type>(2.2768044), 0;
+#if defined(__aarch64__)
+          fref << static_cast<data_type>(1.3515048027), static_cast<data_type>(2.27731156349), 0;
+#else
           fref << static_cast<data_type>(1.35193359852), static_cast<data_type>(2.27630639076), 0;
+#endif
 #endif
         }
         else
@@ -710,6 +716,8 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # else
           fref << static_cast<data_type>(-23.633438), static_cast<data_type>(11.261538), 0;
 # endif
+#elif defined(__aarch64__)
+          fref << static_cast<data_type>(-10.8869991302), static_cast<data_type>(4.50621795654), 0;
 #elif defined(__GNUC__) && defined(__clang__)
 //          fref << static_cast<data_type>(-23.633438), static_cast<data_type>(11.261538), 0;
           fref << static_cast<data_type>(-23.2962379456), static_cast<data_type>(11.0427217484), 0;
@@ -768,6 +776,8 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # else
           fref << static_cast<data_type>(1.930066), static_cast<data_type>(1.438622), 0;
 # endif
+#elif defined(__aarch64__)
+          fref << static_cast<data_type>(1.93304371834), static_cast<data_type>(1.43217349052), 0;
 #else
 //          fref << static_cast<data_type>(1.928891), static_cast<data_type>(1.436470), 0;
           fref << static_cast<data_type>(1.93005561829), static_cast<data_type>(1.43481016159), 0;
@@ -1014,6 +1024,8 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # else
           fref << static_cast<data_type>(-1.328213), static_cast<data_type>(3.102814), 0;
 # endif
+#elif defined(__aarch64__)
+          fref << static_cast<data_type>(-1.09268736839), static_cast<data_type>(2.52347707748), 0;
 #elif defined(__GNUC__) && defined(__clang__)
 //          fref << static_cast<data_type>(-1.328212), static_cast<data_type>(3.102814), 0;
           fref << static_cast<data_type>(-1.35254955292), static_cast<data_type>(3.10928034782), 0;
@@ -1062,6 +1074,8 @@ class piecewise_superellipse_creator_test_suite : public Test::Suite
 # else
           fref << static_cast<data_type>(1.970389), static_cast<data_type>(1.330017), 0;
 # endif
+#elif defined(__aarch64__)
+          fref << static_cast<data_type>(1.97082567215), static_cast<data_type>(1.33347415924), 0;
 #else
 //          fref << static_cast<data_type>(1.975022), static_cast<data_type>(1.332086), 0;
           fref << static_cast<data_type>(1.97497677803), static_cast<data_type>(1.33212637901), 0;

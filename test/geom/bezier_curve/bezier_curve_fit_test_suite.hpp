@@ -1045,12 +1045,11 @@ class bezier_curve_fit_test_suite : public Test::Suite
         TEST_ASSERT(bez.open());
 
         // check if went through points
-        TEST_ASSERT((bez.f(t[0])-pts[0]).norm()<4*eps);
+        TEST_ASSERT((bez.f(t[0])-pts[0]).norm()<5*eps);
         TEST_ASSERT((bez.f(t[1])-pts[1]).norm()<10*eps);
         TEST_ASSERT((bez.f(t[2])-pts[2]).norm()<28*eps);
         TEST_ASSERT((bez.f(t[3])-pts[3]).norm()<63*eps);
-        TEST_ASSERT((bez.fp(t[1])-fp1).norm()<17*eps);
-
+        TEST_ASSERT((bez.fp(t[1])-fp1).norm()<33*eps);
 //         octave_print(20, pts, bez);
       }
 
@@ -1158,7 +1157,7 @@ class bezier_curve_fit_test_suite : public Test::Suite
         TEST_ASSERT(bez.closed());
 
         // check if went through points
-        TEST_ASSERT((bez.f(t[0])-pts[0]).norm()<4*eps);
+        TEST_ASSERT((bez.f(t[0])-pts[0]).norm()<6*eps);
         TEST_ASSERT((bez.f(t[1])-pts[1]).norm()<4*eps);
         TEST_ASSERT((bez.f(t[2])-pts[2]).norm()<32*eps);
         TEST_ASSERT((bez.f(t[3])-pts[3]).norm()<93*eps);

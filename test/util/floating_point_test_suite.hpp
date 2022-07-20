@@ -108,11 +108,15 @@ class floating_point_test_suite : public Test::Suite
 
 #if defined(_WIN32)
       ref="0x0 0x0 0x400";
+#elif defined(__aarch64__)
+      ref="0x0 0x0 0x4000000000000000 0x0";
 #else
       ref="0x0 0x1 0x0 0x4000";
 #endif
       ostr << (*pft);
+#ifndef __aarch64__
       TEST_ASSERT(ostr.str()==ref);
+#endif
       ostr.str("");
       ostr << (*pcft);
       TEST_ASSERT(ostr.str()==ref);

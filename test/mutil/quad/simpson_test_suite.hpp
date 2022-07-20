@@ -71,7 +71,7 @@ void get_reference_adaptive_params<double>(typename eli::mutil::quad::simpson<do
 template <>
 void get_reference_adaptive_params<long double>(typename eli::mutil::quad::simpson<long double>::adaptive_params &ap)
 {
-#ifdef _MSC_VER
+#if defined( _MSC_VER ) || defined( __aarch64__ )
   ap.recursion_depth=5;
   ap.function_count=65;
   ap.coarse_value=17.367256566284723363L;
