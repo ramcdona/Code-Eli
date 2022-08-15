@@ -62,6 +62,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<float>::length_test);
       TEST_ADD(bezier_curve_test_suite<float>::math_test);
       TEST_ADD(bezier_curve_test_suite<float>::integral_test);
+      TEST_ADD(bezier_curve_test_suite<float>::demo_pt_project_test);
     }
     void AddTests(const double &)
     {
@@ -85,6 +86,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<double>::length_test);
       TEST_ADD(bezier_curve_test_suite<double>::math_test);
       TEST_ADD(bezier_curve_test_suite<double>::integral_test);
+      TEST_ADD(bezier_curve_test_suite<double>::demo_pt_project_test);
     }
     void AddTests(const long double &)
     {
@@ -108,6 +110,7 @@ class bezier_curve_test_suite : public Test::Suite
       TEST_ADD(bezier_curve_test_suite<long double>::length_test);
       TEST_ADD(bezier_curve_test_suite<long double>::math_test);
       TEST_ADD(bezier_curve_test_suite<long double>::integral_test);
+      TEST_ADD(bezier_curve_test_suite<long double>::demo_pt_project_test);
     }
 
   public:
@@ -1919,6 +1922,79 @@ class bezier_curve_test_suite : public Test::Suite
         TEST_ASSERT( (bpi.get_control_point(i)-bc.get_control_point(i)).norm() < 1300*eps );
       }
     }
+
+    // Test that demonstrates the steps in projecting a point to a curve.  Used for demonstrating
+    // algebraic operators on Bezier curves.
+    void demo_pt_project_test()
+    {
+      bool output = false;
+      point_type cntrl_in[4];
+      data_type eps(std::numeric_limits<data__>::epsilon());
+
+      point_type x;
+
+      x << -0.6, -0.25, -0.0;
+
+      // set control points
+      cntrl_in[0] << 0.0, 0.0, 0.0;
+      cntrl_in[1] << 0.0, 1.0, 0.0;
+      cntrl_in[2] << 1.4, 0.9, 0.0;
+      cntrl_in[3] << 1.0, 0.0, 0.0;
+
+      bezier_type bc(3);
+
+      // set control points
+      for (index_type i=0; i<4; ++i)
+      {
+        bc.set_control_point(cntrl_in[i], i);
+      }
+
+      if ( output )
+        bc.octave_print( 1 );
+
+      bc.translate( x );
+
+      if ( output )
+        bc.octave_print( 2 );
+
+      bezier_type bcprod;
+
+      bcprod.product( bc, bc );
+
+      if ( output )
+        bcprod.octave_print( 3 );
+
+      oned_type rsq, dr;
+      rsq = bcprod.sumcompcurve();
+
+      if ( output )
+        rsq.octave_print( 4 );
+
+      rsq.fp( dr );
+
+      if ( output )
+        dr.octave_print( 5 );
+
+      oned_type o1, o2;
+      oned_type o11, o12, o21, o22;
+
+      dr.split( o1, o2, 0.5 );
+      o1.split( o11, o12, 0.5 );
+      o2.split( o21, o22, 0.5 );
+
+      if ( output )
+      {
+        o11.octave_print( 6 );
+        o12.octave_print( 7 );
+        o21.octave_print( 8 );
+        o22.octave_print( 9 );
+
+        o1.octave_print( 10 );
+        o2.octave_print( 11 );
+      }
+
+    }
+
 };
 
 #endif
