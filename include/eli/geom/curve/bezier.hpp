@@ -299,7 +299,7 @@ namespace eli
             std::cout << "t_cp=[";
             for (i=0; i<=degree(); ++i)
             {
-              std::cout << ti + i / degree();
+              std::cout << ti + (data_type)i / (data_type)degree();
 
               if (i<degree())
                 std::cout << ", ";

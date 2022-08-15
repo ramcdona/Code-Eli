@@ -531,7 +531,7 @@ namespace eli
               get(bez, dt, pp);
               for (i=0; i<=bez.degree(); ++i)
               {
-                std::cout << ti + dt * i / bez.degree();
+                std::cout << ti + dt * (data_type) i / (data_type) bez.degree();
 
                 if (i<bez.degree())
                   std::cout << ", ";
