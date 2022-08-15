@@ -252,15 +252,15 @@ namespace eli
                   // to get the rapid parameterization variation, find the parameters that
                   // produce uniform spacing in x and y and then average the two
                   tmp=static_cast<data_type>(i)/(nsample_pts-1);
-                  argx=std::pow(1-tmp, m/2);
+                  argx=std::pow(1-tmp, std::sqrt(m/2));
                   argx=std::min(argx, static_cast<data_type>(1));
                   argx=std::max(argx, static_cast<data_type>(0));
-                  argy=std::pow(tmp, n/2);
+                  argy=std::pow(tmp, std::sqrt(n/2));
                   argy=std::min(argy, static_cast<data_type>(1));
                   argy=std::max(argy, static_cast<data_type>(0));
 
                   // TODO: Fix this to get the parameter that better captures extreme n and m cases
-                  t=(std::acos(argx)+std::asin(argy))/(2*eli::constants::math<data__>::two_pi());
+                  t=std::atan2(argy,argx)/eli::constants::math<data__>::two_pi();
 
                   fun(f[i], t);
                 }
@@ -381,15 +381,15 @@ namespace eli
                   // to get the rapid parameterization variation, find the parameters that
                   // produce uniform spacing in x and y and then average the two
                   tmp=static_cast<data_type>(i)/(nhalf);
-                  argx=std::pow(1-tmp, m/2);
+                  argx=std::pow(1-tmp, std::sqrt(m/2));
                   argx=std::min(argx, static_cast<data_type>(1));
                   argx=std::max(argx, static_cast<data_type>(0));
-                  argy=std::pow(tmp, n/2);
+                  argy=std::pow(tmp, std::sqrt(n/2));
                   argy=std::min(argy, static_cast<data_type>(1));
                   argy=std::max(argy, static_cast<data_type>(0));
 
                   // TODO: Fix this to get the parameter that better captures extreme n and m cases
-                  t=(std::acos(argx)+std::asin(argy))/(2*eli::constants::math<data__>::two_pi());
+                  t=std::atan2(argy,argx)/eli::constants::math<data__>::two_pi();
 //                     std::cout << "argx=" << argx << "\targy=" << argy << "\tt=" << t << std::endl;
 
                   fun(f[i], t);
@@ -493,15 +493,15 @@ namespace eli
                 // produce uniform spacing in x and y and then average the two
                 tmp = static_cast<data_type> (i) / (nhalf_bot);
 
-                argx = std::pow(1 - tmp, m_bot / 2);
+                argx = std::pow(1 - tmp, std::sqrt(m_bot / 2));
                 argx = std::min(argx, static_cast<data_type> (1));
                 argx = std::max(argx, static_cast<data_type> (0));
-                argy = std::pow(tmp, n_bot / 2);
+                argy = std::pow(tmp, std::sqrt(n_bot / 2));
                 argy = std::min(argy, static_cast<data_type> (1));
                 argy = std::max(argy, static_cast<data_type> (0));
 
                 // TODO: Fix this to get the parameter that better captures extreme n and m cases
-                t = (std::acos(argx) + std::asin(argy)) / (2 * eli::constants::math<data__>::two_pi());
+                t=std::atan2(argy,argx)/eli::constants::math<data__>::two_pi();
                 //std::cout << "argx=" << argx << "\targy=" << argy << "\tt=" << t << std::endl;
 
                 // parameterization will need to change as shown below
