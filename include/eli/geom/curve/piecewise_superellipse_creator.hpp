@@ -202,6 +202,24 @@ namespace eli
             return max_width_loc;
           }
 
+/*
+ Referencing: Equal-Distance Sampling of Superellipse Models
+ By: Maurizio Pilu and Robert B. Fisher
+ http://dx.doi.org/10.5244/C.9.26
+
+ Developing equation 5, but for non-equal exponents
+ Wolfram Alpha:
+    1.0/sqrt((D[a *(cos(theta)^(2.0/m)),theta])^2  + (D[b *(sin(theta)^(2.0/n)),theta])^2)
+ Result:
+    1.0/sqrt((4.0* a^2 *sin^2(theta) *cos^(4.0/m - 2.0)(theta))/m^2 + (4.0 b^2 cos^2(theta) sin^(4.0/n - 2.0)(theta))/n^2)
+
+    double a, theta, m, n, b;
+
+    1.0 / sqrt( 4.0 * a * a * pow( sin( theta ), 2 ) * pow( cos( theta ), 4.0 / m - 2.0 ) / ( m * m ) +
+                4.0 * b * b * pow( cos( theta ), 2 ) * pow( sin( theta ), 4.0 / n - 2.0 ) / ( n * n ) )
+
+*/
+
           virtual bool create(piecewise<bezier, data_type, dim__, tolerance_type> &pc) const
           {
             typedef piecewise<bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
