@@ -608,6 +608,20 @@ namespace eli
             return true;
           }
 
+          virtual data_type explicit_y( const data_type &x ) const
+          {
+            data_type y;
+            y = max_width_loc + (b - max_width_loc) * std::pow( 1.0 - std::pow( x / a, m ), 1.0 / n );
+            return y;
+          }
+
+          virtual data_type explicit_x( const data_type &y ) const
+          {
+            data_type x;
+            x = a * std::pow( 1.0 - std::pow( (y-max_width_loc) / (b-max_width_loc), n ), 1.0 / m );
+            return x;
+          }
+
         protected:
           virtual void fun(point_type &f, const data_type &t) const
           {
