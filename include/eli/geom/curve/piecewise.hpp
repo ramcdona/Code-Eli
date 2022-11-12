@@ -512,6 +512,55 @@ namespace eli
             std::cout << "End report" << std::endl;
           }
 
+          void print() const
+          {
+              index_type i, j, pp, ns;
+
+              data_type tmin( get_parameter_min());
+
+              ns = number_segments();
+
+              data_type ti = tmin;
+              std::cout << "t:  ";
+              for ( pp = 0; pp < ns; ++pp )
+              {
+                  curve_type bez;
+                  data_type dt;
+                  get( bez, dt, pp );
+                  for ( i = 0; i <= bez.degree(); ++i )
+                  {
+                      std::cout << ti + dt * ( data_type ) i / ( data_type ) bez.degree();
+
+                      if ( i < bez.degree())
+                          std::cout << ", ";
+                      else if ( pp < ns - 1 )
+                          std::cout << ", ";
+                  }
+                  ti += dt;
+              }
+              std::cout << std::endl;
+
+              // get control points and print
+              for ( j = 0; j < dim__; j++ )
+              {
+                  std::cout << "x" << j << ": ";
+                  for ( pp = 0; pp < ns; ++pp )
+                  {
+                      curve_type bez;
+                      get( bez, pp );
+                      for ( i = 0; i <= bez.degree(); ++i )
+                      {
+                          std::cout << bez.get_control_point( i )[ j ];
+                          if ( i < bez.degree())
+                              std::cout << ", ";
+                          else if ( pp < ns - 1 )
+                              std::cout << ", ";
+                      }
+                  }
+                  std::cout << std::endl;
+              }
+          }
+
           void octave_print(int figno) const
           {
             index_type i, j, pp, ns;
