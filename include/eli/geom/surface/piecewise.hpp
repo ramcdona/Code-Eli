@@ -861,6 +861,30 @@ namespace eli
             return NO_ERRORS;
           }
 
+          data_type get_du( const index_type &ui ) const
+          {
+            if ( ui >= number_u_patches() )
+              return INVALID_INDEX;
+
+            index_type uk, vk;
+            typename keymap_type::const_iterator uit, vit;
+            find_patch( uk, vk, uit, vit, ui, 0 );
+
+            return ukey.get_delta_parm( uit );
+          }
+
+          data_type get_dv( const index_type &vi ) const
+          {
+            if ( vi >= number_v_patches() )
+              return INVALID_INDEX;
+
+            index_type uk, vk;
+            typename keymap_type::const_iterator uit, vit;
+            find_patch(uk, vk, uit, vit, 0, vi);
+
+            return vkey.get_delta_parm(vit);
+          }
+
           error_code set(const surface_type &surf, const index_type &ui, const index_type &vi)
           {
             if ((ui>=number_u_patches()) || (vi>=number_v_patches()))
