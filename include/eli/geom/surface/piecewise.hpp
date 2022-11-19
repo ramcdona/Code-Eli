@@ -2930,6 +2930,11 @@ namespace eli
 
               return 0;
             }
+
+            index_type find_index(const typename keymap_type::const_iterator &it) const
+            {
+              return distance( key.begin(), it );
+            }
           };
 
 

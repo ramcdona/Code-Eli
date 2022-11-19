@@ -2938,6 +2938,11 @@ namespace eli
 
           }
 
+          index_type find_index(const typename segment_collection_type::const_iterator &it) const
+          {
+            return distance( segments.begin(), it );
+          }
+
           error_code replace_it(const piecewise<curve__, data_type, dim__> &p, typename segment_collection_type::iterator &scit)
           {
             // Find parameter span to insert
