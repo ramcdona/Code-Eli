@@ -936,7 +936,11 @@ namespace eli
             }
           }
 
-          void clear() {segments.clear();}
+          void clear()
+          {
+            segments.clear();
+            tmax = 0;
+          }
 
           template<typename it__>
           error_code set(it__ itb, it__ ite)
