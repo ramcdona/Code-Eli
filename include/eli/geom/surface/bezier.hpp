@@ -259,6 +259,75 @@ namespace eli
             }
           }
 
+          void octave_print(int figno ) const
+          {
+            index_type i, j, pp, qq;
+
+            std::cout << "figure(" << figno << ");" << std::endl;
+
+            // initialize the u & v parameters
+            std::vector<data__> u(5), v(5);
+            for (i=0; i<static_cast<index_type>(u.size()); ++i)
+            {
+              u[i]=static_cast<data__>(i)/(u.size()-1);
+            }
+            for (j=0; j<static_cast<index_type>(v.size()); ++j)
+            {
+              v[j]=static_cast<data__>(j)/(v.size()-1);
+            }
+
+            // set the surface points
+            std::cout << "surf_x=[";
+            for (i=0; i<static_cast<index_type>(u.size()); ++i)
+            {
+              std::cout << this->f(u[i], v[0]).x();
+              for (j=1; j<static_cast<index_type>(v.size()-1); ++j)
+              {
+                std::cout << ", " << this->f(u[i], v[j]).x();
+              }
+              j=static_cast<index_type>(v.size()-1);
+              std::cout << ", " << this->f(u[i], v[j]).x();
+              if (i<static_cast<index_type>(u.size()-1))
+                std::cout << "; " << std::endl;
+            }
+            std::cout << "];" << std::endl;
+
+            std::cout << "surf_y=[";
+            for (i=0; i<static_cast<index_type>(u.size()); ++i)
+            {
+              std::cout << f(u[i], v[0]).y();
+              for (j=1; j<static_cast<index_type>(v.size()-1); ++j)
+              {
+                std::cout << ", " << f(u[i], v[j]).y();
+              }
+              j=static_cast<index_type>(v.size()-1);
+              std::cout << ", " << f(u[i], v[j]).y();
+              if (i<static_cast<index_type>(u.size()-1))
+                std::cout << "; " << std::endl;
+            }
+            std::cout << "];" << std::endl;
+
+            std::cout << "surf_z=[";
+            for (i=0; i<static_cast<index_type>(u.size()); ++i)
+            {
+              std::cout << f(u[i], v[0]).z();
+              for (j=1; j<static_cast<index_type>(v.size()-1); ++j)
+              {
+                std::cout << ", " << f(u[i], v[j]).z();
+              }
+              j=static_cast<index_type>(v.size()-1);
+              std::cout << ", " << f(u[i], v[j]).z();
+              if (i<static_cast<index_type>(u.size()-1))
+                std::cout << "; " << std::endl;
+            }
+            std::cout << "];" << std::endl;
+
+            std::cout << "setenv('GNUTERM', 'x11');" << std::endl;
+            std::cout << "mesh(surf_x, surf_y, surf_z, zeros(size(surf_z)), 'EdgeColor', [0 0 0]);" << std::endl;
+            std::cout << "axis equal" << std::endl;
+            std::cout << "axis off" << std::endl;
+          }
+
           void rotate(const rotation_matrix_type &rmat)
           {
             index_type j, degv(degree_v());
