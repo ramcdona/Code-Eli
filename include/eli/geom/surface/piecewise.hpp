@@ -248,6 +248,28 @@ namespace eli
             vmax=vkey.get_pmax();
           }
 
+          index_type find_u( const data_type &u_in )
+          {
+            index_type uk;
+            typename keymap_type::iterator uit;
+            data_type uu(0);
+
+            ukey.find_segment( uk, uit, uu, u_in );
+
+            return ukey.find_index( uit );
+          }
+
+          index_type find_v( const data_type &v_in )
+          {
+            index_type vk;
+            typename keymap_type::iterator vit;
+            data_type vv(0);
+
+            vkey.find_segment( vk, vit, vv, v_in );
+
+            return vkey.find_index( vit );
+          }
+
           void parameter_report() const
           {
             printf("U parameter:\n");

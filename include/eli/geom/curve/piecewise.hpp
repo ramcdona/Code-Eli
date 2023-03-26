@@ -496,6 +496,16 @@ namespace eli
             (*itt)=tmax;
           }
 
+          index_type find( const data_type &t_in )
+          {
+            typename segment_collection_type::const_iterator it;
+            data_type tt(0);
+
+            find_segment(it, tt, t_in);
+
+            return find_index( it );
+          }
+
           void parameter_report() const
           {
             std::cout << "Parameter report:" << std::endl;
