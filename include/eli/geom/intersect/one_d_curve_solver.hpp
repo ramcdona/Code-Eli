@@ -128,8 +128,26 @@ namespace eli
         }
 
         // couldn't find better answer so return initial guess
-        t=t0;
-        return val0;
+        t = t0;
+        val = val0;
+
+        // Try tmin.
+        val0 = c.f(tmin)(0);
+        if ( std::abs(val0) <= std::abs(val) )
+        {
+          t = tmin;
+          val = val0;
+        }
+
+        // Try tmax.
+        val0 = c.f(tmax)(0);
+        if ( std::abs(val0) <= std::abs(val) )
+        {
+          t = tmax;
+          val = val0;
+        }
+
+        return val;
       }
 
       template<typename onedcurve__>
