@@ -105,7 +105,6 @@ namespace eli
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
         typedef typename piecewise_type::tolerance_type tolerance_type;
-        typedef typename piecewise_type::point_type point_type;
 
         typedef typename piecewise_type::keymap_type keymap_type;
         typedef typename keymap_type::const_iterator keyit;
@@ -155,8 +154,6 @@ namespace eli
           const typename surface::piecewise<surface__, data__, dim__, tol__>::point_type &vec )
       {
         typedef surface::piecewise<surface__, data__, dim__, tol__> piecewise_type;
-        typedef typename piecewise_type::index_type index_type;
-        typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
 
         bounding_box_type bbox;
@@ -169,7 +166,6 @@ namespace eli
           const typename surface::piecewise<surface__, data__, dim__, tol__>::point_type &p0 )
       {
         typedef surface::piecewise<surface__, data__, dim__, tol__> piecewise_type;
-        typedef typename piecewise_type::index_type index_type;
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
         typedef typename piecewise_type::point_type point_type;

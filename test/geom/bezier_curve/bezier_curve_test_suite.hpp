@@ -1929,7 +1929,6 @@ class bezier_curve_test_suite : public Test::Suite
     {
       bool output = false;
       point_type cntrl_in[4];
-      data_type eps(std::numeric_limits<data__>::epsilon());
 
       point_type x;
 

@@ -299,9 +299,6 @@ namespace eli
         typedef surface::piecewise<surface__, data__, dim__, tol__> piecewise_type;
         typedef typename piecewise_type::index_type index_type;
         typedef typename piecewise_type::data_type data_type;
-        typedef typename piecewise_type::bounding_box_type bounding_box_type;
-        typedef typename piecewise_type::surface_type patch_type;
-        typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
 
 
         bool dbg = false;
@@ -385,9 +382,7 @@ namespace eli
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
         typedef typename piecewise_type::surface_type patch_type;
-        typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
 
-        typedef std::pair<data_type, data_type> pdata;
         typedef std::pair<index_type, index_type> iuivdata;
         typedef std::vector< std::pair<data_type, iuivdata > > dvec;
         dvec minbbdist;
@@ -616,9 +611,7 @@ namespace eli
         typedef typename piecewise_type::data_type data_type;
         typedef typename piecewise_type::bounding_box_type bounding_box_type;
         typedef typename piecewise_type::surface_type patch_type;
-        typedef typename surface::piecewise<surface__, data__, dim__, tol__>::point_type point_type;
 
-        typedef std::pair<data_type, data_type> pdata;
         typedef std::pair<index_type, index_type> iuivdata;
         typedef std::vector< std::pair<data_type, iuivdata > > dvec;
 

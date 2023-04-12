@@ -2173,7 +2173,7 @@ class piecewise_surface_test_suite : public Test::Suite
       data_type u, v, du, dv;
       data_type umin1, vmin1, umin2, vmin2;
       data_type umax1, vmax1, umax2, vmax2;
-      index_type iu, iv, nu, nv;
+      index_type nu, nv;
 
       // create 3x2 patches with unit spacing
       ps1.init_uv(3, 2);
@@ -2949,7 +2949,7 @@ class piecewise_surface_test_suite : public Test::Suite
       }
 
       data_type r, s, t, l, m, n;
-      data_type r0, s0, t0, l0, m0, n0;
+      data_type r0, s0, t0;
 
       // Valid parameter ranges...
       // r [0, 1.0]  s [0, 0.5]  t [0, 1.0]
