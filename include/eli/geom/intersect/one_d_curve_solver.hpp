@@ -97,7 +97,8 @@ namespace eli
         eli::mutil::nls::newton_raphson_method<typename onedcurve__::data_type> nrm;
         internal::onedcurve_g_functor<onedcurve__> g;
         internal::onedcurve_gp_functor<onedcurve__> gp;
-        typename onedcurve__::data_type val0, val;
+        typedef typename onedcurve__::data_type data_type;
+        data_type val0, val;
         typename onedcurve__::tolerance_type tol;
 
         // setup the functors
@@ -115,21 +116,23 @@ namespace eli
         nrm.set_initial_guess(t0);
         val0 = c.f(t0)(0);
 
+        // Set up initial guess as worst case scenario.
+        t = t0;
+        val = val0;
+
         // find the root
-        int ret = nrm.find_root(t, g, gp, 0);
+        data_type tnrm = t0;
+        int ret = nrm.find_root(tnrm, g, gp, 0);
 
         if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
         {
-          val = c.f(t)(0);
-          if ( std::abs(val) <= std::abs(val0) )
+          val0 = c.f(tnrm)(0);
+          if ( std::abs(val0) <= std::abs(val) )
           {
-            return val;
+            t = tnrm;
+            val = val0;
           }
         }
-
-        // couldn't find better answer so return initial guess
-        t = t0;
-        val = val0;
 
         // Try tmin.
         val0 = c.f(tmin)(0);
