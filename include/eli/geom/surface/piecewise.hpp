@@ -2350,7 +2350,7 @@ namespace eli
             data_type dr = l * len;
 
             // Find u at dr distance from pnose along spine, using l to inform initial guess.
-            eli::geom::intersect::specified_distance( u, spine, pnose, dr, umin + l * du );
+            eli::geom::intersect::specified_distance( u, spine, pnose, dr );
             r = ( u - umin ) / du;
 
             smid.get_uconst_curve( scross, u );
