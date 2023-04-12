@@ -30,6 +30,7 @@
 #include "eli/geom/curve/fit_container.hpp"
 #include "eli/geom/intersect/minimum_distance_curve.hpp"
 #include "eli/geom/intersect/intersect_plane_curve.hpp"
+#include "eli/geom/intersect/specified_distance_curve.hpp"
 
 // TODO: MOVE THESE TO utility namespace
 namespace eli

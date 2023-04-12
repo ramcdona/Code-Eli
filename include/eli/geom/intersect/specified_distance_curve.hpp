@@ -106,6 +106,67 @@ namespace eli
         };
       }
 
+      template<template<typename, unsigned short, typename> class curve__, typename data__, unsigned short dim__, typename tol__>
+      typename curve::piecewise<curve__, data__, dim__, tol__>::data_type specified_distance(typename curve::piecewise<curve__, data__, dim__, tol__>::data_type &t,
+                                                                                             const curve::piecewise<curve__, data__, dim__, tol__> &pc,
+                                                                                             const typename curve::piecewise<curve__, data__, dim__, tol__>::point_type &pt,
+                                                                                             const typename curve::piecewise<curve__, data__, dim__, tol__>::data_type &r0)
+      {
+        typedef curve::piecewise<curve__, data__, dim__, tol__> piecewise_type;
+        typedef typename piecewise_type::data_type data_type;
+        typedef typename piecewise_type::onedcurve objcurve;
+        typedef typename objcurve::point_type point_type;
+        typedef typename objcurve::index_type index_type;
+
+        point_type p0;
+        p0 << r0 * r0;
+        objcurve obj = pc.curveptdistsqcurve( pt );
+        obj.translate( -p0 );
+
+        data_type val;
+
+        data_type tmin = pc.get_t0();
+        data_type tmax = pc.get_tmax();
+
+        data_type t0 = 0.5 * ( tmin + tmax );
+        t = t0;
+
+        val = find_zero( t, obj, t0, tmin, tmax );
+
+        typedef typename objcurve::segment_collection_type::const_iterator segit;
+
+        // Check piecewise segment bounding boxes for candidate intersections.
+        for (segit seg=obj.segments.begin(); seg!=obj.segments.end(); ++seg)
+        {
+          index_type nzc = seg->second.numzerocrossings();
+          if ( nzc != 0 ) // Segment is candidate
+          {
+            data_type tlocal, vv;
+
+            if ( nzc == -1 )
+            {
+              tlocal = 0.5;
+              vv = seg->second.f( tlocal )( 0 );
+            }
+            else
+            {
+              vv = find_zero( tlocal, seg->second, 0.5 );
+            }
+
+            if ( std::abs( vv ) < std::abs( val ) )
+            {
+              data_type tstart( seg->first );
+              data_type dt( obj.get_delta_t( seg ) );
+
+              val = vv;
+              t = tstart + tlocal * dt;
+            }
+          }
+        }
+
+        return val;
+      }
+
       template<typename curve__>
       typename curve__::data_type specified_distance_new(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
       {

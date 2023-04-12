@@ -269,6 +269,14 @@ namespace eli
                               const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
                               const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::point_type &nvec);
 
+      template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
+      typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type
+                      specified_distance(
+                              typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
+                              const curve::piecewise<curve1__, data1__, dim1__, tol1__> &pc,
+                              const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
+                              const typename curve::piecewise<curve1__, data1__, dim1__, tol1__>::data_type &r0);
+
     }
 
     namespace curve
@@ -2677,6 +2685,14 @@ namespace eli
                                   const piecewise<curve1__, data1__, dim1__, tol1__> &pc,
                                   const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
                                   const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &nvec);
+
+          template<template<typename, unsigned short, typename> class curve1__, typename data1__, unsigned short dim1__, typename tol1__>
+          friend typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type
+                          eli::geom::intersect::specified_distance(
+                                  typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type &t,
+                                  const piecewise<curve1__, data1__, dim1__, tol1__> &pc,
+                                  const typename piecewise<curve1__, data1__, dim1__, tol1__>::point_type &pt,
+                                  const typename piecewise<curve1__, data1__, dim1__, tol1__>::data_type &r0);
 
           typedef std::map<data_type, curve_type> segment_collection_type;
 
