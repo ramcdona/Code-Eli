@@ -2449,7 +2449,7 @@ class piecewise_surface_test_suite : public Test::Suite
         point_type p, ptest;
         point_type pref( 0, 0, 0 );
 
-        data_type r0( 0.5 ), s0( 0.25 ), t0( 0.5 );
+        data_type r0( 0.5 ), s0( 0.5 ), t0( 0.5 );
 
         // Should be center of sphere.
         p = ps.fRST( r0, s0, t0 );
@@ -2459,12 +2459,6 @@ class piecewise_surface_test_suite : public Test::Suite
         data_type small( sqrt( std::numeric_limits<data_type>::epsilon() ) );
 
         // Also check derivatives at initial point.
-        // r0 = 0.1;
-        // s0 = 0.1;
-        // t0 = 0.1;
-
-        p = ps.fRST( 0.1, 0.1, 0.1 );
-        // std::cout << "P at (0.1,0.1,0.1) " << p << std::endl;
 
         tolerance_type ttol( std::sqrt( std::numeric_limits<data__>::epsilon() ),
                              std::sqrt( std::numeric_limits<data__>::epsilon() ) );
@@ -2502,7 +2496,7 @@ class piecewise_surface_test_suite : public Test::Suite
         index_type ret;
 
         data_type rmin( 0.0 ), rmax( 1.0 );
-        data_type smin( 0.0 ), smax( 0.5 );
+        data_type smin( 0.0 ), smax( 1.0 );
         data_type tmin( 0.0 ), tmax( 1.0 );
 
         index_type nr = 11;
@@ -2621,7 +2615,7 @@ class piecewise_surface_test_suite : public Test::Suite
         point_type p, ptest;
         point_type pref( 0, 0, 0 );
 
-        data_type r0( 0.5 ), s0( 0.25 ), t0( 0.5 );
+        data_type r0( 0.5 ), s0( 0.5 ), t0( 0.5 );
 
         // Should be center of sphere.
         p = ps.fRST( r0, s0, t0 );
@@ -2631,12 +2625,6 @@ class piecewise_surface_test_suite : public Test::Suite
         data_type small( sqrt( std::numeric_limits<data_type>::epsilon() ) );
 
         // Also check derivatives at initial point.
-        // r0 = 0.1;
-        // s0 = 0.1;
-        // t0 = 0.1;
-
-        p = ps.fRST( 0.1, 0.1, 0.1 );
-        // std::cout << "P at (0.1,0.1,0.1) " << p << std::endl;
 
         tolerance_type ttol( std::sqrt( std::numeric_limits<data__>::epsilon() ),
                              std::sqrt( std::numeric_limits<data__>::epsilon() ) );
@@ -2674,7 +2662,7 @@ class piecewise_surface_test_suite : public Test::Suite
         index_type ret;
 
         data_type rmin( 0.0 ), rmax( 1.0 );
-        data_type smin( 0.0 ), smax( 0.5 );
+        data_type smin( 0.0 ), smax( 1.0 );
         data_type tmin( 0.0 ), tmax( 1.0 );
 
         index_type nr = 21;
@@ -2794,7 +2782,7 @@ class piecewise_surface_test_suite : public Test::Suite
         point_type p, ptest;
         point_type pref( 0, 0, 0 );
 
-        data_type r0( 0.5 ), s0( 0.25 ), t0( 0.5 );
+        data_type r0( 0.5 ), s0( 0.5 ), t0( 0.5 );
 
         // Should be center of sphere.
         p = ps.fRST( r0, s0, t0 );
@@ -2804,12 +2792,6 @@ class piecewise_surface_test_suite : public Test::Suite
         data_type small( sqrt( std::numeric_limits<data_type>::epsilon() ) );
 
         // Also check derivatives at initial point.
-        // r0 = 0.1;
-        // s0 = 0.1;
-        // t0 = 0.1;
-
-        p = ps.fRST( 0.1, 0.1, 0.1 );
-        // std::cout << "P at (0.1,0.1,0.1) " << p << std::endl;
 
         tolerance_type ttol( std::sqrt( std::numeric_limits<data__>::epsilon() ),
                              std::sqrt( std::numeric_limits<data__>::epsilon() ) );
@@ -2847,7 +2829,7 @@ class piecewise_surface_test_suite : public Test::Suite
         index_type ret;
 
         data_type rmin( 0.0 ), rmax( 1.0 );
-        data_type smin( 0.0 ), smax( 0.5 );
+        data_type smin( 0.0 ), smax( 1.0 );
         data_type tmin( 0.0 ), tmax( 1.0 );
 
         index_type nr = 21;

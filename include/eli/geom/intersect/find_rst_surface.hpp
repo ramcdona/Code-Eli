@@ -50,7 +50,7 @@ namespace eli
             vec rtn;
 
             typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
-            typename surface__::data_type smin( 0.0 ), smax( 0.5 );
+            typename surface__::data_type smin( 0.0 ), smax( 1.0 );
             typename surface__::data_type tmin( 0.0 ), tmax( 1.0 );
 
             if ( !(r>=rmin) )
@@ -109,7 +109,7 @@ namespace eli
             typename surface__::data_type r( x(0) ), s( x(1) ), t( x(2) );
             mat rtn;
             typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
-            typename surface__::data_type smin( 0.0 ), smax( 0.5 );
+            typename surface__::data_type smin( 0.0 ), smax( 1.0 );
             typename surface__::data_type tmin( 0.0 ), tmax( 1.0 );
 
             if ( !(r>=rmin) )
@@ -282,7 +282,7 @@ namespace eli
         typename surface__::tolerance_type tol;
 
         typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
-        typename surface__::data_type smin( 0.0 ), smax( 0.5 );
+        typename surface__::data_type smin( 0.0 ), smax( 1.0 );
 
         return find_rst( r, s, t, surf, pt, r0, s0, t0, rmin, rmax, smin, smax, ret );
       }
@@ -305,7 +305,7 @@ namespace eli
 
 
         data_type r0 = 0.5;
-        data_type s0 = 0.25;
+        data_type s0 = 0.5;
         data_type t0 = 0.5;
         data_type dist;
 
@@ -334,12 +334,12 @@ namespace eli
             vrng = vmax - vmin;
 
             data_type rr = ( u - umin ) / urng;
-            data_type ss = ( v - vmin ) / vrng;
+            data_type ss = 2.0 * ( v - vmin ) / vrng;
             data_type tt = 0.0; // Assume on bottom surface.
 
-            if ( ss > 0.5 ) // Actually on top surface.
+            if ( ss > 1.0 ) // Actually on top surface.
             {
-              ss = 1.0 - ss;
+              ss = 2.0 - ss;
               tt = 1.0;
             }
             index_type rret = 0;
@@ -485,14 +485,14 @@ namespace eli
             data_type v = vstart + 0.5 * dv;
 
             data_type r0 = ( u - umin ) / urng;
-            data_type s0 = ( v - vmin ) / vrng;
+            data_type s0 = 2.0 * ( v - vmin ) / vrng;
             data_type t0 = 0.5;
 
             data_type rmin = ( ustart - umin ) / urng;
             data_type rmax = ( ustart + du - umin ) / urng;
 
-            data_type smin = ( vstart - vmin ) / vrng;
-            data_type smax = ( vstart + dv - vmin ) / vrng;
+            data_type smin = 2.0 * ( vstart - vmin ) / vrng;
+            data_type smax = 2.0 * ( vstart + dv - vmin ) / vrng;
 
             data_type rr, ss, tt;
             data_type d;
@@ -539,12 +539,12 @@ namespace eli
           if( d < dist ) // Check for improvement.
           {
             data_type rr = ( u - umin ) / urng;
-            data_type ss = ( v - vmin ) / vrng;
+            data_type ss = 2.0 * ( v - vmin ) / vrng;
             data_type tt = 0.0; // Assume on bottom surface.
 
-            if ( ss > 0.5 ) // Actually on top surface.
+            if ( ss > 1.0 ) // Actually on top surface.
             {
-              ss = 1.0 - ss;
+              ss = 2.0 - ss;
               tt = 1.0;
             }
             index_type rret = 0;
@@ -734,14 +734,14 @@ namespace eli
             data_type v = vstart + 0.5 * dv;
 
             data_type r0 = ( u - umin ) / urng;
-            data_type s0 = ( v - vmin ) / vrng;
+            data_type s0 = 2.0 * ( v - vmin ) / vrng;
             data_type t0 = 0.5;
 
             data_type rmin = ( ustart - umin ) / urng;
             data_type rmax = ( ustart + du - umin ) / urng;
 
-            data_type smin = ( vstart - vmin ) / vrng;
-            data_type smax = ( vstart + dv - vmin ) / vrng;
+            data_type smin = 2.0 * ( vstart - vmin ) / vrng;
+            data_type smax = 2.0 * ( vstart + dv - vmin ) / vrng;
 
             data_type rr, ss, tt;
             data_type dout;
@@ -793,12 +793,12 @@ namespace eli
           if( dout < dist ) // Check for improvement.
           {
             data_type rr = ( u - umin ) / urng;
-            data_type ss = ( v - vmin ) / vrng;
+            data_type ss = 2.0 * ( v - vmin ) / vrng;
             data_type tt = 0.0; // Assume on bottom surface.
 
-            if ( ss > 0.5 ) // Actually on top surface.
+            if ( ss > 1.0 ) // Actually on top surface.
             {
-              ss = 1.0 - ss;
+              ss = 2.0 - ss;
               tt = 1.0;
             }
             index_type rret = 0;

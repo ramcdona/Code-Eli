@@ -2289,7 +2289,7 @@ namespace eli
 
           // RST is an alternate parameterization that assumes a u, v surface encloses a volume.
           // R [0, 1] runs the length of the volume (U-direction)
-          // S [0, 0.5] runs the width of the volume (V-direction)
+          // S [0, 1] runs the width of the volume (V-direction)
           // T [0, 1] runs the thickness of the volume
           point_type fRST(const data_type &r, const data_type &s, const data_type &t) const
           {
@@ -2300,8 +2300,8 @@ namespace eli
             dv = vmax - vmin;
 
             data_type u = umin + r * du;
-            data_type vlow = vmin + s * dv;
-            data_type vup = vmax - s * dv;
+            data_type vlow = vmin + 0.5 * s * dv;
+            data_type vup = vmax - 0.5 * s * dv;
 
             point_type xup, xlow;
 
@@ -2320,8 +2320,8 @@ namespace eli
             dv = vmax - vmin;
 
             data_type u = umin + r * du;
-            data_type vlow = vmin + s * dv;
-            data_type vup = vmax - s * dv;
+            data_type vlow = vmin + 0.5 * s * dv;
+            data_type vup = vmax - 0.5 * s * dv;
 
             point_type dxup_du = f_u( u, vup );
             point_type dxlow_du = f_u( u, vlow );
@@ -2339,13 +2339,13 @@ namespace eli
             dv = vmax - vmin;
 
             data_type u = umin + r * du;
-            data_type vlow = vmin + s * dv;
-            data_type vup = vmax - s * dv;
+            data_type vlow = vmin + 0.5 * s * dv;
+            data_type vup = vmax - 0.5 * s * dv;
 
             point_type dxup_dv = f_v( u, vup );
             point_type dxlow_dv = f_v( u, vlow );
 
-            point_type dx_dS = ( 1.0 - t ) * dxlow_dv * dv - t * dxup_dv * dv;
+            point_type dx_dS = 0.5 * ( ( 1.0 - t ) * dxlow_dv * dv - t * dxup_dv * dv );
             return dx_dS;
           }
 
@@ -2359,8 +2359,8 @@ namespace eli
             dv = vmax - vmin;
 
             data_type u = umin + r * du;
-            data_type vlow = vmin + s * dv;
-            data_type vup = vmax - s * dv;
+            data_type vlow = vmin + 0.5 * s * dv;
+            data_type vup = vmax - 0.5 * s * dv;
 
             point_type xup, xlow;
 
