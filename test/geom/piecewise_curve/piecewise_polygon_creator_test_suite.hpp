@@ -264,7 +264,6 @@ class piecewise_polygon_creator_test_suite : public Test::Suite
       {
         piecewise_curve_type pc;
         polygon_creator_type poly_creator(3);
-        data_type dt0(3), dt1(2), dt2(3), t0(-1), dt;
         point_type p0, p1, p2, pave;
 
         // set the corners

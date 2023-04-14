@@ -557,7 +557,7 @@ class piecewise_circle_creator_test_suite : public Test::Suite
 
         piecewise_curve2_type pc;
 
-        TEST_ASSERT( pc.push_back( c ) == piecewise_curve_type::NO_ERRORS );
+        TEST_ASSERT( pc.push_back( c ) == piecewise_curve2_type::NO_ERRORS );
 
         c1.set_control_point( cp[3], 0 );
         c1.set_control_point( origin, 1 );
