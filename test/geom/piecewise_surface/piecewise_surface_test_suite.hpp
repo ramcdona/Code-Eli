@@ -67,6 +67,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<float>::trim_v_test);
     }
     void AddTests(const double &)
     {
@@ -88,6 +89,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<double>::trim_v_test);
     }
     void AddTests(const long double &)
     {
@@ -109,6 +111,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test3);
+      TEST_ADD(piecewise_surface_test_suite<long double>::trim_v_test);
     }
 
   public:
@@ -2885,6 +2888,80 @@ class piecewise_surface_test_suite : public Test::Suite
       }
     }
 
+    void trim_v_test()
+    {
+      typedef typename piecewise_curve_type::curve_type curve_type;
+      typedef typename curve_type::control_point_type curve_control_point_type;
+
+      // create geometry with default parameterizations
+      {
+        bool dbg = false;
+        piecewise_curve_type pc;
+        curve_type c(3);
+        curve_control_point_type cp[4];
+        data_type k=eli::constants::math<data_type>::cubic_bezier_circle_const()*(eli::constants::math<data_type>::sqrt_two()-1);
+        index_type i;
+
+        // create curve
+        cp[0] << 1, 0, 0;
+        cp[1] << 1, k, 0;
+        cp[2] << k, 1, 0;
+        cp[3] << 0, 1, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+        // set 2nd quadrant curve
+        cp[0] <<  0, 1, 0;
+        cp[1] << -k, 1, 0;
+        cp[2] << -1, k, 0;
+        cp[3] << -1, 0, 0;
+        for (i=0; i<4; ++i)
+        {
+          c.set_control_point(cp[i], i);
+        }
+        TEST_ASSERT(pc.push_back(c, 0.25)==piecewise_curve_type::NO_ERRORS);
+
+        piecewise_surface_type ps;
+
+        TEST_ASSERT(eli::geom::surface::create_body_of_revolution(ps, pc, 0, true));
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps.octave_print( 1 );
+
+        TEST_ASSERT(ps.open_u());
+        TEST_ASSERT(ps.closed_v());
+
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps.parameter_report();
+
+        piecewise_surface_type ps2;
+
+        ps.trim_v( 0.1, 0.6, ps2 );
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps2.octave_print( 2 );
+
+        ps.trim_v( 0.1, 1.1, ps2 );
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps2.octave_print( 3 );
+
+        ps.trim_v( 0.6, 0.1, ps2 );
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps2.octave_print( 4 );
+
+        ps.trim_v( 0.75, 0.25, ps2 );
+
+        if (typeid(data_type)==typeid(double) && dbg )
+          ps2.octave_print( 5 );
+
+      }
+    }
 };
 
 #endif
