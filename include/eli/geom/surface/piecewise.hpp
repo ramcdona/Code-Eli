@@ -1210,6 +1210,98 @@ namespace eli
 
           }
 
+          bool trim_v( const data_type &v_start, const data_type &v_end, piecewise<surface__, data_type, dim__, tol__> &res)
+          {
+            index_type uk, vk;
+            typename keymap_type::iterator uit, vit;
+            data_type vmin, vmax;
+            vmin = get_v0();
+            vmax = get_vmax();
+
+            data_type dv;
+            piecewise<surface__, data_type, dim__, tol__> s1, s2, s3, s4, s5;
+
+            // Figure out span of trim area.
+            dv = v_end - v_start;
+            if ( dv < 0 )
+            {
+              dv += vmax;
+            }
+
+            // Start by making a copy.
+            s1 = (*this);
+
+            // Always roll to v_start (will split at v_start implicitly)
+            if ( s1.split_v( v_start ) != NO_ERRORS )
+            {
+              return false;
+            }
+
+            s1.roll_vparm( v_start );
+
+            // Split at end oint
+            if ( s1.split_v( s2, s3, dv ) != NO_ERRORS )
+            {
+              return false;
+            }
+
+            if ( s2.number_v_patches() <= 0 )
+            {
+              return false;
+            }
+
+            // Pull out bounding curves
+            piecewise_curve_type vmin_bndy, vmax_bndy;
+            s2.get_vmin_bndy_curve( vmin_bndy );
+            s2.get_vmax_bndy_curve( vmax_bndy );
+
+            // Re-set v to linear, with v0 = 0.  Keeps u number of segments and parameter vals unchanged.
+            s2.init_v( 1, dv, 0 );
+
+            index_type nu = s2.number_u_patches();
+
+            for ( index_type iu = 0; iu < nu; iu++ )
+            {
+              curve_type cmin, cmax;
+              vmin_bndy.get( cmin, iu );
+              vmax_bndy.get( cmax, iu );
+
+              index_type degu = cmin.degree();
+
+              surface_type s( degu, 1 );
+
+              for ( index_type i = 0; i <= degu; i++ )
+              {
+                s.set_control_point( cmin.get_control_point( i ), i, 0 );
+                s.set_control_point( cmax.get_control_point( i ), i, 1 );
+              }
+
+              s2.set( s, iu, 0 );
+            }
+
+            data_type rev_roll = vmax - v_start;
+
+            if ( rev_roll < dv )
+            {
+              // Split because original split was lost when hole was capped.
+              if ( s2.split_v( rev_roll ) != NO_ERRORS )
+              {
+                return false;
+              }
+            }
+
+            res.join_v( s2, s3 );
+
+            // Roll back to original position.
+            index_type code = res.roll_vparm( rev_roll );
+
+            // Force parameter to make sure no error crept in.
+            res.set_v0( 0.0 );
+            res.set_vmax( vmax );
+
+            return true;
+          }
+
           void to_cubic_u(const data_type &ttol)
           {
             typename keymap_type::iterator uit, vit;
