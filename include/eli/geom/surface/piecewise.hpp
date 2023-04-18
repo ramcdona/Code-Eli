@@ -763,6 +763,56 @@ namespace eli
             vkey.roll_keymap( index );
           }
 
+          index_type roll_uparm( const data_type &u_in )
+          {
+            index_type ui;
+            typename keymap_type::iterator uit;
+            data_type uu;
+            index_type code = ukey.find_segment( ui, uit, uu, u_in );
+
+            if ( code != -1 )
+            {
+              if ( uu > 0.5 )
+              {
+                if ( uit != ukey.key.end() )
+                {
+                  uit++;
+                }
+              }
+            }
+
+            if ( uit != ukey.key.begin() )
+            {
+              ukey.roll_keymap( uit );
+            }
+            return code;
+          }
+
+          index_type roll_vparm( const data_type &v_in )
+          {
+            index_type vi;
+            typename keymap_type::iterator vit;
+            data_type vv;
+            index_type code = vkey.find_segment( vi, vit, vv, v_in );
+
+            if ( code != -1 )
+            {
+              if ( vv > 0.5 )
+              {
+                if ( vit != vkey.key.end() )
+                {
+                  vit++;
+                }
+              }
+            }
+
+            if ( vit != vkey.key.begin() )
+            {
+              vkey.roll_keymap( vit );
+            }
+            return code;
+          }
+
           void scale(const data_type &s)
           {
             typename patch_collection_type::iterator uit;
