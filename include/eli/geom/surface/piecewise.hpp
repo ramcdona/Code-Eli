@@ -175,7 +175,10 @@ namespace eli
           void set_v0(const data_type &v0_in) {vkey.set_pmin(v0_in);}
 
           data_type get_umax() const {return ukey.get_pmax();}
+          void set_umax(const data_type &umax_in) {ukey.set_pmax(umax_in);}
+
           data_type get_vmax() const {return vkey.get_pmax();}
+          void set_vmax(const data_type &vmax_in) {vkey.set_pmax(vmax_in);}
 
           index_type number_u_patches() const {return nu;}
           index_type number_v_patches() const {return nv;}
