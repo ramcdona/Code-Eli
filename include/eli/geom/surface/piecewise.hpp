@@ -2619,15 +2619,11 @@ namespace eli
               assert(tol.approximately_equal(p, pmax));
             }
 
-            void roll_keymap( const index_type &index )
+            void roll_keymap( const typename keymap_type::const_iterator &itstart )
             {
               keymap_type rollkey;
-              index_type ikey;
-              typename keymap_type::const_iterator itstart;
               typename keymap_type::const_iterator itr;
               typename keymap_type::const_iterator itguess = rollkey.begin();
-
-              find_segment( ikey, itstart, index );
 
               data_type p = get_pmin();
 
@@ -2651,6 +2647,16 @@ namespace eli
               }
 
               key.swap( rollkey );
+            }
+
+            void roll_keymap( const index_type &index )
+            {
+              index_type ikey;
+              typename keymap_type::const_iterator itstart;
+
+              find_segment( ikey, itstart, index );
+
+              roll_keymap( itstart );
             }
 
             data_type get_delta_parm(const typename keymap_type::iterator &it) const
