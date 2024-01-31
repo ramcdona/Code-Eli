@@ -40,6 +40,7 @@ namespace eli
           const surface__ *s1;
           const surface__ *s2;
           typename surface__::data_type k;
+          typename surface__::point_type p0;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
 
@@ -64,8 +65,8 @@ namespace eli
 
             typename surface__::point_type p1, p2, pave, disp, tvec;
 
-            p1=s1->f(u1,v1);
-            p2=s2->f(u2,v2);
+            p1=s1->f(u1,v1,p0);
+            p2=s2->f(u2,v2,p0);
 
             pave=(p1+p2)*0.5;
             disp=p2-p1;
@@ -86,6 +87,7 @@ namespace eli
           const surface__ *s1;
           const surface__ *s2;
           typename surface__::data_type k;
+          typename surface__::point_type p0;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 1> vec;
           typedef typename Eigen::Matrix<typename surface__::data_type, 4, 4> mat;
@@ -114,8 +116,8 @@ namespace eli
 
             typename surface__::point_type p1, p2, pave, tvec, dist;
 
-            p1=s1->f(u1,v1);
-            p2=s2->f(u2,v2);
+            p1=s1->f(u1,v1,p0);
+            p2=s2->f(u2,v2,p0);
 
             pave=(p1+p2)*0.5;
             dist=pave;
@@ -171,7 +173,7 @@ namespace eli
       typename surface__::index_type intersect(typename surface__::data_type &u1, typename surface__::data_type &v1,
                                               typename surface__::data_type &u2, typename surface__::data_type &v2,
                                               typename surface__::data_type &dist,
-                                              const surface__ &s1in, const surface__ &s2in, const typename surface__::point_type &pt,
+                                              const surface__ &s1, const surface__ &s2, const typename surface__::point_type &pt,
                                               const typename surface__::data_type &u01, const typename surface__::data_type &v01,
                                               const typename surface__::data_type &u02, const typename surface__::data_type &v02 )
       {
@@ -185,14 +187,6 @@ namespace eli
         typename surface__::data_type u1min, u1max, v1min, v1max;
         typename surface__::data_type u2min, u2max, v2min, v2max;
 
-        surface__ s1 = s1in;
-        surface__ s2 = s2in;
-
-        // Shift surfaces to be centered at initial intersection point.  This forces all coordinates to be close to zero
-        // thereby increasing available precision for the calculations.
-        s1.translate( -pt );
-        s2.translate( -pt );
-
         s1.get_parameter_min(u1min,v1min);
         s1.get_parameter_max(u1max,v1max);
         s2.get_parameter_min(u2min,v2min);
@@ -200,8 +194,10 @@ namespace eli
 
         typename surface__::point_type p1, p2;
 
-        p1=s1.f(u01,v01);
-        p2=s2.f(u02,v02);
+        // Use offset function evaluation here and in functors to shift surfaces to be centered near initial intersection point.
+        // This forces all coordinates to be close to zero thereby increasing available precision for the calculations.
+        p1=s1.f(u01,v01,pt);
+        p2=s2.f(u02,v02,pt);
 
         // Relative importance of nearness to base point.
         typename surface__::data_type k = 1.0e-3;
@@ -210,9 +206,11 @@ namespace eli
         g.s1=&s1;
         g.s2=&s2;
         g.k=k;
+        g.p0=pt;
         gp.s1=&s1;
         gp.s2=&s2;
         gp.k=k;
+        gp.p0=pt;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -281,7 +279,7 @@ namespace eli
           u2=ans(2);
           v2=ans(3);
 
-          dist = eli::geom::point::distance(s1.f(u1, v1), s2.f(u2,v2));
+          dist = eli::geom::point::distance(s1.f(u1, v1, pt), s2.f(u2, v2, pt));
 
 //        if( dist > 1e-6 )
 //        {
