@@ -28,6 +28,7 @@
 #include "eli/geom/point/distance.hpp"
 #include "eli/geom/intersect/minimum_distance_bounding_box.hpp"
 #include "eli/geom/intersect/findnonpos.hpp"
+#include "eli/util/clamp.hpp"
 
 namespace eli
 {
@@ -463,6 +464,9 @@ namespace eli
         {
           assert((u>=umin) && (u<=umax));
           assert((v>=vmin) && (v<=vmax));
+
+          u = util::clamp( u, umin, umax );
+          v = util::clamp( v, vmin, vmax );
 
           dist = eli::geom::point::distance(s.f(u, v), pt);
           if  (dist<=dist0)
