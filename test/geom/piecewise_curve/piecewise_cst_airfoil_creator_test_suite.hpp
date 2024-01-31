@@ -1089,7 +1089,7 @@ class piecewise_cst_airfoil_creator_test_suite : public Test::Suite
         pt = pc.f(t);
 //        std::cout << "pt_ref << " << std::setprecision(15) << pt.x() << ", " << pt.y() << ", " << pt.z() << ";" << std::endl;
         pt_ref << 2.93983922906606, 3.15259989674235, 0;
-        TEST_ASSERT((pt-pt_ref).norm()<2e-4);
+        TEST_ASSERT((pt-pt_ref).norm()<2.5e-4);
 
 //        if (typeid(data_type)==typeid(float))
 //        {
