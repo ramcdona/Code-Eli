@@ -1,5 +1,5 @@
 /*********************************************************************************
-* Copyright (c) 2013 David D. Marshall <ddmarsha@calpoly.edu>
+* Copyright (c) 2024 Rob McDonald <rob.a.mcdonald@gmail.com>
 *
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
@@ -7,15 +7,25 @@
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*    David D. Marshall - initial code and implementation
+*    Rob McDonald
 ********************************************************************************/
 
-#ifndef eli_util_hpp
-#define eli_util_hpp
+#ifndef eli_util_clamp_hpp
+#define eli_util_clamp_hpp
 
-#include "eil/util/clamp.hpp"
-#include "eli/util/tolerance.hpp"
-#include "eli/util/floating_point.hpp"
-#include "eil/util/traits.hpp"
+#include "eli/code_eli.hpp"
 
+// Should use clamp from C++17, but this will do until Code-Eli is set up for that.
+
+namespace eli
+{
+  namespace util
+  {
+    template<class T>
+    T clamp(const T& v, const T& lo, const T& hi)
+    {
+      return v < lo ? lo : hi < v ? hi : v;
+    }
+  }
+}
 #endif
