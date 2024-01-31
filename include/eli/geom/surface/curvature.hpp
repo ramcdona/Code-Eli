@@ -106,7 +106,7 @@ namespace eli
 
 
           // calculate the principal curvatures
-          tmp=std::sqrt(H*H-K);
+          tmp=std::sqrt(std::abs(H*H-K)); // abs() added to protect against nearly -0 operand.
           kmax=H+tmp;
           kmin=H-tmp;
 
