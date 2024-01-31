@@ -45,6 +45,27 @@ namespace eli
         p=Q.row(0);
       }
 
+      // Evaluate Bezier relative to an offset (p0).  This is used to improve precision of surface intersection
+      // algorithms.
+      template<typename Derived1, typename Derived2>
+      void de_casteljau(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t, const Eigen::MatrixBase<Derived1> &p0)
+      {
+        // do some checks on incoming matrix dimensions
+        assert(p.cols()==cp.cols());
+
+        // Initialize Q to shifted control points.
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp-p0);
+        typename Derived2::Scalar oneminust(1-t);
+        typename Derived2::Index k;
+
+        for (k=1; k<Q.rows(); ++k)
+        {
+          Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
+        }
+
+        p=Q.row(0);
+      }
+
       template<typename Derived1, typename Derived2>
       void bezier_i_control_point(Eigen::MatrixBase<Derived1> &cp_i, const Eigen::MatrixBase<Derived2> &cp)
       {

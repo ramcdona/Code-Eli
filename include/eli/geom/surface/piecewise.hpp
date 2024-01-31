@@ -1927,6 +1927,19 @@ namespace eli
             return patches[uk][vk].f(uu, vv);
           }
 
+          point_type f(const data_type &u, const data_type &v, const point_type &p0) const
+          {
+            // find patch that corresponds to given u & v
+            index_type uk, vk;
+            data_type uu(0), vv(0);
+
+            find_patch(uk, vk, uu, vv, u, v);
+
+            assert((uk != -1) && (vk != -1));
+
+            return patches[uk][vk].f(uu, vv, p0);
+          }
+
           point_type f_u(const data_type &u, const data_type &v) const
           {
             // find patch that corresponds to given u & v

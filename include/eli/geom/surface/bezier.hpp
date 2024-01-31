@@ -899,6 +899,46 @@ namespace eli
             return ans;
           }
 
+          point_type f(const data_type &u, const data_type &v, const point_type &p0) const
+          {
+            point_type ans, tmp;
+            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_cp;
+            index_type i, n(degree_u()), m(degree_v());
+
+            // check to make sure have valid curve
+            assert(n>=0);
+            assert(m>=0);
+
+            // check to make sure given valid parametric value
+            assert((u>=0) && (u<=1));
+            assert((v>=0) && (v<=1));
+
+            if (n<=m)
+            {
+              temp_cp.resize(m+1, dim__);
+              // build the temporary control points
+              for (i=0; i<=m; ++i)
+              {
+                eli::geom::utility::de_casteljau(tmp, B_u[i], u, p0);
+                temp_cp.row(i)=tmp;
+              }
+              eli::geom::utility::de_casteljau(ans, temp_cp, v);
+            }
+            else
+            {
+              temp_cp.resize(n+1, dim__);
+              // build the temporary control points
+              for (i=0; i<=n; ++i)
+              {
+                eli::geom::utility::de_casteljau(tmp, B_v[i], v, p0);
+                temp_cp.row(i)=tmp;
+              }
+              eli::geom::utility::de_casteljau(ans, temp_cp, u);
+            }
+
+            return ans;
+          }
+
           void f_ubatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &f_umat ) const
           {
             // check to make sure have valid curve
