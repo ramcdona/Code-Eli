@@ -2441,6 +2441,20 @@ class bezier_surface_test_suite : public Test::Suite
             TEST_ASSERT(bez_hi.get_control_point(i,j)==pt_hi[i][j]);
           }
         }
+
+        bezier_type bez_lo_half(n, m), bez_hi_half(n, m);
+
+        bez.simple_split_u_half( bez_lo_half, bez_hi_half );
+
+        // compare control points
+        for (index_type i=0; i<=n; ++i)
+        {
+          for (index_type j=0; j<=m; ++j)
+          {
+            TEST_ASSERT(bez_lo_half.get_control_point(i,j)==pt_lo[i][j]);
+            TEST_ASSERT(bez_hi_half.get_control_point(i,j)==pt_hi[i][j]);
+          }
+        }
       }
 
       // split in u-direction
@@ -2584,6 +2598,20 @@ class bezier_surface_test_suite : public Test::Suite
           for (index_type j=0; j<=m; ++j)
           {
             bez.set_control_point(pt[i][j], i, j);
+          }
+        }
+
+        // Compare normal split to simple half split.
+        bezier_type bez_lo_half(n, m), bez_hi_half(n, m);
+        bez.split_v( bez_lo, bez_hi, 0.5 );
+        bez.simple_split_v_half( bez_lo_half, bez_hi_half );
+
+        for (index_type i=0; i<=n; ++i)
+        {
+          for (index_type j=0; j<=m; ++j)
+          {
+            TEST_ASSERT( bez_lo.get_control_point(i,j) == bez_lo_half.get_control_point(i,j) );
+            TEST_ASSERT( bez_hi.get_control_point(i,j) == bez_hi_half.get_control_point(i,j) );
           }
         }
 
