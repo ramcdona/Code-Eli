@@ -31,6 +31,20 @@ namespace eli
 
           static const int hit_constraint = 101;
 
+        private:
+          template<typename f__, typename g__>
+          struct wrapper_functor
+          {
+            f__ fun;
+            g__ fprime;
+
+            void operator()( data_type &fx, data_type &fpx, const data_type &x ) const
+            {
+              fx = fun( x );
+              fpx = fprime( x );
+            }
+          };
+
         public:
           newton_raphson_method() : iterative_root_base_constrained<data_type>(), x0(0)
           {
@@ -56,9 +70,20 @@ namespace eli
           }
 
           template<typename f__, typename g__>
-          int find_root(data_type &root, const f__ &fun, const g__ &fprime, const data_type &f0) const
+          int find_root( data_type &root, const f__ &fun, const g__ &fprime, const data_type &f0 ) const
           {
-            data_type x(x0), fx(fun(x0)), fpx(fprime(x0)), eval, eval_abs, eval_abs2, dx(1);
+            wrapper_functor< f__, g__ > ffprime;
+            ffprime.fun = fun;
+            ffprime.fprime = fprime;
+            return find_root( root, ffprime, f0 );
+          }
+
+          template<typename fg__>
+          int find_root(data_type &root, const fg__ &ffprime, const data_type &f0) const
+          {
+            data_type fx, fpx;
+            data_type x(x0), eval, eval_abs, eval_abs2, dx(1);
+            ffprime( fx, fpx, x0 );
             typename iterative_root_base<data__>::iteration_type count;
 
             // calculate the function evaluated at the initial location
@@ -79,8 +104,7 @@ namespace eli
 
               dx=this->calculate_delta_factor(x, -eval/fpx);
               x+=dx;
-              fx=fun(x);
-              fpx=fprime(x);
+              ffprime( fx, fpx, x );
               eval=fx-f0;
               eval_abs=std::abs(eval);
               eval_abs2=std::abs(dx);

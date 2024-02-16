@@ -30,6 +30,22 @@ namespace eli
         public:
           static const int hit_constraint = 101;
 
+        private:
+          template<typename f__, typename g__>
+          struct wrapper_functor
+          {
+            f__ fun;
+            g__ fprime;
+
+            void operator()( typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &fx,
+                             typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix &fpx,
+                             const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &x ) const
+            {
+              fx = fun( x );
+              fpx = fprime( x );
+            }
+          };
+
         public:
           newton_raphson_system_method()
           : iterative_system_root_base_constrained<data__, N__, NSOL__>()
@@ -59,8 +75,19 @@ namespace eli
           template<typename f__, typename g__>
           int find_root(typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &root, const f__ &fun, const g__ &fprime, const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &f0) const
           {
-            typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix dx, x(x0), fx(fun(x0)), eval1, eval2, eval3;
-            typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix fpx(fprime(x0));
+            wrapper_functor< f__, g__ > ffprime;
+            ffprime.fun = fun;
+            ffprime.fprime = fprime;
+            return find_root( root, ffprime, f0 );
+          }
+
+          template<typename fg__>
+          int find_root(typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &root, const fg__ &ffprime, const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &f0) const
+          {
+            typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix fx;
+            typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix dx, x(x0), eval1, eval2, eval3;
+            typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix fpx;
+            ffprime( fx, fpx, x0 );
             data__ abs_tol_norm, rel_tol_norm, abs_x_norm, rel_x_norm;
             typename iterative_root_base<data__>::iteration_type count;
 
@@ -145,8 +172,7 @@ namespace eli
 
               dx=this->calculate_delta_factor(x, dx);
               x+=dx;
-              fx=fun(x);
-              fpx=fprime(x);
+              ffprime( fx, fpx, x );
               eval1=fx-f0;
               abs_tol_norm=this->calculate_norm(eval1);
               abs_x_norm=this->calculate_norm(dx);
@@ -206,6 +232,22 @@ namespace eli
       public:
           static const int hit_constraint = 101;
 
+      private:
+          template<typename f__, typename g__>
+          struct wrapper_functor
+          {
+              f__ fun;
+              g__ fprime;
+
+              void operator()( typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &fx,
+                               typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix &fpx,
+                               const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &x ) const
+              {
+                  fx = fun( x );
+                  fpx = fprime( x );
+              }
+          };
+
       public:
           newton_raphson_large_system_method()
               : iterative_system_root_base_constrained<data__, N__, NSOL__>()
@@ -235,8 +277,19 @@ namespace eli
           template<typename f__, typename g__>
           int find_root( typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &root, const f__ &fun, const g__ &fprime, const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &f0 ) const
           {
-              typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix dx, x( x0 ), fx( fun( x0 ) ), eval1, eval2, eval3;
-              typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix fpx( fprime( x0 ) );
+              wrapper_functor< f__, g__ > ffprime;
+              ffprime.fun = fun;
+              ffprime.fprime = fprime;
+              return find_root( root, ffprime, f0 );
+          }
+
+          template<typename fg__>
+          int find_root(typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &root, const fg__ &ffprime, const typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix &f0) const
+          {
+              typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix fx;
+              typename iterative_system_root_base<data__, N__, NSOL__>::solution_matrix dx, x(x0), eval1, eval2, eval3;
+              typename iterative_system_root_base<data__, N__, NSOL__>::jacobian_matrix fpx;
+              ffprime( fx, fpx, x0 );
               data__ abs_tol_norm, rel_tol_norm, abs_x_norm, rel_x_norm;
               typename iterative_root_base<data__>::iteration_type count;
 
@@ -266,8 +319,7 @@ namespace eli
 
                   dx = this->calculate_delta_factor( x, dx );
                   x += dx;
-                  fx = fun( x );
-                  fpx = fprime( x );
+                  ffprime( fx, fpx, x );
                   eval1 = fx - f0;
                   abs_tol_norm = this->calculate_norm( eval1 );
                   abs_x_norm = this->calculate_norm( dx );
