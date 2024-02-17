@@ -457,6 +457,17 @@ namespace eli
             // invalidate_deriv();
           }
 
+          void transmute( point_type (*fun)( point_type &cp, void* data ), void* data )
+          {
+            index_type i, deg(degree());
+            for (i=0; i<=deg; ++i)
+            {
+              point_type cp = B.row(i);
+              B.row(i)=fun( cp, data );
+            }
+            invalidate_deriv();
+          }
+
           void scale(const data_type &s)
           {
             index_type i, deg(degree());

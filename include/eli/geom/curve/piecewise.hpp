@@ -817,6 +817,16 @@ namespace eli
             }
           }
 
+          void transmute( point_type (*fun)( point_type &cp, void* data ), void* data )
+          {
+            typename segment_collection_type::iterator it;
+
+            for (it=segments.begin(); it!=segments.end(); ++it)
+            {
+              it->second.transmute( fun, data );
+            }
+          }
+
           bool closed() const
           {
             typename segment_collection_type::const_iterator itlast, itfirst;
