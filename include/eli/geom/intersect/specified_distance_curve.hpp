@@ -75,24 +75,24 @@ namespace eli
         };
 
         template <typename curve__>
-        struct curve_spec_gp_functor
+        struct curve_spec_g_gp_functor
         {
           const curve__ *pc;
           typename curve__::point_type pt;
           typename curve__::data_type r0;
 
-          typename curve__::data_type operator()(const typename curve__::data_type &t) const
+          void operator()(typename curve__::data_type &g, typename curve__::data_type &gp, const typename curve__::data_type &t) const
           {
             typename curve__::data_type tt(t);
 
             if ( !(tt>=pc->get_t0()) )
             {
-              std::cout << "Specified distance curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
+              std::cout << "Specified distance curve g_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
               tt=pc->get_t0();
             }
             if ( !(tt<=pc->get_tmax()) )
             {
-              std::cout << "Specified distance curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
+              std::cout << "Specified distance curve g_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
               tt=pc->get_tmax();
             }
 
@@ -101,7 +101,8 @@ namespace eli
             typename curve__::point_type u = pc->f(tt)-pt;
             typename curve__::point_type du = pc->fp(tt);
 
-            return 2.0 * u.dot(du);
+            g = u.dot(u) - r0*r0;
+            gp = 2.0 * u.dot(du);
           }
         };
       }
@@ -192,18 +193,15 @@ namespace eli
       typename curve__::data_type specified_distance_old(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename curve__::data_type> nrm;
-        internal::curve_spec_g_functor<curve__> g;
-        internal::curve_spec_gp_functor<curve__> gp;
+        internal::curve_spec_g_gp_functor<curve__> ggp;
+
         typename curve__::data_type dist0, dist;
         typename curve__::tolerance_type tol;
 
         // setup the functors
-        g.pc=&c;
-        g.pt=pt;
-        g.r0=r0;
-        gp.pc=&c;
-        gp.pt=pt;
-        gp.r0=r0;
+        ggp.pc=&c;
+        ggp.pt=pt;
+        ggp.r0=r0;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -217,7 +215,7 @@ namespace eli
         dist0=eli::geom::point::distance(c.f(t0), pt)-r0;
 
         // find the root
-        nrm.find_root(t, g, gp, 0);
+        nrm.find_root(t, ggp, 0);
 
         // if root is within bounds and is closer than initial guess
         {

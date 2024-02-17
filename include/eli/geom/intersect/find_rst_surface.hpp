@@ -38,16 +38,16 @@ namespace eli
       {
 
         template <typename surface__>
-        struct rst_g_functor
+        struct rst_g_gp_functor
         {
           const surface__ *ps;
           typename surface__::point_type pt;
           typedef typename Eigen::Matrix<typename surface__::data_type, 3, 1> vec;
+          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 3> mat;
 
-          vec operator()(const vec &x) const
+          void operator()(vec &g, mat &gp, const vec &x) const
           {
             typename surface__::data_type r( x(0) ), s( x(1) ), t( x(2) );
-            vec rtn;
 
             typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
             typename surface__::data_type smin( 0.0 ), smax( 1.0 );
@@ -88,62 +88,9 @@ namespace eli
             typename surface__::point_type tmp;
 
             tmp = ps->fRST( r, s, t ) - pt;
-            rtn( 0 ) = tmp( 0 );
-            rtn( 1 ) = tmp( 1 );
-            rtn( 2 ) = tmp( 2 );
-
-            return rtn;
-          }
-        };
-
-        template <typename surface__>
-        struct rst_gp_functor
-        {
-          const surface__ *ps;
-          typename surface__::point_type pt;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 1> vec;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 3> mat;
-
-          mat operator()(const vec &x) const
-          {
-            typename surface__::data_type r( x(0) ), s( x(1) ), t( x(2) );
-            mat rtn;
-            typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
-            typename surface__::data_type smin( 0.0 ), smax( 1.0 );
-            typename surface__::data_type tmin( 0.0 ), tmax( 1.0 );
-
-            if ( !(r>=rmin) )
-            {
-              std::cout << "rst_g_functor, r less than minimum.  r: " << r << " rmin: " << rmin << std::endl;
-              r=rmin;
-            }
-            if ( !(r<=rmax) )
-            {
-              std::cout << "rst_g_functor, r greater than maximum.  r: " << r << " ramx: " << rmax << std::endl;
-              r=rmax;
-            }
-
-            if ( !(s>=smin) )
-            {
-              std::cout << "rst_g_functor, s less than minimum.  s: " << s << " smin: " << smin << std::endl;
-              s=smin;
-            }
-            if ( !(s<=smax) )
-            {
-              std::cout << "rst_g_functor, s greater than maximum.  s: " << s << " smax: " << smax << std::endl;
-              s=smax;
-            }
-
-            if ( !(t>=tmin) )
-            {
-              std::cout << "rst_g_functor, t less than minimum.  t: " << t << " tmin: " << tmin << std::endl;
-              t=tmin;
-            }
-            if ( !(t<=tmax) )
-            {
-              std::cout << "rst_g_functor, t greater than maximum.  t: " << t << " tmax: " << tmax << std::endl;
-              t=tmax;
-            }
+            g( 0 ) = tmp( 0 );
+            g( 1 ) = tmp( 1 );
+            g( 2 ) = tmp( 2 );
 
             typename surface__::point_type Sr, Ss, St;
 
@@ -151,19 +98,17 @@ namespace eli
             Ss = ps->f_S( r, s, t );
             St = ps->f_T( r, s, t );
 
-            rtn( 0, 0 ) = Sr( 0 );
-            rtn( 0, 1 ) = Ss( 0 );
-            rtn( 0, 2 ) = St( 0 );
+            gp( 0, 0 ) = Sr( 0 );
+            gp( 0, 1 ) = Ss( 0 );
+            gp( 0, 2 ) = St( 0 );
 
-            rtn( 1, 0 ) = Sr( 1 );
-            rtn( 1, 1 ) = Ss( 1 );
-            rtn( 1, 2 ) = St( 1 );
+            gp( 1, 0 ) = Sr( 1 );
+            gp( 1, 1 ) = Ss( 1 );
+            gp( 1, 2 ) = St( 1 );
 
-            rtn( 2, 0 ) = Sr( 2 );
-            rtn( 2, 1 ) = Ss( 2 );
-            rtn( 2, 2 ) = St( 2 );
-
-            return rtn;
+            gp( 2, 0 ) = Sr( 2 );
+            gp( 2, 1 ) = Ss( 2 );
+            gp( 2, 2 ) = St( 2 );
           }
         };
       }
@@ -178,18 +123,15 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::rst_g_functor<surface__> g;
-        internal::rst_gp_functor<surface__> gp;
+        internal::rst_g_gp_functor<surface__> ggp;
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
         typename surface__::data_type tmin( 0.0 ), tmax( 1.0 );
 
           // setup the functors
-        g.ps = &surf;
-        g.pt = pt;
-        gp.ps = &surf;
-        gp.pt = pt;
+        ggp.ps = &surf;
+        ggp.pt = pt;
 
         // setup the solver
         nrm.set_absolute_f_tolerance( tol.get_absolute_tolerance() );
@@ -227,7 +169,7 @@ namespace eli
         dist0 = eli::geom::point::distance( surf.fRST( r0, s0, t0 ), pt );
 
         // find the root
-        ret = nrm.find_root( ans, g, gp, rhs );
+        ret = nrm.find_root( ans, ggp, rhs );
         r = ans( 0 );
         s = ans( 1 );
         t = ans( 2 );
@@ -274,13 +216,6 @@ namespace eli
                                               const typename surface__::data_type &r0, const typename surface__::data_type &s0, const typename surface__::data_type &t0,
                                               typename surface__::index_type & ret )
       {
-        typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
-        nonlinear_solver_type nrm;
-        internal::rst_g_functor<surface__> g;
-        internal::rst_gp_functor<surface__> gp;
-        typename surface__::data_type dist0, dist;
-        typename surface__::tolerance_type tol;
-
         typename surface__::data_type rmin( 0.0 ), rmax( 1.0 );
         typename surface__::data_type smin( 0.0 ), smax( 1.0 );
 

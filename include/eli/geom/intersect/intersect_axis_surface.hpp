@@ -44,19 +44,20 @@ namespace eli
         };
 
         template <typename surface__>
-        struct surf_axis_g_functor
+        struct surf_axis_g_gp_functor
         {
           const surface__ *s;
           typename surface__::index_type dir1, dir2;
           typename surface__::point_type p0;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
+          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
 
 
-          vec operator()(const vec &x) const
+          void operator()(vec &g, mat &gp, const vec &x) const
           {
             typename surface__::data_type u(x[0]), v(x[1]);
-            vec rtn;
+
 
             typename surface__::data_type umin, umax, vmin, vmax;
 
@@ -67,55 +68,24 @@ namespace eli
             v=std::min(std::max(v, vmin), vmax);
 
             typename surface__::point_type disp;
+            typename surface__::point_type Su, Sv;
 
             disp = p0 - s->f(u,v);
 
-            rtn(0) = disp(dir1);
-            rtn(1) = disp(dir2);
-
-            return rtn;
-          }
-        };
-
-        template <typename surface__>
-        struct surf_axis_gp_functor
-        {
-          const surface__ *s;
-          typename surface__::index_type dir1, dir2;
-          typename surface__::point_type p0;
-
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
-
-          mat operator()(const vec &x) const
-          {
-            typename surface__::data_type u(x[0]), v(x[1]);
-            mat rtn;
-
-            typename surface__::data_type umin, umax, vmin, vmax;
-
-            s->get_parameter_min(umin,vmin);
-            s->get_parameter_max(umax,vmax);
-
-            u=std::min(std::max(u, umin), umax);
-            v=std::min(std::max(v, vmin), vmax);
-
-            typename surface__::point_type Su, Sv;
+            g(0) = disp(dir1);
+            g(1) = disp(dir2);
 
             Su=s->f_u(u, v);
             Sv=s->f_v(u, v);
 
-            rtn(0,0)=-Su(dir1);
-            rtn(0,1)=-Sv(dir1);
+            gp(0,0)=-Su(dir1);
+            gp(0,1)=-Sv(dir1);
 
-            rtn(1,0)=-Su(dir2);
-            rtn(1,1)=-Sv(dir2);
-
-            // TODO: What to do if matrix becomes singular?
-
-            return rtn;
+            gp(1,0)=-Su(dir2);
+            gp(1,1)=-Sv(dir2);
           }
         };
+
       }
 
 
@@ -126,8 +96,8 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 2, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::surf_axis_g_functor<surface__> g;
-        internal::surf_axis_gp_functor<surface__> gp;
+        internal::surf_axis_g_gp_functor<surface__> ggp;
+
         typename surface__::data_type idist;
         typename surface__::tolerance_type tol;
 
@@ -157,15 +127,10 @@ namespace eli
         v=std::min(std::max(v, vmin), vmax);
 
         // setup the functors
-        g.s=&s;
-        g.p0=p0;
-        g.dir1=dir1;
-        g.dir2=dir2;
-
-        gp.s=&s;
-        gp.p0=p0;
-        gp.dir1=dir1;
-        gp.dir2=dir2;
+        ggp.s=&s;
+        ggp.p0=p0;
+        ggp.dir1=dir1;
+        ggp.dir2=dir2;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -204,7 +169,7 @@ namespace eli
         rhs.setZero();
 
         // find the root
-        typename surface__::index_type ret = nrm.find_root(ans, g, gp, rhs);
+        typename surface__::index_type ret = nrm.find_root(ans, ggp, rhs);
         u=ans(0);
         v=ans(1);
 

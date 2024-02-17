@@ -174,16 +174,16 @@ namespace eli
         };
 
         template <typename surface__>
-        struct surface_g_functor
+        struct surface_g_gp_functor
         {
           const surface__ *ps;
           typename surface__::point_type pt;
           typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
+          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
 
-          vec operator()(const vec &u) const
+          void operator()(vec &g, mat &gp, const vec &u) const
           {
             typename surface__::data_type uu(u[0]), vv(u[1]);
-            vec rtn;
 
             typename surface__::data_type umin, umax, vmin, vmax;
             ps->get_parameter_min(umin,vmin);
@@ -217,77 +217,25 @@ namespace eli
             uu=std::min(std::max(uu, static_cast<typename surface__::data_type>(umin)), static_cast<typename surface__::data_type>(umax));
             vv=std::min(std::max(vv, static_cast<typename surface__::data_type>(vmin)), static_cast<typename surface__::data_type>(vmax));
 
-            typename surface__::point_type tmp;
-
-            tmp=ps->f(uu, vv)-pt;
-            rtn(0)=tmp.dot(ps->f_u(uu, vv));
-            rtn(1)=tmp.dot(ps->f_v(uu, vv));
-            return rtn;
-          }
-        };
-
-        template <typename surface__>
-        struct surface_gp_functor
-        {
-          const surface__ *ps;
-          typename surface__::point_type pt;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
-
-          mat operator()(const vec &u) const
-          {
-            typename surface__::data_type uu(u[0]), vv(u[1]);
-            mat rtn;
-
-            typename surface__::data_type umin, umax, vmin, vmax;
-            ps->get_parameter_min(umin,vmin);
-            ps->get_parameter_max(umax,vmax);
-
-            if ( !(uu>=umin) )
-            {
-              std::cout << "Minimum distance surface gp_functor, u less than minimum.  uu: " << uu << " umin: " << umin << std::endl;
-              uu=umin;
-            }
-            if ( !(uu<=umax) )
-            {
-              std::cout << "Minimum distance surface gp_functor, u greater than maximum.  uu: " << uu << " uamx: " << umax << std::endl;
-              uu=umax;
-            }
-
-            if ( !(vv>=vmin) )
-            {
-              std::cout << "Minimum distance surface gp_functor, v less than minimum.  vv: " << vv << " vmin: " << vmin << std::endl;
-              vv=vmin;
-            }
-            if ( !(vv<=vmax) )
-            {
-              std::cout << "Minimum distance surface gp_functor, v greater than maximum.  vv: " << vv << " vmax: " << vmax << std::endl;
-              vv=vmax;
-            }
-
-            assert((uu>=umin) && (uu<=umax));
-            assert((vv>=vmin) && (vv<=vmax));
-
-            uu=std::min(std::max(uu, static_cast<typename surface__::data_type>(umin)), static_cast<typename surface__::data_type>(umax));
-            vv=std::min(std::max(vv, static_cast<typename surface__::data_type>(vmin)), static_cast<typename surface__::data_type>(vmax));
-
             typename surface__::point_type tmp, Su, Sv, Suu, Suv, Svv;
 
             tmp=ps->f(uu, vv)-pt;
             Su=ps->f_u(uu, vv);
             Sv=ps->f_v(uu, vv);
+
+            g(0)=tmp.dot(Su);
+            g(1)=tmp.dot(Sv);
+
             Suu=ps->f_uu(uu, vv);
             Suv=ps->f_uv(uu, vv);
             Svv=ps->f_vv(uu, vv);
 
-            rtn(0,0)=Su.dot(Su)+tmp.dot(Suu);
-            rtn(0,1)=Su.dot(Sv)+tmp.dot(Suv);
-            rtn(1,0)=rtn(0,1);
-            rtn(1,1)=Sv.dot(Sv)+tmp.dot(Svv);
+            gp(0,0)=Su.dot(Su)+tmp.dot(Suu);
+            gp(0,1)=Su.dot(Sv)+tmp.dot(Suv);
+            gp(1,0)=gp(0,1);
+            gp(1,1)=Sv.dot(Sv)+tmp.dot(Svv);
 
             // TODO: What to do if matrix becomes singular?
-
-            return rtn;
           }
         };
       }
@@ -393,8 +341,7 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 2, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::surface_g_functor<surface__> g;
-        internal::surface_gp_functor<surface__> gp;
+        internal::surface_g_gp_functor<surface__> ggp;
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
@@ -416,10 +363,8 @@ namespace eli
         }
 
         // setup the functors
-        g.ps=&s;
-        g.pt=pt;
-        gp.ps=&s;
-        gp.pt=pt;
+        ggp.ps=&s;
+        ggp.pt=pt;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -456,7 +401,7 @@ namespace eli
         dist0=eli::geom::point::distance(s.f(u0, v0), pt);
 
         // find the root
-        ret = nrm.find_root(ans, g, gp, rhs);
+        ret = nrm.find_root(ans, ggp, rhs);
         u=ans(0);
         v=ans(1);
 

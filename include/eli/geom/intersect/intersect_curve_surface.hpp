@@ -35,18 +35,18 @@ namespace eli
       namespace internal
       {
         template <typename surface__, typename curve__>
-        struct surf_curve_g_functor
+        struct surf_curve_g_gp_functor
         {
           const surface__ *s;
           const curve__ *c;
 
           typedef typename Eigen::Matrix<typename surface__::data_type, 3, 1> vec;
+          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 3> mat;
 
-          vec operator()(const vec &x) const
+          void operator()(vec &g, mat &gp, const vec &x) const
           {
             typename surface__::data_type u(x[0]), v(x[1]);
             typename surface__::data_type t(x[2]);
-            vec rtn;
 
             typename surface__::data_type umin, umax, vmin, vmax;
             typename curve__::data_type tmin, tmax;
@@ -61,67 +61,34 @@ namespace eli
             t=std::min(std::max(t, tmin), tmax);
 
             typename surface__::point_type disp;
+            typename surface__::point_type Su, Sv;
+            typename curve__::point_type Ct;
 
             disp = c->f(t) - s->f(u,v);
 
-            rtn(0)=disp(0);
-            rtn(1)=disp(1);
-            rtn(2)=disp(2);
-
-            return rtn;
-          }
-        };
-
-        template <typename surface__, typename curve__>
-        struct surf_curve_gp_functor
-        {
-          const surface__ *s;
-          const curve__ *c;
-
-          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 1> vec;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 3, 3> mat;
-
-          mat operator()(const vec &x) const
-          {
-            typename surface__::data_type u(x[0]), v(x[1]);
-            typename surface__::data_type t(x[2]);
-            mat rtn;
-
-            typename surface__::data_type umin, umax, vmin, vmax;
-            typename curve__::data_type tmin, tmax;
-
-            s->get_parameter_min(umin,vmin);
-            s->get_parameter_max(umax,vmax);
-            tmin = c->get_t0();
-            tmax = c->get_tmax();
-
-            u=std::min(std::max(u, umin), umax);
-            v=std::min(std::max(v, vmin), vmax);
-            t=std::min(std::max(t, tmin), tmax);
-
-            typename surface__::point_type Su, Sv;
-            typename curve__::point_type Ct;
+            g(0)=disp(0);
+            g(1)=disp(1);
+            g(2)=disp(2);
 
             Su=s->f_u(u, v);
             Sv=s->f_v(u, v);
 
             Ct=c->fp(t);
 
-            rtn(0,0)=-Su(0);
-            rtn(0,1)=-Sv(0);
-            rtn(0,2)=Ct(0);
+            gp(0,0)=-Su(0);
+            gp(0,1)=-Sv(0);
+            gp(0,2)=Ct(0);
 
-            rtn(1,0)=-Su(1);
-            rtn(1,1)=-Sv(1);
-            rtn(1,2)=Ct(1);
+            gp(1,0)=-Su(1);
+            gp(1,1)=-Sv(1);
+            gp(1,2)=Ct(1);
 
-            rtn(2,0)=-Su(2);
-            rtn(2,1)=-Sv(2);
-            rtn(2,2)=Ct(2);
+            gp(2,0)=-Su(2);
+            gp(2,1)=-Sv(2);
+            gp(2,2)=Ct(2);
 
             // TODO: What to do if matrix becomes singular?
 
-            return rtn;
           }
         };
       }
@@ -137,8 +104,7 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 3, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::surf_curve_g_functor<surface__, curve__> g;
-        internal::surf_curve_gp_functor<surface__, curve__> gp;
+        internal::surf_curve_g_gp_functor<surface__, curve__> ggp;
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
@@ -160,10 +126,8 @@ namespace eli
         p2=c.f(t0);
 
         // setup the functors
-        g.s=&s;
-        g.c=&c;
-        gp.s=&s;
-        gp.c=&c;
+        ggp.s=&s;
+        ggp.c=&c;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -213,7 +177,7 @@ namespace eli
         dist0=eli::geom::point::distance(p1, p2);
 
         // find the root
-        nrm.find_root(ans, g, gp, rhs);
+        nrm.find_root(ans, ggp, rhs);
         u=ans(0);
         v=ans(1);
         t=ans(2);

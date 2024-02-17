@@ -39,11 +39,11 @@ namespace eli
       namespace internal
       {
         template <typename onedbezcurve__>
-        struct onedcurve_g_functor
+        struct onedcurve_g_gp_functor
         {
           const onedbezcurve__ *pc;
 
-          typename onedbezcurve__::data_type operator()(const typename onedbezcurve__::data_type &t) const
+          void operator()(typename onedbezcurve__::data_type &g, typename onedbezcurve__::data_type &gp, const typename onedbezcurve__::data_type &t) const
           {
             typename onedbezcurve__::data_type tt(t);
 
@@ -60,33 +60,8 @@ namespace eli
 
             assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
 
-            return pc->f(tt)(0);
-          }
-        };
-
-        template <typename onedbezcurve__>
-        struct onedcurve_gp_functor
-        {
-          const onedbezcurve__ *pc;
-
-          typename onedbezcurve__::data_type operator()(const typename onedbezcurve__::data_type &t) const
-          {
-            typename onedbezcurve__::data_type tt(t);
-
-            if ( !(tt>=pc->get_t0()) )
-            {
-              std::cout << "One D Bezier curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
-              tt=pc->get_t0();
-            }
-            if ( !(tt<=pc->get_tmax()) )
-            {
-              std::cout << "One D Bezier curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
-              tt=pc->get_tmax();
-            }
-
-            assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
-
-            return pc->fp(tt)(0);
+            g = pc->f(tt)(0);
+            gp = pc->fp(tt)(0);
           }
         };
       }
@@ -95,15 +70,13 @@ namespace eli
       typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0, const typename onedcurve__::data_type &tmin, const typename onedcurve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename onedcurve__::data_type> nrm;
-        internal::onedcurve_g_functor<onedcurve__> g;
-        internal::onedcurve_gp_functor<onedcurve__> gp;
+        internal::onedcurve_g_gp_functor<onedcurve__> ggp;
         typedef typename onedcurve__::data_type data_type;
         data_type val0, val;
         typename onedcurve__::tolerance_type tol;
 
         // setup the functors
-        g.pc=&c;
-        gp.pc=&c;
+        ggp.pc=&c;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -122,7 +95,7 @@ namespace eli
 
         // find the root
         data_type tnrm = t0;
-        int ret = nrm.find_root(tnrm, g, gp, 0);
+        int ret = nrm.find_root(tnrm, ggp, 0);
 
         if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
         {

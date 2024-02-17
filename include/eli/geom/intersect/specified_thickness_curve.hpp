@@ -41,56 +41,7 @@ namespace eli
       namespace internal
       {
         template <typename curve__>
-        struct curve_thick_g_functor
-        {
-          const curve__ *pc;
-          typename curve__::point_type pt;
-          typename curve__::data_type thick;
-
-          typedef typename Eigen::Matrix<typename curve__::data_type, 2, 1> vec;
-
-          vec operator()(const vec &ts) const
-          {
-            typename curve__::data_type t1(ts[0]), t2(ts[1]);
-            vec rtn;
-
-            if ( !(t1>=pc->get_t0()) )
-            {
-              std::cout << "Specified thickness curve g_functor, t1 less than minimum.  t1: " << t1 << " t0: " << pc->get_t0() << std::endl;
-              t1=pc->get_t0();
-            }
-            if ( !(t1<=pc->get_tmax()) )
-            {
-              std::cout << "Specified thickness curve g_functor, t1 greater than maximum.  t1: " << t1 << " tmax: " << pc->get_tmax() << std::endl;
-              t1=pc->get_tmax();
-            }
-
-            if ( !(t2>=pc->get_t0()) )
-            {
-              std::cout << "Specified thickness curve g_functor, t2 less than minimum.  t2: " << t2 << " t0: " << pc->get_t0() << std::endl;
-              t2=pc->get_t0();
-            }
-            if ( !(t2<=pc->get_tmax()) )
-            {
-              std::cout << "Specified thickness curve g_functor, t2 greater than maximum.  t2: " << t2 << " tmax: " << pc->get_tmax() << std::endl;
-              t2=pc->get_tmax();
-            }
-
-            assert((t1>=pc->get_t0()) && (t1<=pc->get_tmax()));
-            assert((t2>=pc->get_t0()) && (t2<=pc->get_tmax()));
-
-            typename curve__::point_type u = pc->f(t1) - pt;
-            typename curve__::point_type v = pc->f(t2) - pt;
-            typename curve__::point_type w = u - v;
-
-            rtn(0) = u.dot(u) - v.dot(v);
-            rtn(1) = w.dot(w) - thick * thick;
-            return rtn;
-          }
-        };
-
-        template <typename curve__>
-        struct curve_thick_gp_functor
+        struct curve_thick_g_gp_functor
         {
           const curve__ *pc;
           typename curve__::point_type pt;
@@ -99,10 +50,9 @@ namespace eli
           typedef typename Eigen::Matrix<typename curve__::data_type, 2, 1> vec;
           typedef typename Eigen::Matrix<typename curve__::data_type, 2, 2> mat;
 
-          mat operator()(const vec &ts) const
+          void operator()(vec &g, mat &gp, const vec &ts) const
           {
             typename curve__::data_type t1(ts[0]), t2(ts[1]);
-            mat rtn;
 
             if ( !(t1>=pc->get_t0()) )
             {
@@ -133,15 +83,16 @@ namespace eli
             typename curve__::point_type v = pc->f(t2) - pt;
             typename curve__::point_type w = u - v;
 
+            g(0) = u.dot(u) - v.dot(v);
+            g(1) = w.dot(w) - thick * thick;
+
             typename curve__::point_type du = pc->fp(t1);
             typename curve__::point_type dv = pc->fp(t2);
 
-            rtn(0,0) = 2.0 * u.dot(du);
-            rtn(0,1) = - 2.0 * v.dot(dv);
-            rtn(1,0) = 2.0 * w.dot(du);
-            rtn(1,1) = - 2.0 * w.dot(dv);
-
-            return rtn;
+            gp(0,0) = 2.0 * u.dot(du);
+            gp(0,1) = - 2.0 * v.dot(dv);
+            gp(1,0) = 2.0 * w.dot(du);
+            gp(1,1) = - 2.0 * w.dot(dv);
           }
         };
       }
@@ -151,18 +102,14 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename curve__::data_type, 2, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::curve_thick_g_functor<curve__> g;
-        internal::curve_thick_gp_functor<curve__> gp;
+        internal::curve_thick_g_gp_functor<curve__> ggp;
         typename curve__::data_type r1, r2, dist, dist0;
         typename curve__::tolerance_type tol;
 
         // setup the functors
-        g.pc=&c;
-        g.pt=pt;
-        g.thick=d;
-        gp.pc=&c;
-        gp.pt=pt;
-        gp.thick=d;
+        ggp.pc=&c;
+        ggp.pt=pt;
+        ggp.thick=d;
 
         typename curve__::data_type tmin(c.get_t0());
         typename curve__::data_type tmax(c.get_tmax());
@@ -189,7 +136,7 @@ namespace eli
         rhs.setZero();
 
         // find the root
-        nrm.find_root(ans, g, gp, rhs);
+        nrm.find_root(ans, ggp, rhs);
         t1=ans(0);
         t2=ans(1);
 

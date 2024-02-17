@@ -40,12 +40,12 @@ namespace eli
       namespace internal
       {
         template <typename curve__>
-        struct curve_gdim_functor
+        struct curve_g_gp_dim_functor
         {
           const curve__ *pc;
           typename curve__::data_type idim;
 
-          typename curve__::data_type operator()(const typename curve__::data_type &t) const
+          void operator()(typename curve__::data_type &g, typename curve__::data_type &gp, const typename curve__::data_type &t) const
           {
             typename curve__::data_type tt(t);
 
@@ -62,34 +62,9 @@ namespace eli
 
             assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
 
-            return pc->fp(tt)[idim];
-          }
-        };
+            g = pc->fp(tt)[idim];
 
-        template <typename curve__>
-        struct curve_gpdim_functor
-        {
-          const curve__ *pc;
-          typename curve__::data_type idim;
-
-          typename curve__::data_type operator()(const typename curve__::data_type &t) const
-          {
-            typename curve__::data_type tt(t);
-
-            if ( !(tt>=pc->get_t0()) )
-            {
-              std::cout << "Minimum dimension curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
-              tt=pc->get_t0();
-            }
-            if ( !(tt<=pc->get_tmax()) )
-            {
-              std::cout << "Minimum dimension curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
-              tt=pc->get_tmax();
-            }
-
-            assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
-
-            return pc->fpp(tt)[idim];
+            gp = pc->fpp(tt)[idim];
           }
         };
       }
@@ -98,16 +73,14 @@ namespace eli
       typename curve__::data_type minimum_dimension(typename curve__::data_type &t, const curve__ &c, const typename curve__::data_type &idim, const typename curve__::data_type &t0)
       {
         eli::mutil::nls::newton_raphson_method<typename curve__::data_type> nrm;
-        internal::curve_gdim_functor<curve__> g;
-        internal::curve_gpdim_functor<curve__> gp;
+        internal::curve_g_gp_dim_functor<curve__> ggp;
+
         typename curve__::data_type r0, r;
         typename curve__::tolerance_type tol;
 
         // setup the functors
-        g.pc=&c;
-        g.idim=idim;
-        gp.pc=&c;
-        gp.idim=idim;
+        ggp.pc=&c;
+        ggp.idim=idim;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -127,7 +100,7 @@ namespace eli
         r0=c.f(t0)[idim];
 
         // find the root
-        nrm.find_root(t, g, gp, 0);
+        nrm.find_root(t, ggp, 0);
 
         // if root is within bounds and is closer than initial guess
         {

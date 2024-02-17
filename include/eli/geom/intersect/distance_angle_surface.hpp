@@ -36,14 +36,15 @@ namespace eli
       {
 
         template <typename surface__>
-        struct surface_da_functor
+        struct surface_da_dap_functor
         {
           const surface__ *ps;
           typename surface__::point_type pt;
           typename surface__::point_type dir;
           typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
+          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
 
-          vec operator()(const vec &u) const
+          void operator()(vec &da, mat &dap, const vec &u) const
           {
             typename surface__::data_type uu(u[0]), vv(u[1]);
             vec rtn;
@@ -80,64 +81,12 @@ namespace eli
             uu=std::min(std::max(uu, static_cast<typename surface__::data_type>(umin)), static_cast<typename surface__::data_type>(umax));
             vv=std::min(std::max(vv, static_cast<typename surface__::data_type>(vmin)), static_cast<typename surface__::data_type>(vmax));
 
-            typename surface__::point_type tmp;
-
-            tmp=ps->f(uu, vv)-pt;
-            rtn(0) = tmp.dot( tmp );
-            rtn(1) = tmp.dot( dir ) / sqrt( rtn(0) );
-            return rtn;
-          }
-        };
-
-        template <typename surface__>
-        struct surface_dap_functor
-        {
-          const surface__ *ps;
-          typename surface__::point_type pt;
-          typename surface__::point_type dir;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 1> vec;
-          typedef typename Eigen::Matrix<typename surface__::data_type, 2, 2> mat;
-
-          mat operator()(const vec &u) const
-          {
-            typename surface__::data_type uu(u[0]), vv(u[1]);
-            mat rtn;
-
-            typename surface__::data_type umin, umax, vmin, vmax;
-            ps->get_parameter_min(umin,vmin);
-            ps->get_parameter_max(umax,vmax);
-
-            if ( !(uu>=umin) )
-            {
-              std::cout << "Distance angle surface gp_functor, u less than minimum.  uu: " << uu << " umin: " << umin << std::endl;
-              uu=umin;
-            }
-            if ( !(uu<=umax) )
-            {
-              std::cout << "Distance angle surface gp_functor, u greater than maximum.  uu: " << uu << " uamx: " << umax << std::endl;
-              uu=umax;
-            }
-
-            if ( !(vv>=vmin) )
-            {
-              std::cout << "Distance angle surface gp_functor, v less than minimum.  vv: " << vv << " vmin: " << vmin << std::endl;
-              vv=vmin;
-            }
-            if ( !(vv<=vmax) )
-            {
-              std::cout << "Distance angle surface gp_functor, v greater than maximum.  vv: " << vv << " vmax: " << vmax << std::endl;
-              vv=vmax;
-            }
-
-            assert((uu>=umin) && (uu<=umax));
-            assert((vv>=vmin) && (vv<=vmax));
-
-            uu=std::min(std::max(uu, static_cast<typename surface__::data_type>(umin)), static_cast<typename surface__::data_type>(umax));
-            vv=std::min(std::max(vv, static_cast<typename surface__::data_type>(vmin)), static_cast<typename surface__::data_type>(vmax));
-
             typename surface__::point_type tmp, Su, Sv;
 
             tmp=ps->f(uu, vv)-pt;
+            da(0) = tmp.dot( tmp );
+            da(1) = tmp.dot( dir ) / sqrt( da(0) );
+
             Su=ps->f_u(uu, vv);
             Sv=ps->f_v(uu, vv);
 
@@ -148,16 +97,17 @@ namespace eli
             typename surface__::data_type tmp2;
             tmp2 = tmp.dot(dir) / ( k * krt );
 
-            rtn(0,0) = 2.0 * Su.dot(tmp);
-            rtn(0,1) = 2.0 * Sv.dot(tmp);
-            rtn(1,0) = Su.dot(dir) / krt - tmp2 * Su.dot(tmp);
-            rtn(1,1) = Sv.dot(dir) / krt - tmp2 * Sv.dot(tmp);
+            dap(0,0) = 2.0 * Su.dot(tmp);
+            dap(0,1) = 2.0 * Sv.dot(tmp);
+            dap(1,0) = Su.dot(dir) / krt - tmp2 * Su.dot(tmp);
+            dap(1,1) = Sv.dot(dir) / krt - tmp2 * Sv.dot(tmp);
 
             // TODO: What to do if matrix becomes singular?
 
-            return rtn;
           }
         };
+
+
       }
 
       template<typename surface__>
@@ -169,8 +119,7 @@ namespace eli
       {
         typedef eli::mutil::nls::newton_raphson_system_method<typename surface__::data_type, 2, 1> nonlinear_solver_type;
         nonlinear_solver_type nrm;
-        internal::surface_da_functor<surface__> da;
-        internal::surface_dap_functor<surface__> dap;
+        internal::surface_da_dap_functor<surface__> dadap;
         typename surface__::data_type dist0, dist;
         typename surface__::tolerance_type tol;
 
@@ -179,13 +128,9 @@ namespace eli
         s.get_parameter_max(umax,vmax);
 
         // setup the functors
-        da.ps=&s;
-        da.pt=pt;
-        da.dir=dir;
-
-        dap.ps=&s;
-        dap.pt=pt;
-        dap.dir=dir;
+        dadap.ps=&s;
+        dadap.pt=pt;
+        dadap.dir=dir;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -219,6 +164,7 @@ namespace eli
 
         // set the initial guess
         typename nonlinear_solver_type::solution_matrix uinit, rhs, ans, rhs0, rhs1;
+        typename nonlinear_solver_type::jacobian_matrix mat;
 
         uinit(0)=u0;
         uinit(1)=v0;
@@ -226,10 +172,10 @@ namespace eli
         rhs(0)=dsq;
         rhs(1)=dot;
 
-        rhs0 = da( uinit );
+        dadap( rhs0, mat, uinit );
 
         // find the root
-        ret = nrm.find_root(ans, da, dap, rhs);
+        ret = nrm.find_root(ans, dadap, rhs);
         u=ans(0);
         v=ans(1);
 
@@ -238,7 +184,7 @@ namespace eli
           assert((u>=umin) && (u<=umax));
           assert((v>=vllim) && (v<=vulim));
 
-          rhs1 = da( ans );
+          dadap( rhs1, mat, ans );
 
           if ( (rhs1-rhs).norm() <= (rhs0-rhs).norm() )
           {

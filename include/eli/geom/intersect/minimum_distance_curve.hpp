@@ -41,12 +41,12 @@ namespace eli
       namespace internal
       {
         template <typename curve__>
-        struct min_dist_curve_g_functor
+        struct min_dist_curve_g_gp_functor
         {
           const curve__ *pc;
           typename curve__::point_type pt;
 
-          typename curve__::data_type operator()(const typename curve__::data_type &t) const
+          void operator()(typename curve__::data_type &g, typename curve__::data_type &gp, const typename curve__::data_type &t) const
           {
             typename curve__::data_type tt(t);
 
@@ -63,84 +63,29 @@ namespace eli
 
             assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
 
-            return (pc->f(tt)-pt).dot(pc->fp(tt));
-          }
-        };
-
-        template <typename curve__>
-        struct min_dist_curve_gp_functor
-        {
-          const curve__ *pc;
-          typename curve__::point_type pt;
-
-          typename curve__::data_type operator()(const typename curve__::data_type &t) const
-          {
-            typename curve__::data_type tt(t);
-
-            if ( !(tt>=pc->get_t0()) )
-            {
-              std::cout << "Minimum distance curve gp_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
-              tt=pc->get_t0();
-            }
-            if ( !(tt<=pc->get_tmax()) )
-            {
-              std::cout << "Minimum distance curve gp_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
-              tt=pc->get_tmax();
-            }
-
-            assert((tt>=pc->get_t0()) && (tt<=pc->get_tmax()));
-
             typename curve__::point_type fp(pc->fp(tt));
-            typename curve__::data_type rtn(fp.dot(fp)+pc->fpp(tt).dot(pc->f(tt)-pt));
-            typename curve__::tolerance_type tol;
+            typename curve__::point_type p(pc->f(tt));
 
-            if (tol.approximately_equal(rtn, 0))
-            {
-              min_dist_curve_g_functor<curve__> g;
-
-              g.pc=pc;
-              g.pt=pt;
-              typename curve__::data_type delta = 0.001;
-              if ( t >= pc->get_tmax() - delta )
-              {
-                rtn = ( g( pc->get_tmax() ) - g( pc->get_tmax() - delta ) ) / delta;
-              }
-              else if ( t <= pc->get_t0() + delta )
-              {
-                rtn = ( g( pc->get_t0() + delta ) - g( pc->get_t0() ) ) / delta;
-              }
-              else
-              {
-                rtn = ( g ( t + delta ) - g( t - delta ) ) / ( delta + delta );
-              }
-
-              // if (tol.approximately_equal(rtn, 0))
-              //   std::cout << "rtn still zero " << std::endl;
-              // This often happens.  Consequently, it seems likely that the finite difference fallback is not worth
-              // the trouble.  Instead, the geometry is likely singular and all points on the boundary curve are
-              // equidistant.  After the Newton's method search on the line, a further test of the endpoints is
-              // performed that does not rely on gradients at all.
-            }
-
-            return rtn;
+            typename curve__::point_type dp(p-pt);
+            g = dp.dot(fp);
+            gp = fp.dot(fp)+pc->fpp(tt).dot(dp);
           }
         };
+
+
       }
 
       template<typename curve__>
       typename curve__::data_type minimum_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &t0)
       {
         eli::mutil::nls::newton_raphson_method<typename curve__::data_type> nrm;
-        internal::min_dist_curve_g_functor<curve__> g;
-        internal::min_dist_curve_gp_functor<curve__> gp;
+        internal::min_dist_curve_g_gp_functor<curve__> ggp;
         typename curve__::data_type dist0, dist;
         typename curve__::tolerance_type tol;
 
         // setup the functors
-        g.pc=&c;
-        g.pt=pt;
-        gp.pc=&c;
-        gp.pt=pt;
+        ggp.pc=&c;
+        ggp.pt=pt;
 
         // setup the solver
         nrm.set_absolute_f_tolerance(tol.get_absolute_tolerance());
@@ -160,7 +105,7 @@ namespace eli
         dist0=eli::geom::point::distance(c.f(t0), pt);
 
         // find the root
-        nrm.find_root(t, g, gp, 0);
+        nrm.find_root(t, ggp, 0);
 
         // if root is within bounds and is closer than initial guess
         {
