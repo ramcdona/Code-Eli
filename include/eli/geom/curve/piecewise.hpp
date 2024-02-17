@@ -695,6 +695,19 @@ namespace eli
             pmap.push_back( tmax );
           }
 
+          void get_control_point_vec( std::vector < point_type > &cp_vec ) const
+          {
+            cp_vec.clear();
+            // Not perfect, but a reasonable guess at the size.
+            cp_vec.reserve( segments.size() * (segments.begin())->second.degree() );
+
+            typename segment_collection_type::const_iterator it;
+            for (it=segments.begin(); it!=segments.end(); ++it)
+            {
+              it->second.get_control_point_vec( cp_vec );
+            }
+          }
+
           index_type number_segments() const {return static_cast<index_type>(segments.size());}
 
           void degree(index_type &mind, index_type &maxd) const

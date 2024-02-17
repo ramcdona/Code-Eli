@@ -282,6 +282,15 @@ namespace eli
             return B.row(i);
           }
 
+          void get_control_point_vec( std::vector < point_type > &cp_vec ) const
+          {
+            index_type i, deg(degree());
+            for (i=0; i<=deg; ++i)
+            {
+              cp_vec.push_back( B.row(i) );
+            }
+          }
+
           void get_monomial_coefficients(monomial_coefficient_type &a) const
           {
             a.resize(degree()+1, dim__);
