@@ -2259,6 +2259,24 @@ namespace eli
             return it->second.fp(tt)/delta_t;
           }
 
+          void fp(const piecewise<curve__, data_type, dim__> &a)
+          {
+            set_t0( a.get_t0() );
+            point_type C0;
+
+            typename segment_collection_type::const_iterator scita;
+            for ( scita=a.segments.begin(); scita!=a.segments.end(); ++scita)
+            {
+              curve_type c;
+              data_type dt( a.get_delta_t(scita) );
+
+              scita->second.fp(c);
+              c.scale( 1 / dt );
+
+              push_back( c, dt );
+            }
+          }
+
           void fps(const data_type &t, point_type &fp1, point_type &fp2) const
           {
             // find segment that corresponds to given t
