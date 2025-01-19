@@ -2415,7 +2415,7 @@ namespace eli
             }
           }
 
-          void sum( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          void scaledsum( const data_type &ka, const piecewise<surface__, data_type, dim__, tol__> &a, const data_type &kb, const piecewise<surface__, data_type, dim__, tol__> &b )
           {
             typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
             tolerance_type tol;
@@ -2440,9 +2440,14 @@ namespace eli
                 surface_type *p2 = s2.get_patch( iu, iv );
                 surface_type *p = get_patch( iu, iv );
 
-                p->sum( *p1, *p2 );
+                p->scaledsum( ka, *p1, kb, *p2 );
               }
             }
+          }
+
+          void sum( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          {
+            scaledsum( 1, a, 1, b );
           }
 
           // RST is an alternate parameterization that assumes a u, v surface encloses a volume.

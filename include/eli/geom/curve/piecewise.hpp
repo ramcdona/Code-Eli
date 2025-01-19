@@ -2495,7 +2495,7 @@ namespace eli
             }
           }
 
-          void sum(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
+          void scaledsum(const data_type &ka, const piecewise<curve__, data_type, dim__> &a, const data_type &kb, const piecewise<curve__, data_type, dim__> &b)
           {
             set_t0( a.get_t0() );
 
@@ -2506,10 +2506,15 @@ namespace eli
             {
               curve_type c;
 
-              c.sum( scita->second, scitb->second );
+              c.scaledsum( ka, scita->second, kb, scitb->second );
 
               push_back( c, a.get_delta_t(scita) );
             }
+          }
+
+          void sum(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
+          {
+            scaledsum( 1, a, 1, b );
           }
 
           onedpiecewisecurve sumcompcurve() const

@@ -1891,7 +1891,7 @@ namespace eli
             invalidate_deriv();
           }
 
-          void sum( const bezier<data_type, dim__, tol__> &a, const bezier<data_type, dim__, tol__> &b)
+          void scaledsum( const data_type &ka, const bezier<data_type, dim__, tol__> &a, const data_type &kb, const bezier<data_type, dim__, tol__> &b )
           {
             typedef bezier<data_type, dim__, tol__> surf_type;
 
@@ -1926,9 +1926,14 @@ namespace eli
             {
               for (j=0; j<=m; ++j)
               {
-                set_control_point( bsa.get_control_point(i, j) + bsb.get_control_point(i, j), i, j );
+                set_control_point( (ka * bsa.get_control_point(i, j)) + (kb * bsb.get_control_point(i, j)), i, j );
               }
             }
+          }
+
+          void sum( const bezier<data_type, dim__, tol__> &a, const bezier<data_type, dim__, tol__> &b)
+          {
+            scaledsum( 1, a, 1, b );
           }
 
           onedbezsurf sumcompsurf() const

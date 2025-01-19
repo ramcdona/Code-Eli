@@ -983,7 +983,7 @@ namespace eli
             invalidate_deriv();
           }
 
-          void sum( const bezier<data_type, dim__> &a, const bezier<data_type, dim__> &b)
+          void scaledsum( const data_type &ka, const bezier<data_type, dim__> &a, const data_type &kb, const bezier<data_type, dim__> &b)
           {
             typedef bezier<data_type, dim__> curve_type;
 
@@ -996,9 +996,14 @@ namespace eli
             ca.degree_promote_to( n );
             cb.degree_promote_to( n );
 
-            B = ca.B + cb.B;
+            B = (ka * ca.B) + (kb * cb.B);
 
             invalidate_deriv();
+          }
+
+          void sum( const bezier<data_type, dim__> &a, const bezier<data_type, dim__> &b)
+          {
+            scaledsum( 1, a, 1, b );
           }
 
           onedbezcurve sumcompcurve() const
