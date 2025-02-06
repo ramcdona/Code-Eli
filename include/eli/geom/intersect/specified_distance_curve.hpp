@@ -294,6 +294,13 @@ namespace eli
       }
 */
 
+      template<typename curve__>
+      typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
+      {
+        typename curve__::data_type t0, dist0, dist;
+        t0 = 0.5 * ( tmin + tmax );
+        return specified_distance( t, c, pt, r0, t0, tmin, tmax );
+      }
 
       template<typename curve__>
       typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0)
