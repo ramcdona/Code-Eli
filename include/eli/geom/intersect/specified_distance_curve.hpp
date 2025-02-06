@@ -42,6 +42,8 @@ namespace eli
 
     namespace intersect
     {
+
+/*
       namespace internal
       {
         template <typename curve__>
@@ -106,6 +108,7 @@ namespace eli
           }
         };
       }
+*/
 
       template<template<typename, unsigned short, typename> class curve__, typename data__, unsigned short dim__, typename tol__>
       typename curve::piecewise<curve__, data__, dim__, tol__>::data_type specified_distance(typename curve::piecewise<curve__, data__, dim__, tol__>::data_type &t,
@@ -189,6 +192,7 @@ namespace eli
         return dist;
       }
 
+/*
       template<typename curve__>
       typename curve__::data_type specified_distance_old(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
       {
@@ -232,6 +236,8 @@ namespace eli
         t=t0;
         return dist0;
       }
+*/
+
 
       template<typename curve__>
       typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &t0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
@@ -245,6 +251,7 @@ namespace eli
         return specified_distance(t, c, pt, r0, t0, c.get_t0(), c.get_tmax() );
       }
 
+/*
       template<typename curve__>
       typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0, const typename curve__::data_type &tmin, const typename curve__::data_type &tmax )
       {
@@ -285,6 +292,8 @@ namespace eli
         t=t0;
         return dist0;
       }
+*/
+
 
       template<typename curve__>
       typename curve__::data_type specified_distance(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt, const typename curve__::data_type &r0)
