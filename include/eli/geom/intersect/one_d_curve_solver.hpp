@@ -67,7 +67,7 @@ namespace eli
       }
 
       template<typename onedcurve__>
-      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0, const typename onedcurve__::data_type &tmin, const typename onedcurve__::data_type &tmax )
+      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, int &ret, const onedcurve__ &c, const typename onedcurve__::data_type &t0, const typename onedcurve__::data_type &tmin, const typename onedcurve__::data_type &tmax )
       {
         eli::mutil::nls::newton_raphson_method<typename onedcurve__::data_type> nrm;
         internal::onedcurve_g_gp_functor<onedcurve__> ggp;
@@ -95,7 +95,7 @@ namespace eli
 
         // find the root
         data_type tnrm = t0;
-        int ret = nrm.find_root(tnrm, ggp, 0);
+        ret = nrm.find_root(tnrm, ggp, 0);
 
         if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
         {
@@ -127,9 +127,22 @@ namespace eli
       }
 
       template<typename onedcurve__>
+      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0, const typename onedcurve__::data_type &tmin, const typename onedcurve__::data_type &tmax )
+      {
+        int ret;
+        return find_zero( t, ret, c, t0, tmin, tmax );
+      }
+
+      template<typename onedcurve__>
       typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, const onedcurve__ &c, const typename onedcurve__::data_type &t0 )
       {
         return find_zero( t, c, t0, c.get_t0(), c.get_tmax() );
+      }
+
+      template<typename onedcurve__>
+      typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, int &ret, const onedcurve__ &c, const typename onedcurve__::data_type &t0 )
+      {
+        return find_zero( t, ret, c, t0, c.get_t0(), c.get_tmax(), ret );
       }
 
       template<typename onedcurve__>
