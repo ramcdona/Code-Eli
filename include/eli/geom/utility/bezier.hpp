@@ -31,15 +31,15 @@ namespace eli
 
         Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
         typename Derived2::Scalar oneminust(1-t);
-        typename Derived2::Index k;
+        typename Derived2::Index k, i;
 
         for (k=1; k<Q.rows(); ++k)
         {
-          Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
-//          for (i=0; i<Q.rows()-k; ++i)
-//          {
-//            Q.row(i)=oneminust*Q.row(i)+t*Q.row(i+1);
-//          }
+          // Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
+          for (i=0; i<Q.rows()-k; ++i)
+          {
+            Q.row(i)=oneminust*Q.row(i)+t*Q.row(i+1);
+          }
         }
 
         p=Q.row(0);
@@ -56,11 +56,15 @@ namespace eli
         // Initialize Q to shifted control points.
         Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp-p0);
         typename Derived2::Scalar oneminust(1-t);
-        typename Derived2::Index k;
+        typename Derived2::Index k, i;
 
         for (k=1; k<Q.rows(); ++k)
         {
-          Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
+          // Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
+          for (i=0; i<Q.rows()-k; ++i)
+          {
+            Q.row(i)=oneminust*Q.row(i)+t*Q.row(i+1);
+          }
         }
 
         p=Q.row(0);
