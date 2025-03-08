@@ -786,8 +786,8 @@ namespace eli
 
           void fbatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &ptmat ) const
           {
-            point_type ans, tmp;
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_cp;
+            point_type tmp;
+            Eigen::Matrix<data_type, dim__, Eigen::Dynamic> temp_cp;
             index_type n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
@@ -800,7 +800,7 @@ namespace eli
 
             if ( cu < cv ) // Building u curves expected to be cheaper.
             {
-              temp_cp.resize(n+1, dim__);
+              temp_cp.resize(dim__, n+1);
 
               for ( index_type j = 0; j < nv; j++ )
               {
@@ -813,7 +813,7 @@ namespace eli
                 for (index_type i=0; i<=n; ++i)
                 {
                   eli::geom::utility::de_casteljau(tmp, B_v[i], v);
-                  temp_cp.row(i)=tmp;
+                  temp_cp.col(i)=tmp;
                 }
 
                 for (index_type i=0; i<nu; i++)
@@ -823,13 +823,13 @@ namespace eli
                   // check to make sure given valid parametric value
                   assert((u>=0) && (u<=1));
 
-                  eli::geom::utility::de_casteljau( ptmat[i+i0][j0+j], temp_cp, u);
+                  eli::geom::utility::de_casteljau2( ptmat[i+i0][j0+j], temp_cp, u);
                 }
               }
             }
             else
             {
-              temp_cp.resize(m+1, dim__);
+              temp_cp.resize(dim__, m+1);
 
               for ( index_type i = 0; i < nu; i++ )
               {
@@ -842,7 +842,7 @@ namespace eli
                 for (index_type j=0; j<=m; ++j)
                 {
                   eli::geom::utility::de_casteljau(tmp, B_u[j], u);
-                  temp_cp.row(j)=tmp;
+                  temp_cp.col(j)=tmp;
                 }
 
                 for (index_type j=0; j<nv; j++)
@@ -852,7 +852,7 @@ namespace eli
                   // check to make sure given valid parametric value
                   assert((v>=0) && (v<=1));
 
-                  eli::geom::utility::de_casteljau( ptmat[i+i0][j0+j], temp_cp, v);
+                  eli::geom::utility::de_casteljau2( ptmat[i+i0][j0+j], temp_cp, v);
                 }
               }
             }
