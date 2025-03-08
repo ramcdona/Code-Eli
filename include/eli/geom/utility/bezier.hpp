@@ -24,6 +24,28 @@ namespace eli
     namespace utility
     {
       template<typename Derived1, typename Derived2>
+      void de_casteljau2(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t)
+      {
+        // do some checks on incoming matrix dimensions
+        assert(p.rows()==cp.rows());
+
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
+        typename Derived2::Scalar oneminust(1-t);
+        typename Derived2::Index k, i;
+
+        for (k=1; k<Q.cols(); ++k)
+        {
+          // Q.topRows(Q.rows()-k)=oneminust*Q.topRows(Q.rows()-k)+t*Q.middleRows(1,Q.rows()-k);
+          for (i=0; i<Q.cols()-k; ++i)
+          {
+            Q.col(i)=oneminust*Q.col(i)+t*Q.col(i+1);
+          }
+        }
+
+        p=Q.col(0);
+      }
+
+      template<typename Derived1, typename Derived2>
       void de_casteljau(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t)
       {
         // do some checks on incoming matrix dimensions
