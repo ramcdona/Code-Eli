@@ -2101,6 +2101,107 @@ namespace eli
             return patches[uk][vk].normal(uu, vv);
           }
 
+          // When a (u,v) point lies on the boundary or corner of a patch, this routine calculates the
+          // average unit normal vector considering patches on both sides of the boundary(ies).
+          point_type average_normal(const data_type &u, const data_type &v) const
+          {
+            // find patch that corresponds to given u & v
+            index_type uk, vk;
+            data_type uu(0), vv(0);
+
+            std::vector < index_type > ukvec, vkvec;
+            std::vector < data_type > uuvec, vvvec;
+
+            typename keymap_type::const_iterator uit;
+            typename keymap_type::const_iterator vit;
+
+            patch_boundary_code_type bcode = find_patch(uk, vk, uit, vit, uu, vv, u, v);
+
+            assert((uk != -1) && (vk != -1));
+
+            ukvec.push_back( uk );
+            uuvec.push_back( uu );
+            vkvec.push_back( vk );
+            vvvec.push_back( vv );
+
+
+            // Handle u boundary code
+            if ( bcode.first == -1 ) // u is at start of interval, uu = 0.
+            {
+              if ( uit != ukey.key.begin() )
+              {
+                uit--;
+                uk = uit->second;
+                uu = 1.0;
+
+                ukvec.push_back( uk );
+                uuvec.push_back( uu );
+              }
+            }
+            else if ( bcode.first == 1 ) // u is at end of interval uu = 1;
+            {
+              typename keymap_type::const_iterator uitnext = uit;
+              uitnext++;
+
+              if ( uitnext != ukey.key.end() )
+              {
+                uit = uitnext;
+                uk = uit->second;
+                uu = 0.0;
+
+                ukvec.push_back( uk );
+                uuvec.push_back( uu );
+              }
+            }
+
+            // Handle v boundary code
+            if ( bcode.second == -1 ) // v is at start of interval, vv = 0.
+            {
+              if ( vit != vkey.key.begin() )
+              {
+                vit--;
+                vk = vit->second;
+                vv = 1.0;
+
+                vkvec.push_back( vk );
+                vvvec.push_back( vv );
+              }
+            }
+            else if ( bcode.second == 1 ) // v is at end of interval vv = 1;
+            {
+              typename keymap_type::const_iterator vitnext = vit;
+              vitnext++;
+
+              if ( vitnext != vkey.key.end() )
+              {
+                vit = vitnext;
+                vk = vit->second;
+                vv = 0.0;
+
+                vkvec.push_back( vk );
+                vvvec.push_back( vv );
+              }
+            }
+
+
+            // Average vectors.
+            point_type n( 0, 0, 0 );
+            for ( index_type iu = 0; iu < ukvec.size(); iu++ )
+            {
+              uk = ukvec[iu];
+              uu = uuvec[iu];
+              for ( index_type iv = 0; iv < vkvec.size(); iv++ )
+              {
+                vk = vkvec[iv];
+                vv = vvvec[iv];
+                n = n + patches[uk][vk].normal(uu, vv);
+              }
+            }
+            n.normalize();
+
+            return n;
+          }
+
           void f_pt_normal(const data_type &u, const data_type &v, point_type &pt, point_type &norm, const index_type &utie = 0, const index_type &vtie = 0 ) const
           {
             // find patch that corresponds to given u & v
