@@ -358,10 +358,8 @@ namespace eli
       void bezier_split_control_points(Eigen::MatrixBase<Derived1> &cp_lo, Eigen::MatrixBase<Derived1> &cp_hi,
                                        const Eigen::MatrixBase<Derived2> &cp_in, const typename Derived2::Scalar &t)
       {
-        typename Derived2::Index i, n(cp_in.rows()-1), m;
+        typename Derived2::Index i, j, n(cp_in.rows()-1);
         Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> tri(cp_in);
-
-        typename Derived2::Scalar oneminust(1-t);
 
         // do some dimensions check
         assert(cp_lo.rows()==cp_hi.rows());
@@ -372,16 +370,12 @@ namespace eli
         // set the control points using de Casteljau's algorithm
         for (i=0; i<=n; ++i)
         {
-          m = n - i;
           cp_lo.row(i)=tri.row(0);
-          cp_hi.row(m)=tri.row(m);
-
-          tri.topRows( m ) = tri.middleRows(1, m)*t+tri.topRows(m)*oneminust;
-//          typename Derived2::Index j;
-//          for (j=0; j<n-i; ++j)
-//          {
-//            tri.row(j)=tri.row(j+1)*t+tri.row(j)*(1-t);
-//          }
+          cp_hi.row(n-i)=tri.row(n-i);
+          for (j=0; j<n-i; ++j)
+          {
+            tri.row(j)=tri.row(j+1)*t+tri.row(j)*(1-t);
+          }
         }
       }
 
@@ -391,7 +385,7 @@ namespace eli
       void bezier_split_control_points_half(Eigen::MatrixBase<Derived1> &cp_lo, Eigen::MatrixBase<Derived1> &cp_hi,
                                        const Eigen::MatrixBase<Derived2> &cp_in )
       {
-        typename Derived2::Index i, n(cp_in.rows()-1), m;
+        typename Derived2::Index i, j, n(cp_in.rows()-1);
         Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> tri(cp_in);
 
         // do some dimensions check
@@ -403,16 +397,12 @@ namespace eli
         // set the control points using de Casteljau's algorithm
         for (i=0; i<=n; ++i)
         {
-          m = n - i;
           cp_lo.row(i)=tri.row(0);
-          cp_hi.row(m)=tri.row(m);
-
-          tri.topRows( m ) = (tri.middleRows(1, m)+tri.topRows(m)) * 0.5;
-//          typename Derived2::Index j;
-//          for (j=0; j<n-i; ++j)
-//          {
-//            tri.row(j) = ( tri.row(j+1) + tri.row(j) ) * 0.5;
-//          }
+          cp_hi.row(n-i)=tri.row(n-i);
+          for (j=0; j<n-i; ++j)
+          {
+            tri.row(j) = ( tri.row(j+1) + tri.row(j) ) * 0.5;
+          }
         }
       }
 
