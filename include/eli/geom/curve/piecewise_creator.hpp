@@ -15,6 +15,7 @@
 
 #include "eli/geom/curve/piecewise_creator_base.hpp"
 #include "eli/geom/curve/piecewise_binary_cubic_cylinder_projector.hpp"
+#include "eli/geom/curve/piecewise_binary_cubic_sphere_projector.hpp"
 #include "eli/geom/curve/piecewise_binary_cubic_creator.hpp"
 #include "eli/geom/curve/piecewise_circle_creator.hpp"
 #include "eli/geom/curve/piecewise_point_creator.hpp"
