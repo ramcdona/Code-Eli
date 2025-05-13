@@ -27,7 +27,7 @@ namespace eli
       void de_casteljau2(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t)
       {
         // do some checks on incoming matrix dimensions
-        assert(p.rows()==cp.rows());
+        assert(p.cols()==cp.rows());
 
         Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
         typename Derived2::Scalar oneminust(1-t);
