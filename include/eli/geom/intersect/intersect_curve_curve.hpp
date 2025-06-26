@@ -104,13 +104,13 @@ namespace eli
         tmin2 = c2.get_t0();
         tmax2 = c2.get_tmax();
 
-        t1 = std::min(std::max(t1, tmin1), tmax1);
-        t2 = std::min(std::max(t2, tmin2), tmax2);
+        t1 = std::min(std::max(t01, tmin1), tmax1);
+        t2 = std::min(std::max(t02, tmin2), tmax2);
 
         typename curve__::point_type p1, p2;
 
-        p1 = c1.f(t01);
-        p2 = c2.f(t02);
+        p1 = c1.f(t1);
+        p2 = c2.f(t2);
 
         // setup the functors
         ggp.c1 = &c1;
@@ -144,8 +144,8 @@ namespace eli
         // set the initial guess
         typename nonlinear_solver_type::solution_matrix xinit, rhs, ans;
 
-        xinit(0) = t01;
-        xinit(1) = t02;
+        xinit(0) = t1;
+        xinit(1) = t2;
 
         nrm.set_initial_guess(xinit);
         rhs.setZero();
