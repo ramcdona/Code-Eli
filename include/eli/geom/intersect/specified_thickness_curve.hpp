@@ -140,8 +140,8 @@ namespace eli
 
         // if root is within bounds and is closer than initial guess
         {
-          assert((t1>=tmin) && (t1<=tmax));
-          assert((t2>=tmin) && (t2<=tmax));
+          assert((t1>=t1min) && (t1<=t1max));
+          assert((t2>=t2min) && (t2<=t2max));
 
           dist=eli::geom::point::distance(c.f(t1), c.f(t2))-d;
           if ( std::abs(dist) <= std::abs(dist0) )
