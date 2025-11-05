@@ -185,7 +185,7 @@ namespace eli
 
             if ( adapt && depth < max_depth )
             {
-              point_type mmid = transform_slope( pmid, parent_curve.fp( tmid ) );
+              point_type mmid = transform_slope( pmid0, parent_curve.fp( tmid ) );
 
               piecewise<bezier, data_type, dim__, tolerance_type> insert;
 
