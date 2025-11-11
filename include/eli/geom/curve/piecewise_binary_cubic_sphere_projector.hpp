@@ -155,8 +155,6 @@ namespace eli
                          const data_type &t1, const point_type &p1, const point_type &m1, index_type depth = 0 ) const
           {
             data_type tmid = ( t0 + t1 ) / 2.0;
-            data_type t25 = t0 + 0.25 * ( t1 - t0 ) ;
-            data_type t75 = t0 + 0.75 * ( t1 - t0 ) ;
             point_type pmid0 = parent_curve.f( tmid );
             point_type pmid = transform_point( pmid0 );
 
@@ -169,14 +167,6 @@ namespace eli
             else if ( eli::geom::point::distance( pmid, pc.f( tmid ) ) > ttol )
             {
               adapt = true;
-            }
-            else if ( eli::geom::point::distance( transform_point( parent_curve.f( t25 ) ), pc.f( t25 ) ) > ttol )
-            {
-                adapt = true;
-            }
-            else if ( eli::geom::point::distance( transform_point( parent_curve.f( t75 ) ), pc.f( t75 ) ) > ttol )
-            {
-                adapt = true;
             }
             else if ( !test_match( pc, t0, t1 ) )
             {
