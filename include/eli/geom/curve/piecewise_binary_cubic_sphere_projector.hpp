@@ -106,7 +106,7 @@ namespace eli
 
                 pc.push_back(c, t1-t0);
 
-                d = adapt_pc( pc, t0, p0t, m02t, t1, p1t, m11t );
+                d = std::max( d, adapt_pc( pc, t0, p0t, m02t, t1, p1t, m11t ) );
 
                 t0 = t1;
                 p0t = p1t;
