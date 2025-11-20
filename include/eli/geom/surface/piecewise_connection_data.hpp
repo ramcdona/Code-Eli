@@ -563,7 +563,10 @@ namespace eli
 
             // check if point set
             if ((conditions & CONNECTION_SET)==0)
+            {
+              printf("ERROR: piecewise connection data is not set %d %d\n", conditions, CONNECTION_SET );
               return false;
+            }
 
             // if highest continuity is C0 then done
             if (continuity==C0)
@@ -575,11 +578,15 @@ namespace eli
               // TODO: make this comparison an apprimately_equal() call
 //              if (!tol.approximately_equal(fp_left, fp_right))
               if (fp_left!=fp_right)
+              {
+                printf("ERROR: piecewise connection data first derivatives do not match\n");
                 return false;
+              }
             }
             // check neither side first derivatives set set
             else if ((conditions & (LEFT_FP_SET | RIGHT_FP_SET)) != 0)
             {
+              printf("ERROR: piecewise connection data first derivatives not set\n");
               return false;
             }
 
@@ -588,12 +595,18 @@ namespace eli
             if (use_left_fp())
             {
               if (!tol.approximately_equal(t0, fp_left.get_t0()) || !tol.approximately_equal(tmax, fp_left.get_tmax()))
+              {
+                printf("ERROR: piecewise connection data fp_left parameterization does not match\n");
                 return false;
+              }
             }
             if (use_right_fp())
             {
               if (!tol.approximately_equal(t0, fp_right.get_t0()) || !tol.approximately_equal(tmax, fp_right.get_tmax()))
+              {
+                printf("ERROR: piecewise connection data fp_right parameterization does not match\n");
                 return false;
+              }
             }
 
             // if highest continuity is C1 then done
@@ -606,11 +619,15 @@ namespace eli
               // TODO: make this comparison an apprimately_equal() call
 //              if (!tol.approximately_equal(fpp_left, fpp_right))
               if (fpp_left!=fpp_right)
+              {
+                printf("ERROR: piecewise connection data second derivatives do not match\n");
                 return false;
+              }
             }
             // check neither side second derivatives set set
             else if ((conditions & (LEFT_FPP_SET | RIGHT_FPP_SET)) != 0)
             {
+              printf("ERROR: piecewise connection data second derivatives not set\n");
               return false;
             }
 
@@ -618,12 +635,18 @@ namespace eli
             if (use_left_fpp())
             {
               if (!tol.approximately_equal(t0, fpp_left.get_t0()) || !tol.approximately_equal(tmax, fpp_left.get_tmax()))
+              {
+                printf("ERROR: piecewise connection data fpp_left parameterization does not match\n");
                 return false;
+              }
             }
             if (use_right_fpp())
             {
               if (!tol.approximately_equal(t0, fpp_right.get_t0()) || !tol.approximately_equal(tmax, fpp_right.get_tmax()))
+              {
+                printf("ERROR: piecewise connection data fpp_right parameterization does not match\n");
                 return false;
+              }
             }
 
             // since highest continuity can only be C2 then done

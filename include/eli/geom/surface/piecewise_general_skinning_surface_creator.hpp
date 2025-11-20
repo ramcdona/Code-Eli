@@ -95,10 +95,12 @@ namespace eli
             {
               if (rbs[0].use_left_fp() || rbs[0].use_left_fpp() || rbs[0].get_continuity()!=rib_data_type::C0)
               {
+                printf( "First rib does not have C0 continuity.\n" );
                 return false;
               }
               if (rbs[nsegs].use_right_fp() || rbs[nsegs].use_right_fpp() || rbs[nsegs].get_continuity()!=rib_data_type::C0)
               {
+                printf( "Last rib does not have C0 continuity.\n" );
                 return false;
               }
             }
@@ -109,9 +111,15 @@ namespace eli
             for (i=0; i<nribs; ++i)
             {
               if (!rbs[i].check_state())
+              {
+                printf( "Rib %d is not in valid state.\n", i );
                 return false;
+              }
               if (!tol.approximately_equal(rbs[i].get_t0(), v_start) || !tol.approximately_equal(rbs[i].get_tmax(), v_end))
+              {
+                printf( "Rib %d does not have same start and end parameterization.\n", i );
                 return false;
+              }
             }
 
             // find all unique v-coordinates on joints for each rib
@@ -129,6 +137,7 @@ namespace eli
               // test to make sure this rib's parameterization matches rest
               if (!tol.approximately_equal(rbs[i].get_t0(), t0) || !tol.approximately_equal(rbs[i].get_tmax(), tmax))
               {
+                printf( "Rib %d does not have same start and end parameterization as first rib.\n", i );
                 return false;
               }
 
@@ -146,6 +155,7 @@ namespace eli
 
             if ( njoints < 2 )
             {
+              printf( "Not enough joints specified.\n" );
               return false;
             }
 
