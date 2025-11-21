@@ -1047,6 +1047,13 @@ namespace eli
 
             s.find_patch(uit, vit, uu, vv, u_in, vmin);
 
+            // Split should be at uu == 0.  However, when split already existed, this can
+            // result in uu = 1.0.  Intermediate values should not exist, so comparing to 0.5 seems reasonable.
+            if ( uu > 0.5 )
+            {
+              ++uit;
+            }
+
             s.subsurf(before, s.ukey.key.begin(), uit, s.vkey.key.begin(), s.vkey.key.end());
             s.subsurf(after, uit, s.ukey.key.end(), s.vkey.key.begin(), s.vkey.key.end());
 
@@ -1102,6 +1109,13 @@ namespace eli
             data_type umin = ukey.get_pmin();
 
             s.find_patch(uit, vit, uu, vv, umin, v_in);
+
+            // Split should be at vv == 0.  However, when split already existed, this can
+            // result in vv = 1.0.  Intermediate values should not exist, so comparing to 0.5 seems reasonable.
+            if ( vv > 0.5 )
+            {
+              ++vit;
+            }
 
             s.subsurf(before, s.ukey.key.begin(), s.ukey.key.end(), s.vkey.key.begin(), vit);
             s.subsurf(after, s.ukey.key.begin(), s.ukey.key.end(), vit, s.vkey.key.end());
