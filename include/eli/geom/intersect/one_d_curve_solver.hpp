@@ -85,16 +85,20 @@ namespace eli
         nrm.set_lower_condition( tmin, eli::mutil::nls::iterative_root_base_constrained<typename onedcurve__::data_type>::IRC_EXCLUSIVE);
         nrm.set_upper_condition( tmax, eli::mutil::nls::iterative_root_base_constrained<typename onedcurve__::data_type>::IRC_EXCLUSIVE);
 
+        data_type t0_safe = t0;
+        if ( !(t0_safe >= tmin) ) t0_safe = tmin;
+        if ( !(t0_safe <= tmax) ) t0_safe = tmax;
+
         // set the initial guess
-        nrm.set_initial_guess(t0);
-        val0 = c.f(t0)(0);
+        nrm.set_initial_guess(t0_safe);
+        val0 = c.f(t0_safe)(0);
 
         // Set up initial guess as worst case scenario.
-        t = t0;
+        t = t0_safe;
         val = val0;
 
         // find the root
-        data_type tnrm = t0;
+        data_type tnrm = t0_safe;
         ret = nrm.find_root(tnrm, ggp, 0);
 
         if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
