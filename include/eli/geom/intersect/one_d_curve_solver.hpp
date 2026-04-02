@@ -107,20 +107,25 @@ namespace eli
           }
         }
 
-        // Try tmin.
-        val0 = c.f(tmin)(0);
-        if ( std::abs(val0) <= std::abs(val) )
+        // Try tmin and tmax only as fallback when no good solution has been found yet.
+        // If the current best is already within tolerance, skip — endpoints are valid
+        // zeros too (distance function is zero at multiple t values on a closed curve)
+        // and checking them unconditionally displaces the geometrically correct NR result.
+        if ( std::abs(val) > tol.get_absolute_tolerance() )
         {
-          t = tmin;
-          val = val0;
-        }
+          val0 = c.f(tmin)(0);
+          if ( std::abs(val0) < std::abs(val) )
+          {
+            t = tmin;
+            val = val0;
+          }
 
-        // Try tmax.
-        val0 = c.f(tmax)(0);
-        if ( std::abs(val0) <= std::abs(val) )
-        {
-          t = tmax;
-          val = val0;
+          val0 = c.f(tmax)(0);
+          if ( std::abs(val0) < std::abs(val) )
+          {
+            t = tmax;
+            val = val0;
+          }
         }
 
         return val;
