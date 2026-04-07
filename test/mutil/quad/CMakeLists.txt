@@ -23,4 +23,5 @@ set (QUAD_TEST_HEADER ${PROJECT_SOURCE_DIR}/trapezoid_test_suite.hpp
 
 add_executable(${QUAD_TEST_EXE} ${QUAD_TEST_SOURCE} ${QUAD_TEST_HEADER})
 target_link_libraries(${QUAD_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${QUAD_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${QUAD_TEST_EXE} COMMAND $<TARGET_FILE:${QUAD_TEST_EXE}> --text)

@@ -24,4 +24,5 @@ set (DM_TEST_HEADER ${PROJECT_SOURCE_DIR}/combination_test_suite.hpp
 
 add_executable(${DM_TEST_EXE} ${DM_TEST_SOURCE} ${DM_TEST_HEADER})
 target_link_libraries(${DM_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${DM_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${DM_TEST_EXE} COMMAND $<TARGET_FILE:${DM_TEST_EXE}> --text)

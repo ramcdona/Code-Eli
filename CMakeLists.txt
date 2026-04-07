@@ -32,6 +32,8 @@ else()
   set(ELI_BUILD_TIME "")
 endif()
 
+set( CMAKE_CXX_STANDARD 17 )
+
 # include the compiler specific settings
 include(${ELI_SOURCE_DIR}/cmake/ConfigureCompiler.cmake)
 
@@ -55,19 +57,16 @@ endif()
 configure_file(${ELI_SOURCE_DIR}/cmake/code_eli.hpp.in ${ELI_BINARY_DIR}/include/eli/code_eli.hpp @ONLY)
 
 find_package(CPPTest)
-find_package(Eigen3 3.0.0)
+find_package(Eigen3 REQUIRED NO_MODULE)
 
-if (EIGEN3_FOUND)
-  # add the include directories and libraries that are needed
-  include_directories(${ELI_BINARY_DIR}/include
-                      ${ELI_SOURCE_DIR}/include
-                      ${EIGEN3_INCLUDE_DIR})
-  add_subdirectory(example)
+# add the include directories and libraries that are needed
+include_directories(${ELI_BINARY_DIR}/include
+                    ${ELI_SOURCE_DIR}/include )
+add_subdirectory(example)
 
-  if(CPPTEST_FOUND)
-    # add the CPPTest include and link directories
-    include_directories(${CPPTEST_INCLUDE_DIRS})
-    link_directories(${CPPTEST_LIBRARY_DIRS})
-    add_subdirectory(test)
-  endif()
+if(CPPTEST_FOUND)
+  # add the CPPTest include and link directories
+  include_directories(${CPPTEST_INCLUDE_DIRS})
+  link_directories(${CPPTEST_LIBRARY_DIRS})
+  add_subdirectory(test)
 endif()

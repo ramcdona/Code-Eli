@@ -33,6 +33,7 @@ set (BEZIER_CURVE_TEST_HEADER ${PROJECT_SOURCE_DIR}/bezier_curve_test_suite.hpp
 
 add_executable(${BEZIER_CURVE_TEST_EXE} ${BEZIER_CURVE_TEST_SOURCE} ${BEZIER_CURVE_TEST_HEADER})
 target_link_libraries(${BEZIER_CURVE_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${BEZIER_CURVE_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${BEZIER_CURVE_TEST_EXE} COMMAND $<TARGET_FILE:${BEZIER_CURVE_TEST_EXE}> --text)
 
 # add the bezier_curve_fit test
@@ -56,4 +57,5 @@ set (BEZIER_CURVE_FIT_TEST_HEADER ${PROJECT_SOURCE_DIR}/bezier_curve_fit_test_su
 
 add_executable(${BEZIER_CURVE_FIT_TEST_EXE} ${BEZIER_CURVE_FIT_TEST_SOURCE} ${BEZIER_CURVE_FIT_TEST_HEADER})
 target_link_libraries(${BEZIER_CURVE_FIT_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${BEZIER_CURVE_FIT_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${BEZIER_CURVE_FIT_TEST_EXE} COMMAND $<TARGET_FILE:${BEZIER_CURVE_FIT_TEST_EXE}> --text)

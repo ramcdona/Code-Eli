@@ -25,3 +25,4 @@ set (VSP_POD_HEADER ${ELI_SOURCE_DIR}/include/eli/constants/math.hpp
 
 add_executable(${VSP_POD_EXE} ${VSP_POD_SOURCE} ${VSP_POD_HEADER})
 target_link_libraries(${VSP_POD_EXE} ${_ELI_EXAMPLE_LIBRARIES_LIST})
+target_link_libraries(${VSP_POD_EXE} Eigen3::Eigen )

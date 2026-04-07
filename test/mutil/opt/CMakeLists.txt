@@ -20,4 +20,5 @@ set (OPT_TEST_HEADER ${PROJECT_SOURCE_DIR}/least_squares_test_suite.hpp
 
 add_executable(${OPT_TEST_EXE} ${OPT_TEST_SOURCE} ${OPT_TEST_HEADER})
 target_link_libraries(${OPT_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${OPT_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${OPT_TEST_EXE} COMMAND $<TARGET_FILE:${OPT_TEST_EXE}> --text)

@@ -29,4 +29,5 @@ set (NLS_TEST_HEADER ${PROJECT_SOURCE_DIR}/nls_test_suite.hpp
 
 add_executable(${NLS_TEST_EXE} ${NLS_TEST_SOURCE} ${NLS_TEST_HEADER})
 target_link_libraries(${NLS_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${NLS_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${NLS_TEST_EXE} COMMAND $<TARGET_FILE:${NLS_TEST_EXE}> --text)

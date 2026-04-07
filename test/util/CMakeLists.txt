@@ -20,6 +20,7 @@ set (TOLERANCE_TEST_HEADER ${PROJECT_SOURCE_DIR}/tolerance_test_suite.hpp
 
 add_executable(${TOLERANCE_TEST_EXE} ${TOLERANCE_TEST_SOURCE} ${TOLERANCE_TEST_HEADER})
 target_link_libraries(${TOLERANCE_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${TOLERANCE_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${TOLERANCE_TEST_EXE} COMMAND $<TARGET_FILE:${TOLERANCE_TEST_EXE}> --text)
 
 # add the floating point test
@@ -31,6 +32,7 @@ set (FLOATING_POINT_TEST_HEADER ${PROJECT_SOURCE_DIR}/floating_point_test_suite.
 
 add_executable(${FLOATING_POINT_TEST_EXE} ${FLOATING_POINT_TEST_SOURCE} ${FLOATING_POINT_TEST_HEADER})
 target_link_libraries(${FLOATING_POINT_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${FLOATING_POINT_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${FLOATING_POINT_TEST_EXE} COMMAND $<TARGET_FILE:${FLOATING_POINT_TEST_EXE}> --text)
 
 # add the traits test
@@ -41,4 +43,5 @@ set (TRAITS_TEST_HEADER ${PROJECT_SOURCE_DIR}/traits_test_suite.hpp
 
 add_executable(${TRAITS_TEST_EXE} ${TRAITS_TEST_SOURCE} ${TRAITS_TEST_HEADER})
 target_link_libraries(${TRAITS_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${TRAITS_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${TRAITS_TEST_EXE} COMMAND $<TARGET_FILE:${TRAITS_TEST_EXE}> --text)

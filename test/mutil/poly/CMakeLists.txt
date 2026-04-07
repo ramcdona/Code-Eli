@@ -29,4 +29,5 @@ set (POLY_TEST_HEADER ${PROJECT_SOURCE_DIR}/poly_basic_test_suite.hpp
 
 add_executable(${POLY_TEST_EXE} ${POLY_TEST_SOURCE} ${POLY_TEST_HEADER})
 target_link_libraries(${POLY_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${POLY_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${POLY_TEST_EXE} COMMAND $<TARGET_FILE:${POLY_TEST_EXE}> --text)

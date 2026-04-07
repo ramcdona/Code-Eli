@@ -20,3 +20,4 @@ set (AIRFOIL_FIT_HEADER ${ELI_SOURCE_DIR}/include/eli/constants/math.hpp
 
 add_executable(${AIRFOIL_FIT_EXE} ${AIRFOIL_FIT_SOURCE} ${AIRFOIL_FIT_HEADER})
 target_link_libraries(${AIRFOIL_FIT_EXE} ${_ELI_EXAMPLE_LIBRARIES_LIST})
+target_link_libraries(${AIRFOIL_FIT_EXE} Eigen3::Eigen )

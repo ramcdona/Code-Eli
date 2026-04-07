@@ -25,4 +25,5 @@ set (FD_TEST_HEADER ${PROJECT_SOURCE_DIR}/fd_test_suite.hpp
 
 add_executable(${FD_TEST_EXE} ${FD_TEST_SOURCE} ${FD_TEST_HEADER})
 target_link_libraries(${FD_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${FD_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${FD_TEST_EXE} COMMAND $<TARGET_FILE:${FD_TEST_EXE}> --text)

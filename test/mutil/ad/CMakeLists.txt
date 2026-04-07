@@ -27,4 +27,5 @@ set (AD_TEST_HEADER ${PROJECT_SOURCE_DIR}/ad_dual_test_suite.hpp
 
 add_executable(${AD_TEST_EXE} ${AD_TEST_SOURCE} ${AD_TEST_HEADER})
 target_link_libraries(${AD_TEST_EXE} ${_ELI_TEST_LIBRARIES_LIST})
+target_link_libraries(${AD_TEST_EXE} Eigen3::Eigen )
 add_test(NAME ${AD_TEST_EXE} COMMAND $<TARGET_FILE:${AD_TEST_EXE}> --text)
