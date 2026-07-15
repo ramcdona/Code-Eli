@@ -31,19 +31,9 @@ namespace eli
         {
         }
         tolerance(const data__ &abs, const data__ &rel) : abs_tol(abs), rel_tol(rel) {}
-        tolerance(const tolerance<data__> &tol) : abs_tol(tol.abs_tol), rel_tol(tol.rel_tol) {}
-        ~tolerance() {}
-
-        tolerance & operator=(const tolerance<data__> &tol)
-        {
-          if (this == &tol)
-            return *this;
-
-          abs_tol=tol.abs_tol;
-          rel_tol=tol.rel_tol;
-
-          return *this;
-        }
+        // The copy constructor, copy assignment operator, and destructor are intentionally left
+        // implicit.  This keeps tolerance trivially copyable so classes containing it can have
+        // implicit nothrow move operations.
 
         bool operator==(const tolerance<data__> &tol) const
         {

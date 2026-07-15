@@ -36,20 +36,8 @@ namespace eli
         public:
           bounding_box() : empty(true) {}
           bounding_box(const point_type &p) : empty(false), pmin(p), pmax(p) {}
-          bounding_box(const bounding_box<data_type, dim__> &bb) : empty(bb.empty), pmin(bb.pmin), pmax(bb.pmax) {}
-          ~bounding_box() {}
-
-          bounding_box<data_type, dim__> & operator=(const bounding_box<data_type, dim__> &bb)
-          {
-            if (this!=&bb)
-            {
-              empty=bb.empty;
-              pmin=bb.pmin;
-              pmax=bb.pmax;
-            }
-
-            return (*this);
-          }
+          // The copy constructor, copy assignment operator, and destructor are intentionally left
+          // implicit.  This keeps bounding_box trivially copyable.
 
           bool operator==(const bounding_box<data_type, dim__> &bb)
           {

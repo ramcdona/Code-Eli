@@ -334,8 +334,9 @@ namespace eli
 
         public:
           piecewise() : tmax(0) {}
-          piecewise(const piecewise<curve__, data_type, dim__, tol__> &p) : segments(p.segments), tmax(p.tmax), tol(p.tol) {}
-          ~piecewise() {}
+          // The copy constructor, copy assignment operator, and destructor are intentionally left
+          // implicit.  A user-declared version of any of them would suppress the implicit move
+          // operations, forcing containers and callers to deep-copy instead of move.
 
           bool operator==(const piecewise<curve__, data_type, dim__> &p) const
           {
@@ -355,17 +356,6 @@ namespace eli
             }
 
             return true;
-          }
-
-          piecewise & operator=(const piecewise<curve__, data_type, dim__> &p)
-          {
-            if (this==&p)
-              return (*this);
-            segments=p.segments;
-            tmax=p.tmax;
-            tol=p.tol;
-
-            return (*this);
           }
 
           bool operator!=(const piecewise<curve__, data_type, dim__> &p) const

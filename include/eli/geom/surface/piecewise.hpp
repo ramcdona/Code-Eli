@@ -110,26 +110,9 @@ namespace eli
 
         public:
           piecewise() : nu(0), nv(0), uclosecache(UNKNOWN), vclosecache(UNKNOWN) {}
-          piecewise(const piecewise<surface__, data_type, dim__, tol__> &p)
-            : patches(p.patches), ukey(p.ukey), vkey(p.vkey), nu(p.nu), nv(p.nv),
-            uclosecache(p.uclosecache), vclosecache(p.vclosecache) {}
-          ~piecewise() {}
-
-          piecewise & operator=(const piecewise<surface__, data_type, dim__> &p)
-          {
-            if (this==&p)
-              return (*this);
-
-            patches=p.patches;
-            ukey=p.ukey;
-            vkey=p.vkey;
-            nu=p.nu;
-            nv=p.nv;
-            uclosecache=p.uclosecache;
-            vclosecache=p.vclosecache;
-
-            return (*this);
-          }
+          // The copy constructor, copy assignment operator, and destructor are intentionally left
+          // implicit.  A user-declared version of any of them would suppress the implicit move
+          // operations, forcing containers and callers to deep-copy instead of move.
 
           bool operator==(const piecewise<surface__, data_type, dim__> &p) const
           {
@@ -2711,8 +2694,7 @@ namespace eli
             data_type pmax;
 
             parameter_key() : pmax(0) {}
-            parameter_key(const parameter_key &pk) : key(pk.key), pmax(pk.pmax) {}
-            ~parameter_key() {}
+            // Copy operations and destructor intentionally implicit to keep parameter_key movable.
 
             bool operator==(const parameter_key &pk) const
             {
