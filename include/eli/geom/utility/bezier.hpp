@@ -32,7 +32,11 @@ namespace eli
 
       // The fast paths below must produce results bit-comparable with the Eigen expression
       // fallback -- keep the compiler from contracting a*x+b*y into fused multiply-adds.
+      // Clang implements the standard pragma; GCC does not (and warns), and MSVC does not
+      // contract under its default /fp:precise, so both are left alone.
+      #if defined(__clang__)
       #pragma STDC FP_CONTRACT OFF
+      #endif
 
       template<typename Derived1, typename Derived2>
       void de_casteljau2(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t)
