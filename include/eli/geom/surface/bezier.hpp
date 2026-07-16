@@ -16,6 +16,7 @@
 #include <cstddef>  // nullptr
 
 #include <vector>
+#include <iostream>
 
 #include "eli/code_eli.hpp"
 
@@ -261,7 +262,7 @@ namespace eli
 
           void octave_print(int figno ) const
           {
-            index_type i, j, pp, qq;
+            index_type i, j;
 
             std::cout << "figure(" << figno << ");" << std::endl;
 

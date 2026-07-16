@@ -14,6 +14,7 @@
 #define eli_geom_curve_piecewise_hpp
 
 #include <map>
+#include <iostream>
 #include <iterator>
 
 #include "eli/code_eli.hpp"
@@ -1432,7 +1433,7 @@ namespace eli
             // Place union of pmap and omap into cmap.
             std::set_union( pmap.begin(), pmap.end(), omap.begin(), omap.end(), std::back_inserter(cmap), comp );
 
-            for ( int i = 0; i < cmap.size(); i++ )
+            for ( int i = 0; i < static_cast<int>( cmap.size() ); i++ )
             {
               split( cmap[i] );
               other.split( cmap[i] );

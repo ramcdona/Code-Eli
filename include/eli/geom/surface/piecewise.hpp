@@ -14,6 +14,7 @@
 #define eli_geom_surface_piecewise_hpp
 
 #include <vector>
+#include <iostream>
 #include <iterator>
 #include <utility>
 #include <algorithm>
@@ -266,7 +267,7 @@ namespace eli
 
           void octave_print(int figno ) const
           {
-            index_type i, j, pp, qq, nup, nvp;
+            index_type i, j, nup, nvp;
             data_type umin, vmin, umax, vmax;
 
             nup = number_u_patches();
@@ -1209,7 +1210,6 @@ namespace eli
 
           bool trim_v( const data_type &v_start, const data_type &v_end, piecewise<surface__, data_type, dim__, tol__> &res)
           {
-            index_type uk, vk;
             typename keymap_type::iterator uit, vit;
             data_type vmin, vmax;
             vmin = get_v0();
@@ -1290,7 +1290,7 @@ namespace eli
             res.join_v( s2, s3 );
 
             // Roll back to original position.
-            index_type code = res.roll_vparm( rev_roll );
+            res.roll_vparm( rev_roll );
 
             // Force parameter to make sure no error crept in.
             res.set_v0( 0.0 );
@@ -1395,7 +1395,7 @@ namespace eli
 
           void promote_u_to( const std::vector< index_type > ord )
           {
-            assert ( ord.size() == nu );
+            assert ( ord.size() == static_cast<size_t>( nu ) );
 
             index_type uk;
             typename keymap_type::const_iterator uit;
@@ -1415,7 +1415,7 @@ namespace eli
 
           void promote_v_to( const std::vector< index_type > ord )
           {
-            assert ( ord.size() == nv );
+            assert ( ord.size() == static_cast<size_t>( nv ) );
 
             index_type vk;
             typename keymap_type::const_iterator vit;
@@ -2079,7 +2079,6 @@ namespace eli
 
             assert((uk != -1) && (vk != -1));
 
-            data_type delta_u = ukey.get_delta_parm(uit);
             data_type delta_v = vkey.get_delta_parm(vit);
 
             return patches[uk][vk].f_vvv(uu, vv)/(delta_v*delta_v*delta_v);
@@ -2183,11 +2182,11 @@ namespace eli
 
             // Average vectors.
             point_type n( 0, 0, 0 );
-            for ( index_type iu = 0; iu < ukvec.size(); iu++ )
+            for ( index_type iu = 0; iu < static_cast<index_type>( ukvec.size() ); iu++ )
             {
               uk = ukvec[iu];
               uu = uuvec[iu];
-              for ( index_type iv = 0; iv < vkvec.size(); iv++ )
+              for ( index_type iv = 0; iv < static_cast<index_type>( vkvec.size() ); iv++ )
               {
                 vk = vkvec[iv];
                 vv = vvvec[iv];
@@ -2284,7 +2283,7 @@ namespace eli
               data_type uu;
               index_type code = ukey.find_segment( uk, uit, uu, uvec[i] );
 
-              if ( code == -1 && i == ( uvec.size() - 1 ) ) // u is at start of interval, uu = 0.
+              if ( code == -1 && i == static_cast<index_type>( uvec.size() ) - 1 ) // u is at start of interval, uu = 0.
               {
                 if ( uit != ukey.key.begin() )
                 {
@@ -2318,7 +2317,7 @@ namespace eli
               data_type vv;
               index_type code = vkey.find_segment( vk, vit, vv, vvec[i] );
 
-              if ( code == -1 && i == ( vvec.size() - 1 ) ) // v is at start of interval, vv = 0.
+              if ( code == -1 && i == static_cast<index_type>( vvec.size() ) - 1 ) // v is at start of interval, vv = 0.
               {
                 if ( vit != vkey.key.begin() )
                 {
@@ -2483,7 +2482,7 @@ namespace eli
             // Place union of 1 and 2 into pmaps
             std::set_union( upmap1.begin(), upmap1.end(), upmap2.begin(), upmap2.end(), std::back_inserter(upmap), comp );
 
-            for ( index_type i = 0; i < upmap.size(); i++ )
+            for ( index_type i = 0; i < static_cast<index_type>( upmap.size() ); i++ )
             {
               s1.split_u( upmap[i] );
               s2.split_u( upmap[i] );
@@ -2506,7 +2505,7 @@ namespace eli
             // Place union of 1 and 2 into pmaps
             std::set_union( vpmap1.begin(), vpmap1.end(), vpmap2.begin(), vpmap2.end(), std::back_inserter(vpmap), comp );
 
-            for ( index_type i = 0; i < vpmap.size(); i++ )
+            for ( index_type i = 0; i < static_cast<index_type>( vpmap.size() ); i++ )
             {
               s1.split_v( vpmap[i] );
               s2.split_v( vpmap[i] );
@@ -2819,7 +2818,7 @@ namespace eli
               key.clear();
               typename keymap_type::iterator itguess = key.end();
 
-              for ( index_type j = 0; j < pmap.size() - 1; j++ )
+              for ( index_type j = 0; j < static_cast<index_type>( pmap.size() ) - 1; j++ )
               {
                 itguess = key.insert( itguess, std::make_pair( pmap[j], j) );
               }
