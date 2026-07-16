@@ -23,15 +23,58 @@ namespace eli
   {
     namespace utility
     {
+      // Stack buffer limits for the de Casteljau fast path.  Curves within these limits
+      // (degree < DC_MAX_N, dimension <= DC_MAX_M) are evaluated in a local buffer with
+      // simple contiguous loops, avoiding the heap allocation and strided Eigen row/column
+      // expressions of the general path.  These routines are the innermost loops of all
+      // curve and surface evaluation, so this matters.
+      enum { DC_MAX_N = 64, DC_MAX_M = 4 };
+
+      // The fast paths below must produce results bit-comparable with the Eigen expression
+      // fallback -- keep the compiler from contracting a*x+b*y into fused multiply-adds.
+      #pragma STDC FP_CONTRACT OFF
+
       template<typename Derived1, typename Derived2>
       void de_casteljau2(Eigen::MatrixBase<Derived1> &p, const Eigen::MatrixBase<Derived2> &cp, const typename Derived2::Scalar &t)
       {
         // do some checks on incoming matrix dimensions
         assert(p.cols()==cp.rows());
 
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
-        typename Derived2::Scalar oneminust(1-t);
-        typename Derived2::Index k, i;
+        typedef typename Derived2::Scalar scalar_type;
+        typedef typename Derived2::Index index_type;
+
+        const index_type n(cp.cols());  // points are columns
+        const index_type m(cp.rows());
+        const scalar_type oneminust(1-t);
+        index_type k, i, j;
+
+        if ( n <= DC_MAX_N && m <= DC_MAX_M )
+        {
+          // Column-contiguous local buffer: q[i*m + j] holds component j of point i.
+          scalar_type q[DC_MAX_N*DC_MAX_M];
+
+          for (i=0; i<n; ++i)
+          {
+            for (j=0; j<m; ++j)
+            {
+              q[i*m+j] = cp(j, i);
+            }
+          }
+
+          for (k=1; k<n; ++k)
+          {
+            const index_type nrem((n-k)*m);
+            for (i=0; i<nrem; ++i)
+            {
+              q[i] = oneminust*q[i] + t*q[i+m];
+            }
+          }
+
+          p = Eigen::Map< const Eigen::Matrix<scalar_type, Eigen::Dynamic, 1> >(q, m);
+          return;
+        }
+
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
 
         for (k=1; k<Q.cols(); ++k)
         {
@@ -51,9 +94,41 @@ namespace eli
         // do some checks on incoming matrix dimensions
         assert(p.cols()==cp.cols());
 
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
-        typename Derived2::Scalar oneminust(1-t);
-        typename Derived2::Index k, i;
+        typedef typename Derived2::Scalar scalar_type;
+        typedef typename Derived2::Index index_type;
+
+        const index_type n(cp.rows());  // points are rows
+        const index_type m(cp.cols());
+        const scalar_type oneminust(1-t);
+        index_type k, i, j;
+
+        if ( n <= DC_MAX_N && m <= DC_MAX_M )
+        {
+          // Row-contiguous local buffer: q[i*m + j] holds component j of point i.
+          scalar_type q[DC_MAX_N*DC_MAX_M];
+
+          for (i=0; i<n; ++i)
+          {
+            for (j=0; j<m; ++j)
+            {
+              q[i*m+j] = cp(i, j);
+            }
+          }
+
+          for (k=1; k<n; ++k)
+          {
+            const index_type nrem((n-k)*m);
+            for (i=0; i<nrem; ++i)
+            {
+              q[i] = oneminust*q[i] + t*q[i+m];
+            }
+          }
+
+          p = Eigen::Map< const Eigen::Matrix<scalar_type, 1, Eigen::Dynamic> >(q, 1, m);
+          return;
+        }
+
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
 
         for (k=1; k<Q.rows(); ++k)
         {
@@ -75,10 +150,44 @@ namespace eli
         // do some checks on incoming matrix dimensions
         assert(p.cols()==cp.cols());
 
-        // Initialize Q to shifted control points.
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> Q(cp-p0);
-        typename Derived2::Scalar oneminust(1-t);
-        typename Derived2::Index k, i;
+        typedef typename Derived2::Scalar scalar_type;
+        typedef typename Derived2::Index index_type;
+
+        const index_type n(cp.rows());  // points are rows
+        const index_type m(cp.cols());
+        const scalar_type oneminust(1-t);
+        index_type k, i, j;
+
+        if ( n <= DC_MAX_N && m <= DC_MAX_M )
+        {
+          // Row-contiguous local buffer of shifted control points.
+          scalar_type q[DC_MAX_N*DC_MAX_M];
+
+          for (i=0; i<n; ++i)
+          {
+            for (j=0; j<m; ++j)
+            {
+              q[i*m+j] = cp(i, j) - p0(0, j);
+            }
+          }
+
+          for (k=1; k<n; ++k)
+          {
+            const index_type nrem((n-k)*m);
+            for (i=0; i<nrem; ++i)
+            {
+              q[i] = oneminust*q[i] + t*q[i+m];
+            }
+          }
+
+          p = Eigen::Map< const Eigen::Matrix<scalar_type, 1, Eigen::Dynamic> >(q, 1, m);
+          return;
+        }
+
+        // Initialize Q to shifted control points.  Note the rowwise subtraction -- p0 is a
+        // single point while cp holds one control point per row.
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
+        Q.rowwise() -= p0.row(0);
 
         for (k=1; k<Q.rows(); ++k)
         {
