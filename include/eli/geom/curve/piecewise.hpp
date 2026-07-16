@@ -22,6 +22,7 @@
 #include "eli/constants/math.hpp"
 #include "eli/util/tolerance.hpp"
 
+#include "eli/geom/point/distance.hpp"
 #include "eli/geom/general/continuity.hpp"
 #include "eli/geom/intersect/specified_distance_curve.hpp"
 
@@ -307,6 +308,11 @@ namespace eli
 
           typedef typename curve_type::onedbezcurve onedbezcurve;
           typedef piecewise<curve__, data_type, 1, tol__> onedpiecewisecurve;
+
+          // Allow piecewise curves of other dimensions to access private members --
+          // product1d reads the segment map of the 1D curve directly.
+          template<template<typename, unsigned short, typename> class, typename, unsigned short, typename>
+          friend class piecewise;
           typedef piecewise<curve__, data_type, 2, tol__> twodpiecewisecurve;
           typedef piecewise<curve__, data_type, 3, tol__> threedpiecewisecurve;
           typedef piecewise<curve__, data_type, 4, tol__> fourdpiecewisecurve;
@@ -1727,7 +1733,7 @@ namespace eli
             curve_type cstart, cend;
 
             // Distance to close.
-            data_type d = dist( pstart, pend );
+            data_type d = eli::geom::point::distance( pstart, pend );
 
             if ( tol.approximately_equal( d, 0 ) )
             {
@@ -2854,7 +2860,7 @@ namespace eli
 
             if(it != segments.rbegin())
             {
-              typename segment_collection_type::reverse_iterator itprev = it;
+              typename segment_collection_type::const_reverse_iterator itprev = it;
               itprev--;
               delta_t = itprev->first - it->first;
             }
@@ -2874,7 +2880,7 @@ namespace eli
 
             if(it != segments.rbegin())
             {
-              typename segment_collection_type::reverse_iterator itprev = it;
+              typename segment_collection_type::const_reverse_iterator itprev = it;
               itprev--;
               delta_t = itprev->first - it->first;
             }
