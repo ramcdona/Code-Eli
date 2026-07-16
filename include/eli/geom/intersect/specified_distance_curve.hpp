@@ -14,6 +14,7 @@
 #define eli_geom_intersect_specified_distance_curve_hpp
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 #include <list>
 #include <algorithm>

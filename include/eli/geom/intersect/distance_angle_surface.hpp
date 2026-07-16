@@ -14,6 +14,7 @@
 #define eli_geom_intersect_distance_angle_surface_hpp
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 #include <list>
 #include <algorithm>

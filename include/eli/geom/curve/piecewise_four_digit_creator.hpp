@@ -14,6 +14,7 @@
 #define eli_geom_curve_piecewise_four_digit_creator_hpp
 
 #include "eli/code_eli.hpp"
+#include <iostream>
 
 #include "eli/mutil/dm/binomial_coefficient.hpp"
 #include "eli/geom/curve/piecewise_creator_base.hpp"

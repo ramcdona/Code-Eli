@@ -14,6 +14,7 @@
 #define eli_geom_curve_piecewise_general_creator_hpp
 
 #include <vector>
+#include <iostream>
 
 #include "eli/code_eli.hpp"
 

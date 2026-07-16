@@ -14,6 +14,7 @@
 #define eli_mutil_poly_root_closed_form_hpp
 
 #include <vector>
+#include <iostream>
 #include <limits>
 
 #include "eli/code_eli.hpp"

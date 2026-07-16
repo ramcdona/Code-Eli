@@ -14,6 +14,7 @@
 #define eli_geom_intersect_one_d_curve_solver_hpp
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 #include <list>
 #include <algorithm>

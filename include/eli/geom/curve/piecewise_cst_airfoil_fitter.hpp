@@ -14,6 +14,7 @@
 #define piecewise_cst_airfoil_fitter_hpp
 
 #include <vector>
+#include <iostream>
 #include <iterator>
 #include <algorithm>
 

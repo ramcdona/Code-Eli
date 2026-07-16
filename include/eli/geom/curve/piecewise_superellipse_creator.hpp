@@ -14,6 +14,7 @@
 #define eli_geom_curve_piecewise_superellipse_creator_hpp
 
 #include "eli/code_eli.hpp"
+#include <iostream>
 
 #include "eli/geom/curve/piecewise_creator_base.hpp"
 #include "eli/geom/curve/piecewise.hpp"
