@@ -112,12 +112,12 @@ namespace eli
             {
               if (!rbs[i].check_state())
               {
-                printf( "Rib %d is not in valid state.\n", i );
+                printf( "Rib %d is not in valid state.\n", static_cast<int>(i) );
                 return false;
               }
               if (!tol.approximately_equal(rbs[i].get_t0(), v_start) || !tol.approximately_equal(rbs[i].get_tmax(), v_end))
               {
-                printf( "Rib %d does not have same start and end parameterization.\n", i );
+                printf( "Rib %d does not have same start and end parameterization.\n", static_cast<int>(i) );
                 return false;
               }
             }
@@ -137,7 +137,7 @@ namespace eli
               // test to make sure this rib's parameterization matches rest
               if (!tol.approximately_equal(rbs[i].get_t0(), t0) || !tol.approximately_equal(rbs[i].get_tmax(), tmax))
               {
-                printf( "Rib %d does not have same start and end parameterization as first rib.\n", i );
+                printf( "Rib %d does not have same start and end parameterization as first rib.\n", static_cast<int>(i) );
                 return false;
               }
 

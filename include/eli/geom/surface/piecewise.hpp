@@ -2836,7 +2836,7 @@ namespace eli
               // cycle through all segments to get each bounding box to add
               for (it=key.begin(); it!=key.end(); ++it)
               {
-                printf(" seg: %d \t p: %f \t pk %d\n", i, it->first, it->second);
+                printf(" seg: %d \t p: %f \t pk %d\n", i, it->first, static_cast<int>(it->second));
                 ++i;
               }
               printf(" pmax: %f\n", pmax);
