@@ -718,61 +718,85 @@ namespace eli
             }
 
             // build segments based on joint information
-            Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> coef(seg_ind[nsegs]*dim__, seg_ind[nsegs]*dim__), rows(dim__, seg_ind[nsegs]*dim__);
-            Eigen::Matrix<data_type, Eigen::Dynamic, 1> x(seg_ind[nsegs]*dim__, 1), rhs(seg_ind[nsegs]*dim__, 1), rhs_seg(dim__, 1);
+            const index_type nunk(seg_ind[nsegs]*dim__);
+            const bool have_fits(seg_fit_ind[nsegs]!=0);
+
+            // Without fit points the system is solved sparsely, so accumulate triplets
+            // directly from each condition's row block instead of assembling -- and later
+            // scanning -- a dense coefficient matrix.  The dense matrix is only built when
+            // the fit (least squares) branch below needs it.
+            Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> coef(have_fits ? nunk : 0, have_fits ? nunk : 0), rows(dim__, nunk);
+            Eigen::Matrix<data_type, Eigen::Dynamic, 1> x(nunk, 1), rhs(nunk, 1), rhs_seg(dim__, 1);
+            std::vector< Eigen::Triplet<data_type> > coef_triplets;
             index_type cond_no(0);
+
+            if (!have_fits)
+            {
+              coef_triplets.reserve(6*nunk);
+            }
+
+            auto record_condition = [&]()
+            {
+              if (have_fits)
+              {
+                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
+              }
+              else
+              {
+                for (index_type rr=0; rr<dim__; ++rr)
+                {
+                  for (index_type cc=0; cc<nunk; ++cc)
+                  {
+                    if (rows(rr, cc)!=0)
+                    {
+                      coef_triplets.push_back(Eigen::Triplet<data_type>(cond_no*dim__+rr, cc, rows(rr, cc)));
+                    }
+                  }
+                }
+              }
+              rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
+              ++cond_no;
+            };
 
             for (i=0; i<nsegs; ++i)
             {
               // set the end point conditions
-              assert(cond_no<coef.rows());
+              assert(cond_no*dim__<nunk);
               set_point_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i].get_f(), true);
-              coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-              rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-              ++cond_no;
+              record_condition();
 
-              assert(cond_no<coef.rows());
+              assert(cond_no*dim__<nunk);
               set_point_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i+1].get_f(), false);
-              coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-              rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-              ++cond_no;
+              record_condition();
 
               // set the end point 1st derivative conditions
               if (joint_states[i].use_right_fp())
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fp_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i].get_right_fp(), this->get_segment_dt(i), true);
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
 
               if (joint_states[i+1].use_left_fp())
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fp_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i+1].get_left_fp(), this->get_segment_dt(i), false);
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
 
               // set the end point 2nd derivative conditions
               if (joint_states[i].use_right_fpp())
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fpp_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i].get_right_fpp(), this->get_segment_dt(i), true);
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
 
               if (joint_states[i+1].use_left_fpp())
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fpp_condition(rows, rhs_seg, seg_ind[i], seg_degree[i], joint_states[i+1].get_left_fpp(), this->get_segment_dt(i), false);
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
             }
 
@@ -783,31 +807,34 @@ namespace eli
               // set the 1st derivative continuous without specifying value
               if ( (joint_states[i].get_continuity()>C0) && !joint_states[i].use_left_fp() && !joint_states[i].use_right_fp() )
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fp_continuous_condition(rows, rhs_seg, seg_ind[i-1], seg_degree[i-1], seg_degree[i], this->get_segment_dt(i-1), this->get_segment_dt(i));
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
 
               // set the 2nd derivative continuous without specifying value
               if ( (joint_states[i].get_continuity()>C1) && !joint_states[i].use_left_fpp() && !joint_states[i].use_right_fpp() )
               {
-                assert(cond_no<coef.rows());
+                assert(cond_no*dim__<nunk);
                 set_fpp_continuous_condition(rows, rhs_seg, seg_ind[i-1], seg_degree[i-1], seg_degree[i], this->get_segment_dt(i-1), this->get_segment_dt(i));
-                coef.block(cond_no*dim__, 0, dim__, coef.cols())=rows;
-                rhs.block(cond_no*dim__, 0, dim__, 1)=rhs_seg;
-                ++cond_no;
+                record_condition();
               }
             }
 
             // solve for the control points
             if ((seg_fit_ind[nsegs]==0) || (cond_no*dim__==coef.rows()))
             {
-              assert(cond_no*dim__==coef.rows());
+              assert(cond_no*dim__==nunk);
 
               Eigen::SparseMatrix<data_type> coefSp(cond_no*dim__, cond_no*dim__);
-              coefSp = coef.sparseView();
+              if (have_fits)
+              {
+                coefSp = coef.sparseView();
+              }
+              else
+              {
+                coefSp.setFromTriplets(coef_triplets.begin(), coef_triplets.end());
+              }
 
               Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
               solver.compute( coefSp );
