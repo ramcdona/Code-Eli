@@ -333,7 +333,8 @@ namespace eli
             return true;
           }
 
-        private:
+        protected:
+          // Accessible to derived creators (e.g. the uniform structure skinning creator).
           std::vector<rib_data_type> ribs;
           std::vector<index_type> max_degree;
           bool closed;
