@@ -135,12 +135,13 @@ namespace eli
               return false;
             }
 
-            // ---- per strip: gather values, solve, place control points ----
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> B(st.nrow, dim__), X(st.nrow, dim__);
-
+            // ---- per v segment: gather every strip's right hand side into one wide
+            //      matrix and solve them all with a single back substitution, so the
+            //      factored solve runs blocked (level 3) across all strips at once ----
             for (v=0; v<nv; ++v)
             {
               std::vector<surface_type> surfs(nu);
+              const index_type nstrip(max_jdegs[v]+1);
 
               // hoist the per-segment curves for each rib out of the strip loop
               std::vector<curve_type> fcrv(nribs), lfpcrv(nribs), rfpcrv(nribs), lfppcrv(nribs), rfppcrv(nribs);
@@ -165,9 +166,10 @@ namespace eli
                 }
               }
 
-              for (j=0; j<=max_jdegs[v]; ++j)
+              // strip j occupies right hand side columns [j*dim, j*dim+dim)
+              Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> B(st.nrow, dim__*nstrip);
+              for (j=0; j<nstrip; ++j)
               {
-                // evaluate the right hand side for each compiled condition
                 for (index_type c=0; c<st.nrow; ++c)
                 {
                   const condition_type &cnd(st.conditions[c]);
@@ -197,27 +199,26 @@ namespace eli
                       val.setZero();
                       break;
                   }
-                  B.row(c)=val;
+                  B.block(c, j*dim__, 1, dim__)=val;
                 }
+              }
 
-                X=solver.solve(B);
-                if (solver.info()!=Eigen::Success)
+              Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> X(solver.solve(B));
+              if (solver.info()!=Eigen::Success)
+              {
+                assert(false);
+                return false;
+              }
+
+              // place control points directly into the temporary surfaces
+              for (u=0; u<nu; ++u)
+              {
+                surfs[u].resize(st.seg_degree[u], max_jdegs[v]);
+                for (j=0; j<nstrip; ++j)
                 {
-                  assert(false);
-                  return false;
-                }
-
-                // place control points directly into the temporary surfaces
-                for (u=0; u<nu; ++u)
-                {
-                  if (j==0)
-                  {
-                    surfs[u].resize(st.seg_degree[u], max_jdegs[v]);
-                  }
-
                   for (i=0; i<=st.seg_degree[u]; ++i)
                   {
-                    point_type cp(X.row(st.seg_ind[u]+i));
+                    point_type cp(X.block(st.seg_ind[u]+i, j*dim__, 1, dim__));
                     surfs[u].set_control_point(cp, i, j);
                   }
                 }
