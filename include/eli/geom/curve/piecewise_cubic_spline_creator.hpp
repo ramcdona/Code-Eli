@@ -14,6 +14,8 @@
 #define eli_geom_curve_piecewise_spline_creator_hpp
 
 #include <iterator>
+#include <map>
+#include <memory>
 #include <vector>
 
 #include "eli/code_eli.hpp"
@@ -779,7 +781,6 @@ namespace eli
           void set_cubic_spline(point_it__ itb)
           {
             index_type i, nseg(this->get_number_segments()), nunk(3*nseg+1);
-            Eigen::SparseMatrix<data_type> M(nunk, nunk);
             Eigen::Matrix<data_type, Eigen::Dynamic, dim__> b(nunk, dim__);
 
             typedef Eigen::Triplet< data_type, index_type > trip;
@@ -822,12 +823,9 @@ namespace eli
             tlist.push_back( trip( nunk-2, nunk-1, -1/dt2_3 ) );
             b.row(nunk-2).setZero();
 
-            M.setFromTriplets( tlist.begin(), tlist.end() );
-
-            Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
-            solver.compute( M );
+            std::shared_ptr<cubic_solver_type> solver( factorize_cubic_spline( 0, nunk, tlist ) );
             // find the control points and set them
-            b = solver.solve(b);
+            b = solver->solve(b);
             for (i=0; i<nunk; ++i)
             {
               control_point[i]=b.row(i);
@@ -844,7 +842,6 @@ namespace eli
           void set_clamped_cubic_spline(point_it__ itb, const point_type &start_slope, const point_type &end_slope)
           {
             index_type i, nseg(this->get_number_segments()), nunk(3*nseg+1);
-            Eigen::SparseMatrix<data_type> M(nunk, nunk);
             Eigen::Matrix<data_type, Eigen::Dynamic, dim__> b(nunk, dim__);
 
             typedef Eigen::Triplet< data_type, index_type > trip;
@@ -864,12 +861,9 @@ namespace eli
             tlist.push_back( trip( nunk-2, nunk-1, 3/tmp ) );
             b.row(nunk-2)=end_slope;
 
-            M.setFromTriplets( tlist.begin(), tlist.end() );
-
-            Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
-            solver.compute( M );
+            std::shared_ptr<cubic_solver_type> solver( factorize_cubic_spline( 1, nunk, tlist ) );
             // find the control points and set them
-            b = solver.solve(b);
+            b = solver->solve(b);
             for (i=0; i<nunk; ++i)
             {
               control_point[i]=b.row(i);
@@ -886,7 +880,6 @@ namespace eli
           void set_natural_cubic_spline(point_it__ itb)
           {
             index_type i, nseg(this->get_number_segments()), nunk(3*nseg+1);
-            Eigen::SparseMatrix<data_type> M(nunk, nunk);
             Eigen::Matrix<data_type, Eigen::Dynamic, dim__> b(nunk, dim__);
 
             typedef Eigen::Triplet< data_type, index_type > trip;
@@ -905,12 +898,9 @@ namespace eli
             tlist.push_back( trip( nunk-2, nunk-1, 1 ) );
             b.row(nunk-2).setZero();
 
-            M.setFromTriplets( tlist.begin(), tlist.end() );
-
-            Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
-            solver.compute( M );
+            std::shared_ptr<cubic_solver_type> solver( factorize_cubic_spline( 2, nunk, tlist ) );
             // find the control points and set them
-            b = solver.solve(b);
+            b = solver->solve(b);
             for (i=0; i<nunk; ++i)
             {
               control_point[i]=b.row(i);
@@ -950,7 +940,6 @@ namespace eli
           void set_periodic_cubic_spline(point_it__ itb)
           {
             index_type i, nseg(this->get_number_segments()), nunk(3*nseg+1);
-            Eigen::SparseMatrix<data_type> M(nunk, nunk);
             Eigen::Matrix<data_type, Eigen::Dynamic, dim__> b(nunk, dim__);
 
             typedef Eigen::Triplet< data_type, index_type > trip;
@@ -976,12 +965,9 @@ namespace eli
             tlist.push_back( trip( nunk-2, nunk-1, -1.0/dtn/dtn ) );
             b.row(nunk-2).setZero();
 
-            M.setFromTriplets( tlist.begin(), tlist.end() );
-
-            Eigen::SparseLU <Eigen::SparseMatrix< data_type > > solver;
-            solver.compute( M );
+            std::shared_ptr<cubic_solver_type> solver( factorize_cubic_spline( 3, nunk, tlist ) );
             // find the control points and set them
-            b = solver.solve(b);
+            b = solver->solve(b);
 
             for (i=0; i<nunk; ++i)
             {
@@ -991,6 +977,44 @@ namespace eli
 
         private:
           typedef std::vector<point_type, Eigen::aligned_allocator<point_type> > point_collection_type;
+
+          // Reusable factorization of the cubic spline coefficient matrix.  The matrix is
+          // fully determined by the spline variant, the segment count, and the segment
+          // parameterization -- point values enter only the right hand side.  When the
+          // same creator is asked to solve repeatedly with identical structure (e.g. one
+          // solve per control point strip of a skinning surface) a single factorization is
+          // reused instead of rebuilding and re-factorizing an identical matrix.
+          typedef Eigen::SparseLU< Eigen::SparseMatrix<data_type> > cubic_solver_type;
+
+          std::shared_ptr<cubic_solver_type>
+          factorize_cubic_spline( int variant, index_type nunk,
+                                  const std::vector< Eigen::Triplet<data_type, index_type> > &tlist )
+          {
+            index_type i, nseg(this->get_number_segments());
+            std::vector<data_type> key;
+            key.reserve(nseg+2);
+            key.push_back( static_cast<data_type>(variant) );
+            key.push_back( static_cast<data_type>(nseg) );
+            for (i=0; i<nseg; ++i)
+            {
+              key.push_back( this->get_segment_dt(i) );
+            }
+
+            typename std::map< std::vector<data_type>, std::shared_ptr<cubic_solver_type> >::const_iterator it( factorization_cache.find(key) );
+            if (it!=factorization_cache.end())
+            {
+              return it->second;
+            }
+
+            Eigen::SparseMatrix<data_type> M(nunk, nunk);
+            M.setFromTriplets( tlist.begin(), tlist.end() );
+            std::shared_ptr<cubic_solver_type> solver( new cubic_solver_type() );
+            solver->compute( M );
+            factorization_cache[key]=solver;
+            return solver;
+          }
+
+          std::map< std::vector<data_type>, std::shared_ptr<cubic_solver_type> > factorization_cache;
 
           template< typename Derived2__, typename point_it__>
           void create_cubic_spline_base_matrix( std::vector< Eigen::Triplet< data_type, index_type > > &tripletList, Eigen::MatrixBase<Derived2__> &b, point_it__ itb)
