@@ -244,14 +244,19 @@ namespace eli
             // here should have everything to make an nribs x njoints piecewise surface with all
             // of the j-degrees matching in the u-direction so that can use general curve creator
             // techniques to create control points
+            typedef eli::geom::curve::piecewise_cubic_spline_creator<data_type, dim__, tolerance_type> piecewise_curve_creator_type;
+            typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
+            typedef typename piecewise_curve_type::curve_type curve_type;
+
+            // The cubic spline coefficient matrix in the u direction depends only on the
+            // parameterization, which is the same for every v segment, so keep one creator
+            // across the whole surface -- its factorization cache is then reused for every
+            // strip of every v segment rather than being rebuilt per v segment.
+            piecewise_curve_creator_type gc;
+
             for (v=0; v<nv; ++v)
             {
-              typedef eli::geom::curve::piecewise_cubic_spline_creator<data_type, dim__, tolerance_type> piecewise_curve_creator_type;
-              typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
-              typedef typename piecewise_curve_type::curve_type curve_type;
-
               std::vector < point_type > pts( nu+1 );
-              piecewise_curve_creator_type gc;
               piecewise_curve_type c, cseg;
 
               std::vector<surface_type> surfs(nu);
