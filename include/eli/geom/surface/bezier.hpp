@@ -213,7 +213,17 @@ namespace eli
 
           void resize(const index_type &u_dim, const index_type &v_dim)
           {
-            resize( B_u, B_v, point_data, u_dim, v_dim );
+            // Only rebuild the control-point storage and the B_u/B_v maps when something actually
+            // changes; when the surface is already exactly this size they are valid, so resize
+            // becomes just a cache invalidation, which makes reuse of a correctly-sized surface
+            // cheap.  Both the reported degree AND the raw point_data size must match: the default
+            // constructor reports degree (1,1) but sizes point_data for (0,0), so the size check is
+            // needed to force a real resize in that case.
+            if ( u_dim != degree_u() || v_dim != degree_v()
+                 || static_cast<index_type>( point_data.size() ) != dim__ * ( u_dim + 1 ) * ( v_dim + 1 ) )
+            {
+              resize( B_u, B_v, point_data, u_dim, v_dim );
+            }
             invalidate_deriv();
           }
 
