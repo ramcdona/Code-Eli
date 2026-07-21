@@ -15,6 +15,7 @@
 
 #include "eli/code_eli.hpp"
 
+#include "eli/util/scratch.hpp"
 #include "eli/mutil/dm/binomial_coefficient.hpp"
 
 namespace eli
@@ -78,7 +79,9 @@ namespace eli
           return;
         }
 
-        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
+        eli::util::scratch< Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> > Q_scr;
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> &Q = *Q_scr;
+        Q = cp;
 
         for (k=1; k<Q.cols(); ++k)
         {
@@ -132,7 +135,9 @@ namespace eli
           return;
         }
 
-        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
+        eli::util::scratch< Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> > Q_scr;
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> &Q = *Q_scr;
+        Q = cp;
 
         for (k=1; k<Q.rows(); ++k)
         {
@@ -190,7 +195,9 @@ namespace eli
 
         // Initialize Q to shifted control points.  Note the rowwise subtraction -- p0 is a
         // single point while cp holds one control point per row.
-        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> Q(cp);
+        eli::util::scratch< Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> > Q_scr;
+        Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic> &Q = *Q_scr;
+        Q = cp;
         Q.rowwise() -= p0.row(0);
 
         for (k=1; k<Q.rows(); ++k)
@@ -443,9 +450,13 @@ namespace eli
 
         index_type na(cp_a.rows()-1), nb(cp_b.rows()-1);
 
-        // make working copies
-        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> cp_A(cp_a);
-        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> cp_B(cp_b);
+        // make working copies (two distinct borrows from the shared scratch pool)
+        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > cp_A_scr;
+        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > cp_B_scr;
+        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> &cp_A = *cp_A_scr;
+        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> &cp_B = *cp_B_scr;
+        cp_A = cp_a;
+        cp_B = cp_b;
 
         if(na == nb)
         {
@@ -472,7 +483,9 @@ namespace eli
                                        const Eigen::MatrixBase<Derived2> &cp_in, const typename Derived2::Scalar &t)
       {
         typename Derived2::Index i, j, n(cp_in.rows()-1);
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> tri(cp_in);
+        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> > tri_scr;
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> &tri = *tri_scr;
+        tri = cp_in;
 
         // do some dimensions check
         assert(cp_lo.rows()==cp_hi.rows());
@@ -499,7 +512,9 @@ namespace eli
                                        const Eigen::MatrixBase<Derived2> &cp_in )
       {
         typename Derived2::Index i, j, n(cp_in.rows()-1);
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> tri(cp_in);
+        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> > tri_scr;
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> &tri = *tri_scr;
+        tri = cp_in;
 
         // do some dimensions check
         assert(cp_lo.rows()==cp_hi.rows());

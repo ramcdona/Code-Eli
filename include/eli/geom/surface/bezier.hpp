@@ -20,6 +20,7 @@
 
 #include "eli/code_eli.hpp"
 
+#include "eli/util/scratch.hpp"
 #include "eli/util/tolerance.hpp"
 
 #include "eli/geom/utility/bezier.hpp"
@@ -769,7 +770,8 @@ namespace eli
           void fbatch( index_type i0, index_type j0, index_type nu, index_type nv, const std::vector < data_type > &uvec, const std::vector < data_type > &vvec, std::vector < std::vector < point_type > > &ptmat ) const
           {
             point_type tmp;
-            Eigen::Matrix<data_type, dim__, Eigen::Dynamic> temp_cp;
+            eli::util::scratch< Eigen::Matrix<data_type, dim__, Eigen::Dynamic> > temp_cp_scr;
+            Eigen::Matrix<data_type, dim__, Eigen::Dynamic> &temp_cp = *temp_cp_scr;
             index_type n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
@@ -844,7 +846,10 @@ namespace eli
           point_type f(const data_type &u, const data_type &v) const
           {
             point_type ans, tmp;
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_cp;
+            // Reused scratch for the intermediate control points on the hottest surface-evaluation
+            // path (see eli::util::scratch), instead of allocating a fresh matrix on every call.
+            eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, dim__> > temp_cp_scr;
+            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> &temp_cp = *temp_cp_scr;
             index_type i, n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
@@ -884,7 +889,10 @@ namespace eli
           point_type f(const data_type &u, const data_type &v, const point_type &p0) const
           {
             point_type ans, tmp;
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_cp;
+            // Reused scratch for the intermediate control points on the hottest surface-evaluation
+            // path (see eli::util::scratch), instead of allocating a fresh matrix on every call.
+            eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, dim__> > temp_cp_scr;
+            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> &temp_cp = *temp_cp_scr;
             index_type i, n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
