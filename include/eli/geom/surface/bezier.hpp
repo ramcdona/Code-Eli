@@ -69,45 +69,34 @@ namespace eli
 
           mutable bezier<data_type, dim__, tol__> * deriv_u;
           mutable bezier<data_type, dim__, tol__> * deriv_v;
+          // Whether the cached derivative surfaces above are up to date.  Kept separate from the
+          // pointers so the allocations can be retained and recomputed in place across
+          // invalidations (e.g. resizing to the same degree) instead of being freed and reallocated.
+          mutable bool deriv_u_valid;
+          mutable bool deriv_v_valid;
 
         public:
-          bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL )
+          bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
           {
             // set the B_u and B_v maps
             set_Bs(1, 1);
           }
-          bezier(const index_type &u_dim, const index_type &v_dim) : point_data(dim__*(u_dim+1)*(v_dim+1)), deriv_u( NULL ), deriv_v( NULL )
+          bezier(const index_type &u_dim, const index_type &v_dim) : point_data(dim__*(u_dim+1)*(v_dim+1)), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
           {
             // set the B_u and B_v maps
             set_Bs(u_dim, v_dim);
           }
-          bezier(const bezier<data_type, dim__, tol__> &bs) : point_data(bs.point_data)
+          bezier(const bezier<data_type, dim__, tol__> &bs) : point_data(bs.point_data), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
           {
-            // set the B_u and B_v maps
+            // set the B_u and B_v maps.  The derivative surfaces are a lazily-built cache and are
+            // recomputed on demand rather than deep-copied here.
             set_Bs(bs.degree_u(), bs.degree_v());
-
-            if (bs.deriv_u)
-            {
-              deriv_u = new bezier<data_type, dim__>( *(bs.deriv_u) );
-            }
-            else
-            {
-              deriv_u = NULL;
-            }
-
-            if (bs.deriv_v)
-            {
-              deriv_v = new bezier<data_type, dim__>( *(bs.deriv_v) );
-            }
-            else
-            {
-              deriv_v = NULL;
-            }
           }
 
           ~bezier()
           {
-            invalidate_deriv();
+            delete deriv_u;
+            delete deriv_v;
           }
 
           bezier & operator=(const bezier<data_type, dim__, tol__> &bs)
@@ -116,26 +105,8 @@ namespace eli
             {
               point_data=bs.point_data;
               set_Bs(bs.degree_u(), bs.degree_v());
+              // Keep any existing derivative allocation; just mark it stale to be recomputed lazily.
               invalidate_deriv();
-
-              if (bs.deriv_u)
-              {
-                deriv_u = new bezier<data_type, dim__>( *(bs.deriv_u) );
-              }
-              else
-              {
-                deriv_u = NULL;
-              }
-
-              if (bs.deriv_v)
-              {
-                deriv_v = new bezier<data_type, dim__>( *(bs.deriv_v) );
-              }
-              else
-              {
-                deriv_v = NULL;
-              }
-
             }
 
             return (*this);
@@ -2091,34 +2062,35 @@ namespace eli
 
           void invalidate_deriv()
           {
-            if ( deriv_u )
-            {
-              delete deriv_u;
-              deriv_u = NULL;
-            }
-
-            if ( deriv_v )
-            {
-              delete deriv_v;
-              deriv_v = NULL;
-            }
+            // Keep the derivative allocations so they can be reused; just mark them stale.  The
+            // storage is freed only in the destructor.
+            deriv_u_valid = false;
+            deriv_v_valid = false;
           }
 
           void validate_u() const
           {
-            if ( !deriv_u )
+            if ( !deriv_u_valid )
             {
-              deriv_u = new bezier<data_type, dim__>();
-              f_u( *deriv_u );
+              if ( !deriv_u )
+              {
+                deriv_u = new bezier<data_type, dim__>();
+              }
+              f_u( *deriv_u );   // resizes deriv_u as needed (no-op if same degree) and refills it
+              deriv_u_valid = true;
             }
           }
 
           void validate_v() const
           {
-            if ( !deriv_v )
+            if ( !deriv_v_valid )
             {
-              deriv_v = new bezier<data_type, dim__>();
-              f_v( *deriv_v );
+              if ( !deriv_v )
+              {
+                deriv_v = new bezier<data_type, dim__>();
+              }
+              f_v( *deriv_v );   // resizes deriv_v as needed (no-op if same degree) and refills it
+              deriv_v_valid = true;
             }
           }
 
