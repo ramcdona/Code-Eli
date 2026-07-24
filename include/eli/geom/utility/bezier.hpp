@@ -483,8 +483,11 @@ namespace eli
                                        const Eigen::MatrixBase<Derived2> &cp_in, const typename Derived2::Scalar &t)
       {
         typename Derived2::Index i, j, n(cp_in.rows()-1);
-        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> > tri_scr;
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> &tri = *tri_scr;
+        // Preserve the compile-time column count (dim) of the control points so the
+        // fixed-width row updates below can be unrolled/vectorized instead of running a
+        // runtime-length inner loop over an unknown column count.
+        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Derived2::ColsAtCompileTime> > tri_scr;
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Derived2::ColsAtCompileTime> &tri = *tri_scr;
         tri = cp_in;
 
         // do some dimensions check
@@ -512,8 +515,11 @@ namespace eli
                                        const Eigen::MatrixBase<Derived2> &cp_in )
       {
         typename Derived2::Index i, j, n(cp_in.rows()-1);
-        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> > tri_scr;
-        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Eigen::Dynamic> &tri = *tri_scr;
+        // Preserve the compile-time column count (dim) of the control points so the
+        // fixed-width row updates below can be unrolled/vectorized instead of running a
+        // runtime-length inner loop over an unknown column count.
+        eli::util::scratch< Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Derived2::ColsAtCompileTime> > tri_scr;
+        Eigen::Matrix<typename Derived2::Scalar, Eigen::Dynamic, Derived2::ColsAtCompileTime> &tri = *tri_scr;
         tri = cp_in;
 
         // do some dimensions check
