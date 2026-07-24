@@ -83,6 +83,17 @@ namespace eli
           mutable close_state uclose_cache;
           mutable close_state vclose_cache;
 
+          // Reused intermediate control-point buffers for f(), the hottest surface-evaluation
+          // path.  f() collapses one parametric direction into a temporary curve and then
+          // evaluates it; temp_u / temp_v hold that curve's control points for the two collapse
+          // directions.  Kept per-patch (rather than in a shared thread-local scratch whose size
+          // oscillates across patches of differing degree) so they stay sized to this patch and
+          // the resize() in f() is a steady-state no-op.  Single-threaded per patch, consistent
+          // with the deriv_u / deriv_v cache above.
+          typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> temp_buffer_type;
+          mutable temp_buffer_type temp_u;
+          mutable temp_buffer_type temp_v;
+
         public:
           bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( CLOSE_UNKNOWN ), vclose_cache( CLOSE_UNKNOWN )
           {
@@ -877,10 +888,6 @@ namespace eli
           point_type f(const data_type &u, const data_type &v) const
           {
             point_type ans, tmp;
-            // Reused scratch for the intermediate control points on the hottest surface-evaluation
-            // path (see eli::util::scratch), instead of allocating a fresh matrix on every call.
-            eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, dim__> > temp_cp_scr;
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> &temp_cp = *temp_cp_scr;
             index_type i, n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
@@ -893,25 +900,27 @@ namespace eli
 
             if (n<=m)
             {
-              temp_cp.resize(m+1, dim__);
+              // collapse u -> temporary v-direction curve.  temp_v is a per-patch member, so this
+              // resize is a no-op once the patch has been evaluated (or resized) at least once.
+              temp_v.resize(m+1, dim__);
               // build the temporary control points
               for (i=0; i<=m; ++i)
               {
                 eli::geom::utility::de_casteljau(tmp, B_u[i], u);
-                temp_cp.row(i)=tmp;
+                temp_v.row(i)=tmp;
               }
-              eli::geom::utility::de_casteljau(ans, temp_cp, v);
+              eli::geom::utility::de_casteljau(ans, temp_v, v);
             }
             else
             {
-              temp_cp.resize(n+1, dim__);
-              // build the temporary control points
+              // collapse v -> temporary u-direction curve.
+              temp_u.resize(n+1, dim__);
               for (i=0; i<=n; ++i)
               {
                 eli::geom::utility::de_casteljau(tmp, B_v[i], v);
-                temp_cp.row(i)=tmp;
+                temp_u.row(i)=tmp;
               }
-              eli::geom::utility::de_casteljau(ans, temp_cp, u);
+              eli::geom::utility::de_casteljau(ans, temp_u, u);
             }
 
             return ans;
@@ -920,10 +929,6 @@ namespace eli
           point_type f(const data_type &u, const data_type &v, const point_type &p0) const
           {
             point_type ans, tmp;
-            // Reused scratch for the intermediate control points on the hottest surface-evaluation
-            // path (see eli::util::scratch), instead of allocating a fresh matrix on every call.
-            eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, dim__> > temp_cp_scr;
-            Eigen::Matrix<data_type, Eigen::Dynamic, dim__> &temp_cp = *temp_cp_scr;
             index_type i, n(degree_u()), m(degree_v());
 
             // check to make sure have valid curve
@@ -936,25 +941,27 @@ namespace eli
 
             if (n<=m)
             {
-              temp_cp.resize(m+1, dim__);
+              // collapse u -> temporary v-direction curve (see f(u,v); per-patch buffer reused).
+              temp_v.resize(m+1, dim__);
               // build the temporary control points
               for (i=0; i<=m; ++i)
               {
                 eli::geom::utility::de_casteljau(tmp, B_u[i], u, p0);
-                temp_cp.row(i)=tmp;
+                temp_v.row(i)=tmp;
               }
-              eli::geom::utility::de_casteljau(ans, temp_cp, v);
+              eli::geom::utility::de_casteljau(ans, temp_v, v);
             }
             else
             {
-              temp_cp.resize(n+1, dim__);
+              // collapse v -> temporary u-direction curve.
+              temp_u.resize(n+1, dim__);
               // build the temporary control points
               for (i=0; i<=n; ++i)
               {
                 eli::geom::utility::de_casteljau(tmp, B_v[i], v, p0);
-                temp_cp.row(i)=tmp;
+                temp_u.row(i)=tmp;
               }
-              eli::geom::utility::de_casteljau(ans, temp_cp, u);
+              eli::geom::utility::de_casteljau(ans, temp_u, u);
             }
 
             return ans;
