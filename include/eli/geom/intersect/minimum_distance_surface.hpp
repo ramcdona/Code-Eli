@@ -272,7 +272,7 @@ namespace eli
         typename surface__::tolerance_type tol;
 
 
-        if (s.open_u() || user_con )
+        if ( user_con || s.open_u() ) // user_con first: skip the closed_u() boundary-curve sweep when the caller supplied bounds
         {
           tpsolve.set_lower_condition(0, umin, nonlinear_solver_type::IRC_EXCLUSIVE);
           tpsolve.set_upper_condition(0, umax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -282,7 +282,7 @@ namespace eli
           tpsolve.set_periodic_condition(0, umin, umax);
         }
 
-        if (s.open_v() || user_con )
+        if ( user_con || s.open_v() ) // user_con first: skip the closed_v() boundary-curve sweep when the caller supplied bounds
         {
           tpsolve.set_lower_condition(1, vmin, nonlinear_solver_type::IRC_EXCLUSIVE);
           tpsolve.set_upper_condition(1, vmax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -372,7 +372,7 @@ namespace eli
         nrm.set_max_iteration(20);
         nrm.set_norm_type(nonlinear_solver_type::max_norm);
 
-        if (s.open_u() || user_con )
+        if ( user_con || s.open_u() ) // user_con first: skip the closed_u() boundary-curve sweep when the caller supplied bounds
         {
           nrm.set_lower_condition(0, umin, nonlinear_solver_type::IRC_EXCLUSIVE);
           nrm.set_upper_condition(0, umax, nonlinear_solver_type::IRC_EXCLUSIVE);
@@ -382,7 +382,7 @@ namespace eli
           nrm.set_periodic_condition(0, umin, umax);
         }
 
-        if (s.open_v() || user_con )
+        if ( user_con || s.open_v() ) // user_con first: skip the closed_v() boundary-curve sweep when the caller supplied bounds
         {
           nrm.set_lower_condition(1, vmin, nonlinear_solver_type::IRC_EXCLUSIVE);
           nrm.set_upper_condition(1, vmax, nonlinear_solver_type::IRC_EXCLUSIVE);
