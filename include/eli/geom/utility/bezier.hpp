@@ -450,11 +450,13 @@ namespace eli
 
         index_type na(cp_a.rows()-1), nb(cp_b.rows()-1);
 
-        // make working copies (two distinct borrows from the shared scratch pool)
-        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > cp_A_scr;
-        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> > cp_B_scr;
-        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> &cp_A = *cp_A_scr;
-        Eigen::Matrix<data_type, Eigen::Dynamic, Eigen::Dynamic> &cp_B = *cp_B_scr;
+        // make working copies (two distinct borrows from the shared scratch pool).
+        // Preserve the compile-time column count (dim) of the control points so the
+        // fixed-width row differences below stay fixed-width rather than runtime-length.
+        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Derived1::ColsAtCompileTime> > cp_A_scr;
+        eli::util::scratch< Eigen::Matrix<data_type, Eigen::Dynamic, Derived2::ColsAtCompileTime> > cp_B_scr;
+        Eigen::Matrix<data_type, Eigen::Dynamic, Derived1::ColsAtCompileTime> &cp_A = *cp_A_scr;
+        Eigen::Matrix<data_type, Eigen::Dynamic, Derived2::ColsAtCompileTime> &cp_B = *cp_B_scr;
         cp_A = cp_a;
         cp_B = cp_b;
 
