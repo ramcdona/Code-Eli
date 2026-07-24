@@ -76,18 +76,25 @@ namespace eli
           mutable bool deriv_u_valid;
           mutable bool deriv_v_valid;
 
+          // Cached u/v closed-ness.  closed_u()/closed_v() otherwise rebuild and compare the
+          // boundary curves on every call; the result changes only when the control points
+          // change, so it is computed lazily and reset in invalidate_deriv() like deriv_*_valid.
+          enum close_state { CLOSE_UNKNOWN, CLOSE_OPEN, CLOSE_CLOSED };
+          mutable close_state uclose_cache;
+          mutable close_state vclose_cache;
+
         public:
-          bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
+          bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( CLOSE_UNKNOWN ), vclose_cache( CLOSE_UNKNOWN )
           {
             // set the B_u and B_v maps
             set_Bs(1, 1);
           }
-          bezier(const index_type &u_dim, const index_type &v_dim) : point_data(dim__*(u_dim+1)*(v_dim+1)), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
+          bezier(const index_type &u_dim, const index_type &v_dim) : point_data(dim__*(u_dim+1)*(v_dim+1)), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( CLOSE_UNKNOWN ), vclose_cache( CLOSE_UNKNOWN )
           {
             // set the B_u and B_v maps
             set_Bs(u_dim, v_dim);
           }
-          bezier(const bezier<data_type, dim__, tol__> &bs) : point_data(bs.point_data), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false )
+          bezier(const bezier<data_type, dim__, tol__> &bs) : point_data(bs.point_data), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( bs.uclose_cache ), vclose_cache( bs.vclose_cache )
           {
             // set the B_u and B_v maps.  The derivative surfaces are a lazily-built cache and are
             // recomputed on demand rather than deep-copied here.
@@ -398,22 +405,46 @@ namespace eli
           bool open_u() const {return !closed_u();}
           bool closed_u() const
           {
-            curve_type bc0, bc1;
+            if ( uclose_cache == CLOSE_UNKNOWN )
+            {
+              curve_type bc0, bc1;
 
-            get_umin_bndy_curve(bc0);
-            get_umax_bndy_curve(bc1);
+              get_umin_bndy_curve(bc0);
+              get_umax_bndy_curve(bc1);
 
-            return eli::geom::curve::equivalent_curves(bc0, bc1);
+              if ( eli::geom::curve::equivalent_curves(bc0, bc1) )
+              {
+                uclose_cache = CLOSE_CLOSED;
+              }
+              else
+              {
+                uclose_cache = CLOSE_OPEN;
+              }
+            }
+
+            return ( uclose_cache == CLOSE_CLOSED );
           }
           bool open_v() const {return !closed_v();}
           bool closed_v() const
           {
-            curve_type bc0, bc1;
+            if ( vclose_cache == CLOSE_UNKNOWN )
+            {
+              curve_type bc0, bc1;
 
-            get_vmin_bndy_curve(bc0);
-            get_vmax_bndy_curve(bc1);
+              get_vmin_bndy_curve(bc0);
+              get_vmax_bndy_curve(bc1);
 
-            return eli::geom::curve::equivalent_curves(bc0, bc1);
+              if ( eli::geom::curve::equivalent_curves(bc0, bc1) )
+              {
+                vclose_cache = CLOSE_CLOSED;
+              }
+              else
+              {
+                vclose_cache = CLOSE_OPEN;
+              }
+            }
+
+            return ( vclose_cache == CLOSE_CLOSED );
           }
 
           void set_control_point(const point_type &cp, const index_type &i, const index_type &j)
@@ -2074,6 +2105,9 @@ namespace eli
             // storage is freed only in the destructor.
             deriv_u_valid = false;
             deriv_v_valid = false;
+            // Control points changed -> the cached closed-ness may no longer hold.
+            uclose_cache = CLOSE_UNKNOWN;
+            vclose_cache = CLOSE_UNKNOWN;
           }
 
           void validate_u() const
