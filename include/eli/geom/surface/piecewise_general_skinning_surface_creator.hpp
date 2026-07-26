@@ -181,53 +181,20 @@ namespace eli
           {
             typedef typename piecewise_surface_type::surface_type surface_type;
 
-            index_type nribs(this->get_number_u_segments()+1), i, j;
-            std::vector<index_type> seg_degree(nribs-1);
-            std::vector<rib_data_type> rib_states(ribs);
-            tolerance_type tol;
+            index_type i, j;
 
             // FIX: Should be able to handle closed surfaces
             assert(!closed);
 
             // FIX: Need to be able to handle v-direction discontinuous fu and fuu specifications
 
-            // reset the incoming piecewise surface
-            ps.clear();
+            // split ribs to a common joint set, promote to matching degree, and initialize ps
+            std::vector<rib_data_type> rib_states;
+            std::vector<index_type> max_jdegs;
+            index_type nribs, njoints;
+            prepare_strips(rib_states, max_jdegs, nribs, njoints, ps);
 
-            // split ribs so have same number of curves (with same joint parameters) for all ribs and get degree
-            index_type njoints(this->get_number_v_segments()+1);
-            std::vector<data_type> joints(njoints);
-            std::vector<index_type> max_jdegs(njoints-1,0);
-
-            joints[0]=this->get_v0();
-            for (j=0; j<(njoints-1); ++j)
-            {
-              joints[j+1]=joints[j]+this->get_segment_dv(j);
-            }
-
-            for (i=0; i<nribs; ++i)
-            {
-              std::vector<index_type> jdegs;
-              rib_states[i].split(joints.begin(), joints.end(), std::back_inserter(jdegs));
-              for (j=0; j<(njoints-1); ++j)
-              {
-                if (jdegs[j]>max_jdegs[j])
-                {
-                  max_jdegs[j]=jdegs[j];
-                }
-              }
-            }
-
-            // set degree in u-direction for each rib segment strip
-            for (i=0; i<nribs; ++i)
-            {
-              rib_states[i].promote(max_jdegs.begin(), max_jdegs.end());
-            }
-
-            // resize the piecewise surface
             index_type u, v, nu(nribs-1), nv(njoints-1);
-
-            ps.init_uv(this->du_begin(), this->du_end(), this->dv_begin(), this->dv_end(), this->get_u0(), this->get_v0());
 
             // build segments based on rib information
             // here should have everything to make an nribs x njoints piecewise surface with all
@@ -334,6 +301,52 @@ namespace eli
           }
 
         protected:
+          // Shared create() prologue for skinning creators: copy the rib set, split every rib to a
+          // common joint parameterization while accumulating the per-v-segment maximum degree,
+          // promote all ribs to that degree, and initialize ps's uv parameterization.  Both the
+          // general (reference) creator and the uniform (factored-solve) creator build on this.
+          void prepare_strips( std::vector<rib_data_type> &rib_states,
+                               std::vector<index_type> &max_jdegs,
+                               index_type &nribs, index_type &njoints,
+                               piecewise_surface_type &ps ) const
+          {
+            index_type i, j;
+
+            nribs = this->get_number_u_segments()+1;
+            njoints = this->get_number_v_segments()+1;
+
+            rib_states = ribs;
+            max_jdegs.assign(njoints-1, 0);
+
+            std::vector<data_type> joints(njoints);
+            joints[0]=this->get_v0();
+            for (j=0; j<(njoints-1); ++j)
+            {
+              joints[j+1]=joints[j]+this->get_segment_dv(j);
+            }
+
+            for (i=0; i<nribs; ++i)
+            {
+              std::vector<index_type> jdegs;
+              rib_states[i].split(joints.begin(), joints.end(), std::back_inserter(jdegs));
+              for (j=0; j<(njoints-1); ++j)
+              {
+                if (jdegs[j]>max_jdegs[j])
+                {
+                  max_jdegs[j]=jdegs[j];
+                }
+              }
+            }
+
+            for (i=0; i<nribs; ++i)
+            {
+              rib_states[i].promote(max_jdegs.begin(), max_jdegs.end());
+            }
+
+            ps.clear();
+            ps.init_uv(this->du_begin(), this->du_end(), this->dv_begin(), this->dv_end(), this->get_u0(), this->get_v0());
+          }
+
           // Accessible to derived creators (e.g. the uniform structure skinning creator).
           std::vector<rib_data_type> ribs;
           std::vector<index_type> max_degree;

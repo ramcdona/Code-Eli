@@ -75,47 +75,19 @@ namespace eli
             typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
             typedef typename piecewise_curve_type::curve_type curve_type;
 
-            index_type nribs(this->get_number_u_segments()+1), i, j;
-            std::vector<rib_data_type> rib_states(this->ribs);
+            index_type i, j;
 
             // The general creator does not handle closed surfaces either.
             assert(!this->closed);
 
-            ps.clear();
-
-            // split ribs so have same number of curves (with same joint parameters) for
-            // all ribs and get degree -- identical to the general creator prologue.
-            index_type njoints(this->get_number_v_segments()+1);
-            std::vector<data_type> joint_params(njoints);
-            std::vector<index_type> max_jdegs(njoints-1, 0);
-
-            joint_params[0]=this->get_v0();
-            for (j=0; j<(njoints-1); ++j)
-            {
-              joint_params[j+1]=joint_params[j]+this->get_segment_dv(j);
-            }
-
-            for (i=0; i<nribs; ++i)
-            {
-              std::vector<index_type> jdegs;
-              rib_states[i].split(joint_params.begin(), joint_params.end(), std::back_inserter(jdegs));
-              for (j=0; j<(njoints-1); ++j)
-              {
-                if (jdegs[j]>max_jdegs[j])
-                {
-                  max_jdegs[j]=jdegs[j];
-                }
-              }
-            }
-
-            for (i=0; i<nribs; ++i)
-            {
-              rib_states[i].promote(max_jdegs.begin(), max_jdegs.end());
-            }
+            // split ribs to a common joint set, promote to matching degree, and initialize ps
+            // (shared with the general creator via the base class).
+            std::vector<rib_data_type> rib_states;
+            std::vector<index_type> max_jdegs;
+            index_type nribs, njoints;
+            this->prepare_strips(rib_states, max_jdegs, nribs, njoints, ps);
 
             index_type u, v, nu(nribs-1), nv(njoints-1);
-
-            ps.init_uv(this->du_begin(), this->du_end(), this->dv_begin(), this->dv_end(), this->get_u0(), this->get_v0());
 
             // ---- structure pass: compile the condition program once ----
             structure_type st;
