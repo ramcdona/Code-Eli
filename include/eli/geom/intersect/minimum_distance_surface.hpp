@@ -91,6 +91,27 @@ namespace eli
 
               bool divflag = false;
 
+              // Divergence is judged on the distance, which is what the iteration is trying to
+              // reduce, not on the length of the step.  The step norm is the wrong quantity: it is
+              // a max norm over both parameters, so as one converges the norm becomes whichever
+              // component is still moving, and a drift of parts in 1e7 in that component reads as
+              // two growing steps and the whole iteration is abandoned.  Traced on this surface,
+              // that discarded a converged answer at d=0.607 and returned the seed at d=1.969 --
+              // and of 1670 steps traced across failing cases, exactly one iteration ever reached
+              // the converged return at all.
+              typename surface__::data_type dprev( std::numeric_limits<typename surface__::data_type>::max() );
+              typename surface__::data_type dnow( dprev );
+
+              // Best point visited.  On divergence the iteration used to hand back the starting
+              // guess, discarding everything it had found: one trace reaches d=0.948 and then
+              // returns the seed at d=2.453.  The test for divergence is now right; the response
+              // to it was still wrong.
+              typename mutil::nls::iterative_system_root_base<typename surface__::data_type, N__, NSOL__>::solution_matrix xbest( x0 );
+              typename surface__::data_type dbest( std::numeric_limits<typename surface__::data_type>::max() );
+
+              // Trust region radius, as a fraction of the parameter span.  See the clamp below.
+              typename surface__::data_type trust( static_cast<typename surface__::data_type>(0.25) );
+
               bool all_zero = false;
 
               abs_x_norm = std::numeric_limits<typename surface__::data_type>::max();
@@ -101,6 +122,38 @@ namespace eli
                 s->f_pt_derivs( x(0), x(1), q, Su, Sv );
 
                 r = q - pt;
+
+                dprev = dnow;
+                dnow = r.norm();
+
+                // Widen the trust region while the steps are working and shrink it when they are
+                // not.  A fixed clamp is what produced the limit cycle this replaces: the raw
+                // steps were +1.26 and -1.89, both longer than the limit, so both came out at
+                // exactly the limit and v ping-ponged between 1.175 and 2.175 for ever.  The
+                // divergence test could not see it either, since it wants two worsening steps in a
+                // row and a two-cycle alternates.  Halving on a worse step turns the cycle into a
+                // spiral that closes on the answer.
+                //
+                // It only ever shrinks.  Restoring the radius after a good step looks like the
+                // usual trust region rule and is wrong here: a wing gave a four-cycle in which
+                // every other step improved, so the radius doubled back up as fast as it came
+                // down and the cycle survived.  There is nothing to restore in any case -- a
+                // radius that is not binding costs nothing, so the only radius worth having is
+                // one large enough to have been binding once.
+                //
+                // This costs nothing.  The radius is updated from the evaluation the iteration was
+                // going to make anyway, and a step already shorter than the radius is untouched --
+                // so a run that never gets clamped never notices any of it.
+                if ( dnow > dprev )
+                {
+                  trust /= 2;
+                }
+
+                if ( dnow < dbest )
+                {
+                  dbest = dnow;
+                  xbest = x;
+                }
 
                 A = Sv.cross( r );
                 B = Su.cross( r );
@@ -119,19 +172,66 @@ namespace eli
                     dx(1) = 0.0;
                 }
 
+                // Keep the step inside the range the tangent plane can speak for.  The step is the
+                // solution of a linearisation about the current point; asking it to move most of
+                // the way round a closed surface is asking it about geometry it knows nothing of.
+                // 26% of steps traced here wanted more than half the v period, and the periodic
+                // wrap then turns such a step into a small one in the opposite direction -- or
+                // into nothing at all, which reads as a converged iteration sitting at a point
+                // that is not a solution.  A quarter of the span is well inside where a tangent
+                // plane means anything, and clamping is not a line search: no extra evaluation,
+                // and a step already short enough is untouched.
+                typename surface__::data_type ulim( trust*( umax - umin ) );
+                typename surface__::data_type vlim( trust*( vmax - vmin ) );
+
+                // Each parameter on its own, not the whole step scaled to preserve its direction.
+                // Preserving the direction sounds like the careful choice and it is the wrong one
+                // here: near a crease Sv is small, so the v part of the step blows up -- traced
+                // wanting one and a half periods -- and scaling the pair to fit drags a perfectly
+                // good u step down with it, to 6.6e-3 where the tangent plane had asked for 0.32.
+                // The two parameters are not commensurable in the first place, and a box is the
+                // usual shape for a trust region on unknowns that are not.
+                // ...except where one of the parameter directions is nearly collapsed.  There the
+                // step in that direction is a ratio with a vanishing denominator and means nothing
+                // -- near a pod's nose Sv is a fortieth of Su and the tangent plane asks to travel
+                // most of the way round the ring -- so a box, which grants it the whole allowance,
+                // takes the iteration somewhere it has no reason to go.  Scaling the pair together
+                // there keeps the step pointing where the reliable component says.
+                typename surface__::data_type sumag( Su.norm() ), svmag( Sv.norm() );
+                typename surface__::data_type flat( static_cast<typename surface__::data_type>(0.05) );
+
+                bool unreliable = ( sumag < flat*svmag ) || ( svmag < flat*sumag );
+
+                if ( std::abs( dx(0) ) > ulim )
+                {
+                  if ( unreliable )
+                  {
+                    dx(1) *= ulim/std::abs( dx(0) );
+                  }
+                  dx(0) *= ulim/std::abs( dx(0) );
+                }
+                if ( std::abs( dx(1) ) > vlim )
+                {
+                  if ( unreliable )
+                  {
+                    dx(0) *= vlim/std::abs( dx(1) );
+                  }
+                  dx(1) *= vlim/std::abs( dx(1) );
+                }
+
                 dx = this->calculate_delta_factor(x, dx);
                 x+=dx;
 
                 prev_dx = abs_x_norm;
                 abs_x_norm = this->calculate_norm(dx);
 
-                if ( divflag && abs_x_norm > prev_dx ) // Diverging twice in a row.
+                if ( divflag && ( dnow > dprev ) ) // Getting further away twice in a row.
                 {
                   // Solution diverging, return initial guess.
-                  root = x0;
+                  root = xbest;
                   return this->no_root_found;
                 }
-                else if ( abs_x_norm > prev_dx ) // Diverging first time
+                else if ( dnow > dprev ) // Further away, first time
                 {
                   divflag = true;
                 }
@@ -154,8 +254,23 @@ namespace eli
                 ++count;
               }
 
-              // Current solution good enough to keep.
-              root = x;
+              // The loop evaluates at the top and steps at the bottom, so the point it leaves in
+              // x has never been measured.  Measure it once and keep whichever of it and the best
+              // point visited is actually closer.  Reading xbest only on the divergence return
+              // would throw away the best answer the run found on every other exit -- and
+              // max_iteration, not convergence, is the exit that dominates here.  One f()
+              // against up to maxit f_pt_derivs() is not a cost worth the wrong answer.
+              q = s->f( x(0), x(1) );
+              r = q - pt;
+
+              if ( dbest < r.norm() )
+              {
+                root = xbest;
+              }
+              else
+              {
+                root = x;
+              }
 
               if ( all_zero )
               {
@@ -325,7 +440,7 @@ namespace eli
 
         if ( dist > dist0 )
         {
-          x = x0; // No progress made, restore initial guess.
+          x = x0; // Genuinely no progress; the starting guess is the best there is.
           dist = dist0;
         }
 
@@ -491,6 +606,7 @@ namespace eli
         v = v0t;
         return dist_tan;
       }
+
 
       template<typename surface__>
       typename surface__::data_type minimum_distance_old(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt)
