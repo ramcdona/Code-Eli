@@ -26,6 +26,7 @@
 #include "minimum_distance_plane_test_suite.hpp"         // minimum_distance_plane_test_suite
 #include "minimum_distance_curve_test_suite.hpp"         // minimum_distance_curve_test_suite
 #include "minimum_distance_surface_test_suite.hpp"       // minimum_distance_surface_test_suite
+#include "minimum_distance_surface_property_test_suite.hpp" // minimum_distance_surface_property_test_suite
 
 enum TestType {testTypeText, testTypeCompiler, testTypeHTML};
 
@@ -174,6 +175,9 @@ int main(int argc, char *argv[])
     ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<float>()));
     ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<double>()));
     ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_property_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_property_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new minimum_distance_surface_property_test_suite<long double>()));
 
     //
     // NOTE: End of section that should be changed

@@ -21,6 +21,7 @@ set (MINIMUM_DISTANCE_TEST_HEADER ${PROJECT_SOURCE_DIR}/minimum_distance_point_t
                                   ${PROJECT_SOURCE_DIR}/minimum_distance_plane_test_suite.hpp
                                   ${PROJECT_SOURCE_DIR}/minimum_distance_curve_test_suite.hpp
                                   ${PROJECT_SOURCE_DIR}/minimum_distance_surface_test_suite.hpp
+                                  ${PROJECT_SOURCE_DIR}/minimum_distance_surface_property_test_suite.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/constants/math.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/util/tolerance.hpp
                                   ${ELI_SOURCE_DIR}/include/eli/mutil/nls/newton_raphson_method.hpp
