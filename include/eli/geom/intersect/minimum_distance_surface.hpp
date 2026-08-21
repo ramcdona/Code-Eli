@@ -553,7 +553,7 @@ namespace eli
       }
 
       template<typename surface__>
-      typename surface__::data_type minimum_distance(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
+      typename surface__::data_type minimum_distance_core(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
                                                      const typename surface__::data_type &u0, const typename surface__::data_type &v0,
                                                      const typename surface__::data_type uminc = 0, const typename surface__::data_type umaxc = 0,
                                                      const typename surface__::data_type vminc = 0, const typename surface__::data_type vmaxc = 0 )
@@ -607,6 +607,344 @@ namespace eli
         return dist_tan;
       }
 
+
+      // Judge the answer the iteration produced, and do something about it if it is not one.
+      //
+      // The core above is Gauss-Newton, and Gauss-Newton is drawn to any point where the residual
+      // is perpendicular to the surface -- the far side ridge of a body as readily as the near
+      // side.  It need not even arrive: on a ridge crest the step is small and *grows*, which is
+      // what escaping an unstable stationary point looks like, and the iteration budget runs out
+      // long before it gets anywhere.  It can also stop at a degenerate pole, where the whole v
+      // line collapses to a point so there is no way to move around it, or at a boundary it had no
+      // business stopping at.  None of this shows in the return code.
+      //
+      // Second derivatives settle it.  The objective is 0.5*|r|^2 with r = S - pt, so its Hessian
+      // is J^T J + r.S'', which is exact and cheap now that f_pt_derivs2 fetches the whole set in
+      // one patch lookup.  A minimum needs it positive definite; a ridge crest fails on r.Svv, a
+      // pole fails on the collapsed row, and a point found exactly gives r = 0 and H = J^T J,
+      // which is positive definite -- so a correct answer never triggers any of what follows, and
+      // pays only for the test.
+      //
+      // Three things follow from it, in order: a Newton polish with that exact Hessian, for the
+      // case where the answer is a minimum but the iteration had not reached it; the same test
+      // again on the polished point, together with a gradient check at any active boundary; and a
+      // restart from a line of samples when the answer is not a minimum at all.
+      template<typename surface__>
+      typename surface__::data_type minimum_distance(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt,
+                                                     const typename surface__::data_type &u0, const typename surface__::data_type &v0,
+                                                     const typename surface__::data_type uminc = 0, const typename surface__::data_type umaxc = 0,
+                                                     const typename surface__::data_type vminc = 0, const typename surface__::data_type vmaxc = 0 )
+      {
+        typename surface__::data_type dist = minimum_distance_core( u, v, s, pt, u0, v0, uminc, umaxc, vminc, vmaxc );
+
+        typename surface__::data_type umin, umax, vmin, vmax;
+        s.get_parameter_min( umin, vmin );
+        s.get_parameter_max( umax, vmax );
+
+        typename surface__::data_type edge( std::sqrt( std::numeric_limits< typename surface__::data_type >::epsilon() ) );
+
+        // Is the answer in hand a minimum at all?
+        //
+        // The tangent plane iteration is Gauss-Newton on the residual, so it is drawn to any point
+        // where the residual is perpendicular to the surface -- the far side ridge of a body of
+        // revolution as readily as the near side.  Worse, it need not even arrive: traced on a
+        // ridge crest the v step is 5e-4 and *grows* by half a percent each pass, which is what
+        // escaping an unstable stationary point looks like, and twenty iterations move it by 0.01
+        // before the budget runs out.  Both end at a point that is not the answer, and neither
+        // shows up in the return code.
+        //
+        // Second derivatives settle it outright.  The objective is 0.5*|r|^2 with r = S - pt, so
+        //
+        //     H = [ Su.Su + r.Suu   Su.Sv + r.Suv ]
+        //         [ Su.Sv + r.Suv   Sv.Sv + r.Svv ]
+        //
+        // and a minimum needs H positive definite.  On a ridge crest r points outward while the
+        // surface curves away from it, r.Svv is negative and large, and H fails -- exactly the
+        // case above.  At a pole one row collapses and it fails too, so this subsumes the
+        // collapsed-derivative test it replaces.  Sitting on the surface gives r = 0 and H = J^T J,
+        // which is positive definite, so a point found exactly never triggers anything.
+        //
+        // Three extra surface evaluations, once, after the iteration has finished -- and only ever
+        // followed by more work when the answer is demonstrably not a minimum.
+        typename surface__::point_type q, su, sv, suu, suv, svv;
+        s.f_pt_derivs2( u, v, q, su, sv, suu, suv, svv );
+
+        typename surface__::point_type r( q - pt );
+
+        typename surface__::data_type h00( su.dot( su ) + r.dot( suu ) );
+        typename surface__::data_type h01( su.dot( sv ) + r.dot( suv ) );
+        typename surface__::data_type h11( sv.dot( sv ) + r.dot( svv ) );
+
+        // Whether the point the iteration handed over was a minimum.  Kept separately from the
+        // test after the polish below, because the polish is local: it will happily settle a point
+        // that was sitting on a ridge into the nearest minimum on that ridge, which is a better
+        // answer and still the wrong one.  A restart is wanted if either test fails.
+        bool minimum0 = ( h00 > 0 ) && ( h00*h11 - h01*h01 > 0 );
+
+        {
+          // Is this the answer the iteration was heading for?
+          //
+          // Gauss-Newton drops the r.S'' term from the Hessian, which is what makes the tangent
+          // plane cheap and what makes it stall.  Where that term is comparable to J^T J the step
+          // is built on the wrong curvature and convergence goes linear at a rate near one:
+          // traced here as twenty iterations of a v step that stays at 8e-4 and never shrinks,
+          // moving v by 0.019 in total while the distance improves in the sixth decimal.  It ends
+          // at max_iteration, short of the answer, and the return code says only that it ran out.
+          //
+          // The Hessian just computed is the exact one, and it is positive definite, so a full
+          // Newton step is a descent step and lands on the answer in a few passes rather than
+          // hundreds.  Whether to take one is decided by the gradient, scaled to a cosine so the
+          // test means the same thing at any distance: an iteration that genuinely converged has
+          // nothing here to trigger it, and pays for the test alone.
+          for ( int i = 0; i < 8; ++i )
+          {
+            typename surface__::data_type g0( r.dot( su ) ), g1( r.dot( sv ) );
+            typename surface__::data_type rmag( r.norm() ), sumag( su.norm() ), svmag( sv.norm() );
+
+            bool stationary = true;
+
+            if ( rmag > 0 )
+            {
+              if ( ( sumag > 0 ) && ( std::abs( g0 ) > edge*sumag*rmag ) )
+              {
+                stationary = false;
+              }
+              if ( ( svmag > 0 ) && ( std::abs( g1 ) > edge*svmag*rmag ) )
+              {
+                stationary = false;
+              }
+            }
+
+            if ( stationary )
+            {
+              break;
+            }
+
+            typename surface__::data_type det( h00*h11 - h01*h01 );
+
+            typename surface__::data_type du( 0 ), dv( 0 );
+
+            if ( ( svmag <= 0 ) && ( h00 > 0 ) )
+            {
+              // The surface has no v extent here at all.  A sharp trailing edge is built this
+              // way -- the closing strip has zero width, so Sv vanishes along the whole crease --
+              // and the nearest point to anything off the back of a wing lies on that crease,
+              // where the distance has a corner in v rather than a stationary point.  The tangent
+              // plane cannot converge to a corner: traced here it ping-ponged across the seam,
+              // 3.958, 3.990, 0.021, 0.005, 3.990, with the trust region halving each time until
+              // the step underflowed.
+              //
+              // v is not a free variable on a crease.  Hold it and solve the one dimensional
+              // problem along the edge, which is smooth and has an ordinary minimum.
+              du = -g0/h00;
+            }
+            else if ( ( sumag <= 0 ) && ( h11 > 0 ) )
+            {
+              dv = -g1/h11;
+            }
+            else if ( ( det > 0 ) && ( h00 > 0 ) )
+            {
+              du = ( -h11*g0 + h01*g1 )/det;
+              dv = ( h01*g0 - h00*g1 )/det;
+            }
+            else
+            {
+              break;
+            }
+
+            // Bounded, for the same reason the tangent plane step is.  A positive but nearly
+            // singular determinant gives an arbitrarily long step, and a step of 1e30 in a
+            // periodic parameter is not merely useless -- wrapping it back into range one period
+            // at a time does not finish in any usable time.
+            typename surface__::data_type ulim( ( umax - umin )/4 );
+            typename surface__::data_type vlim( ( vmax - vmin )/4 );
+
+            if ( std::abs( du ) > ulim )
+            {
+              dv *= ulim/std::abs( du );
+              du *= ulim/std::abs( du );
+            }
+            if ( std::abs( dv ) > vlim )
+            {
+              du *= vlim/std::abs( dv );
+              dv *= vlim/std::abs( dv );
+            }
+
+            typename surface__::data_type unew( u + du ), vnew( v + dv );
+
+            // Same domain rules the iteration itself works under: u is clamped, v is wrapped where
+            // the surface closes and clamped where it does not.
+            if ( unew < umin ) { unew = umin; }
+            if ( unew > umax ) { unew = umax; }
+
+            if ( s.open_v() )
+            {
+              if ( vnew < vmin ) { vnew = vmin; }
+              if ( vnew > vmax ) { vnew = vmax; }
+            }
+            else
+            {
+              if ( vnew < vmin ) { vnew += ( vmax - vmin ); }
+              if ( vnew > vmax ) { vnew -= ( vmax - vmin ); }
+            }
+
+            typename surface__::point_type qn, sun, svn, suun, suvn, svvn;
+            s.f_pt_derivs2( unew, vnew, qn, sun, svn, suun, suvn, svvn );
+
+            typename surface__::point_type rn( qn - pt );
+            typename surface__::data_type dn( rn.norm() );
+
+            if ( !( dn < dist ) )
+            {
+              // Newton overshot.  The point in hand is the better one and there is nothing more
+              // this step can offer.
+              break;
+            }
+
+            u = unew;
+            v = vnew;
+            dist = dn;
+            q = qn;
+            su = sun;
+            sv = svn;
+            r = rn;
+
+            h00 = su.dot( su ) + r.dot( suun );
+            h01 = su.dot( sv ) + r.dot( suvn );
+            h11 = sv.dot( sv ) + r.dot( svvn );
+
+          }
+        }
+
+        // Now judge the answer in hand.  The Hessian is the exact one, and after the polish above
+        // it describes the point actually being returned.
+        bool minimum = minimum0 && ( h00 > 0 ) && ( h00*h11 - h01*h01 > 0 );
+
+        // A boundary answer is a constrained one, and the Hessian says nothing about whether the
+        // constraint is the reason it stopped.  The gradient does: at u = umin the answer is only
+        // a minimum if moving u up makes things worse.  Traced on a wing, an iteration ran into
+        // the root edge and stopped at d = 22.5 with the gradient still pointing inboard, where
+        // the answer was 13.7 -- and the Hessian test passed it, since a constrained minimum need
+        // not have a positive definite Hessian and this one was not even constrained.
+        //
+        // Free quantities; the residual and both derivatives are already in hand.
+        if ( u <= umin + edge*( umax - umin ) )
+        {
+          if ( r.dot( su ) < 0 )
+          {
+            minimum = false;
+          }
+        }
+        else if ( u >= umax - edge*( umax - umin ) )
+        {
+          if ( r.dot( su ) > 0 )
+          {
+            minimum = false;
+          }
+        }
+
+        if ( s.open_v() )
+        {
+          if ( v <= vmin + edge*( vmax - vmin ) )
+          {
+            if ( r.dot( sv ) < 0 )
+            {
+              minimum = false;
+            }
+          }
+          else if ( v >= vmax - edge*( vmax - vmin ) )
+          {
+            if ( r.dot( sv ) > 0 )
+            {
+              minimum = false;
+            }
+          }
+        }
+
+
+        if ( !minimum )
+        {
+          // Where to restart, and along which parameter.
+          //
+          // Half a period round in v is the obvious guess and it is wrong at a pole, which is
+          // where most of these end up: every v names the same physical point there, so the v the
+          // iteration produced carries no information and adding to it carries none either.
+          // Traced on a point just past the nose and off the axis, the half-period restart lands
+          // on the far side and walks straight back to the pole.  One line of samples finds the
+          // right value outright.
+          //
+          // Which parameter to sample is the same question again.  A collapsed derivative is
+          // precisely what "carries no information" means, so sample the collapsed one: at a pod's
+          // nose Sv vanishes and the samples run round the ring, while at a wing's tip cap it is
+          // Su that vanishes -- traced at |Su| = 4e-5 against |Sv| = 4e-2, with the distance flat
+          // to six figures over the whole cap -- and the samples must run along the span instead.
+          // A ring is no use there; it stays inside the cap.  Where neither has collapsed, v is
+          // the periodic one and the better bet.
+          typename surface__::data_type sumag( su.norm() ), svmag( sv.norm() );
+          typename surface__::data_type flat( static_cast<typename surface__::data_type>(0.01) );
+
+          // Not less than, but not greater than.  A wing's tip closing patch is degenerate in
+          // both directions at once -- Su and Sv both vanish, and so does the Hessian entirely --
+          // and a strict test then picks v, whose samples all stay inside the cap.  Neither
+          // parameter carries information there, and it is u that leads out.
+          bool scan_u = ( sumag <= flat*svmag );
+
+          typename surface__::data_type unudge( u ), vnudge( v );
+
+          if ( u <= umin + edge*( umax - umin ) )
+          {
+            unudge = umin + static_cast<typename surface__::data_type>(0.01)*( umax - umin );
+          }
+          else if ( u >= umax - edge*( umax - umin ) )
+          {
+            unudge = umax - static_cast<typename surface__::data_type>(0.01)*( umax - umin );
+          }
+
+          const int nscan( 12 );
+
+          typename surface__::data_type dscan( std::numeric_limits< typename surface__::data_type >::max() );
+
+          for ( int i = 0; i < nscan; ++i )
+          {
+            // Cell centres.  Starting at the lower bound would put a sample on the parameter
+            // boundary, and a restart from exactly there spends its first steps arguing with the
+            // constraint rather than descending.
+            typename surface__::data_type t( ( i + static_cast<typename surface__::data_type>(0.5) )/nscan );
+
+            typename surface__::data_type ui( unudge ), vi( v );
+
+            if ( scan_u )
+            {
+              ui = umin + ( umax - umin )*t;
+            }
+            else
+            {
+              vi = vmin + ( vmax - vmin )*t;
+            }
+
+            typename surface__::data_type di( ( s.f( ui, vi ) - pt ).norm() );
+
+            if ( di < dscan )
+            {
+              dscan = di;
+              unudge = ui;
+              vnudge = vi;
+            }
+          }
+
+          typename surface__::data_type u2, v2;
+          typename surface__::data_type dist2 = minimum_distance_core( u2, v2, s, pt, unudge, vnudge, uminc, umaxc, vminc, vmaxc );
+
+          if ( dist2 < dist )
+          {
+            u = u2;
+            v = v2;
+            dist = dist2;
+          }
+        }
+
+        return dist;
+      }
 
       template<typename surface__>
       typename surface__::data_type minimum_distance_old(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt)
