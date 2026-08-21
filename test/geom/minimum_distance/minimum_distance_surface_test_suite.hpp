@@ -14,6 +14,7 @@
 #define minimum_distance_surface_test_suite_hpp
 
 #include <cmath>    // cos(), sin()
+#include <limits>   // numeric_limits
 
 #include <typeinfo> // typeid
 
@@ -36,6 +37,21 @@ class minimum_distance_surface_test_suite : public Test::Suite
     typedef typename surface_type::onedbezsurf onedbez_type;
 
     tolerance_type tol;
+
+    // A separate tolerance for a parameter that came back from an iterative minimisation, as
+    // opposed to one that was computed directly.
+    //
+    // At a minimum the distance is stationary, so an error of e in the parameter shifts the
+    // distance by O(e^2).  Pinning the parameter down to better than sqrt(epsilon) would mean
+    // resolving the distance to better than epsilon, which no arithmetic can do.  That is the
+    // geometry of a minimum, not a shortcoming of the search: in the cases below the distance
+    // comes back right to 1e-16 while the parameter is out by up to 1e-9.
+    //
+    // The default tolerance also compares relatively, which is doubly wrong for a reference
+    // parameter near zero: at v_ref = 0.001, a relative tolerance of sqrt(epsilon) demands 1e-11
+    // absolute.  A surface parameter lives on [0,1], so [0,1] is the scale to judge it on, and
+    // the absolute term is what should carry the test.
+    tolerance_type parm_tol;
 
   protected:
     void AddTests(const float &)
@@ -71,6 +87,8 @@ class minimum_distance_surface_test_suite : public Test::Suite
 
   public:
     minimum_distance_surface_test_suite()
+      : parm_tol(std::sqrt(std::numeric_limits<data_type>::epsilon()),
+                 std::sqrt(std::numeric_limits<data_type>::epsilon()))
     {
       AddTests(data__());
     }
@@ -1482,33 +1500,33 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point very near surface
@@ -1518,33 +1536,33 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near surface
@@ -1554,33 +1572,33 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near center surface
@@ -1590,25 +1608,25 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
 // RM -- New tangent plane solver causes this case to miss solution for floats.
       // +v_off cases seek local maximum.
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-//      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+//      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-//      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+//      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near and outside surface
@@ -1618,33 +1636,33 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point far and outside surface
@@ -1654,33 +1672,33 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near end of surface
@@ -1690,23 +1708,23 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near end and outside of surface
@@ -1716,23 +1734,23 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near end of surface
@@ -1742,23 +1760,23 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near end and outside of surface
@@ -1768,23 +1786,23 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near closed portion of surface
@@ -1794,38 +1812,38 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near closed portion and outside of surface
@@ -1835,38 +1853,38 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 1-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near closed portion of surface
@@ -1876,38 +1894,38 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=-s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       // test point near closed portion and outside of surface
@@ -1917,38 +1935,38 @@ class minimum_distance_surface_test_suite : public Test::Suite
       norm=s.normal(u_ref, v_ref);
       pt=s.f(u_ref, v_ref)+dist_ref*norm;
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, 0+u_off, v_ref);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref+v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
       dist=eli::geom::intersect::minimum_distance(u, v, s, pt, u_ref-u_off, v_ref-v_off);
-      TEST_ASSERT(tol.approximately_equal(u, u_ref));
-      TEST_ASSERT(tol.approximately_equal(v, v_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(u, u_ref));
+      TEST_ASSERT(parm_tol.approximately_equal(v, v_ref));
       TEST_ASSERT(tol.approximately_equal(dist, dist_ref));
 
 //       if (typeid(data_type)==typeid(double))
