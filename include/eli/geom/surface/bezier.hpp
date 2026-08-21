@@ -1307,12 +1307,37 @@ namespace eli
             tolerance_type tol;
 
             // If have degenerate surface try higher order terms.
-            // Since want direction and don't care about magnitude,
-            // can use du=dv=1  in Taylor serier expansion:
             // N(du, dv)=N+N_u*du+N_v*dv+1/2*(N_uu*du^2+2*N_uv*du*dv+N_vv*dv^2)+H.O.T.
             // see "Bezier Normal Vector Surface and Its Applications" by Yamaguchi
+            //
+            // The magnitude of the step does not matter, only its direction, but the direction
+            // matters a great deal: du and dv say which way the limit is approached from, and the
+            // answer is the normal of whatever lies that way.  Off the u=1 or v=1 edge of a patch
+            // that is nothing at all, and the expansion returns the normal of a surface that is
+            // not there.  Where the leading term is first order it is odd in (du, dv), so the
+            // answer comes back exactly reversed: on a wing tip the whole trailing edge, and the
+            // corner at u=v=1, shade inside out.
+            //
+            // So step towards the middle of the patch, which is always inside it and is exact at
+            // the boundaries, where it reduces to +1 at 0 and -1 at 1.
+            //
+            // At an interior degenerate point both directions are available and, for a first
+            // order leading term, they give opposite answers -- there is no unique normal, and
+            // Yamaguchi requires the point to be on a boundary before using that term.  Which one
+            // is wanted is a question about the surface being drawn, not about the surface: it is
+            // the limit from the side being shaded.  Stepping into this patch answers it, because
+            // the caller has already chosen the patch.
             point_type S_uu, S_uv, S_vv, N_u, N_v;
             data_type du(1), dv(1);
+
+            if ( u > static_cast<data_type>(0.5) )
+            {
+              du = -1;
+            }
+            if ( v > static_cast<data_type>(0.5) )
+            {
+              dv = -1;
+            }
 
             // calculate Taylor series second term
 
@@ -1336,10 +1361,25 @@ namespace eli
               N_uu=S_uuu.cross(S_v)+2*S_uu.cross(S_uv)+S_u.cross(S_uuv);
               N_uv=S_uuv.cross(S_v)+S_uu.cross(S_vv)+S_uv.cross(S_uv)+S_u.cross(S_uvv);
               N_vv=S_uvv.cross(S_v)+2*S_uv.cross(S_vv)+S_u.cross(S_vvv);
+              // du*du and dv*dv do not care about the direction, but the cross term does, and it
+              // is wrong for the same reason the first order term was.
               n=0.5*(N_uu*du*du+2*N_uv*du*dv+N_vv*dv*dv);
               nlen=n.norm();
 
-              // if still get zero normal then give up
+              // Still nothing.  Carrying the expansion further will not help: a patch that
+              // reaches here has S_u parallel to S_v not merely at this point but across the
+              // whole patch -- its image is a curve or a point, with no area and no normal
+              // anywhere on it.  OpenVSP builds such patches deliberately, as zero width strips
+              // at a leading or trailing edge, to give those edges an exact parameter value.
+              //
+              // Reaching here shows only that N and its partials through second order vanish at
+              // this parameter.  For a normal surface of bidegree (2m-2, 2n-2) that does not by
+              // itself force the rest of the control net to zero, so this is not a proof that no
+              // higher expansion could help -- it is the point past which this function stops
+              // looking.
+              //
+              // The only answer lies outside this patch, which is more than this function can
+              // see.  Report the failure honestly as a zero normal and leave it to the caller.
               if (tol.approximately_equal(nlen, 0))
               {
                 n.setZero();
