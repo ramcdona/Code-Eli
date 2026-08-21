@@ -1361,6 +1361,20 @@ namespace eli
             pt_v = f_v( u, v );
           }
 
+          // The point, both first derivatives and all three second derivatives at once.  Nothing
+          // is shared at this level; the piecewise form is where this earns its keep, since it
+          // locates the patch once instead of six times.
+          void f_pt_derivs2(const data_type &u, const data_type &v, point_type &pt, point_type &pt_u, point_type &pt_v,
+                            point_type &pt_uu, point_type &pt_uv, point_type &pt_vv ) const
+          {
+            pt = f( u, v );
+            pt_u = f_u( u, v );
+            pt_v = f_v( u, v );
+            pt_uu = f_uu( u, v );
+            pt_uv = f_uv( u, v );
+            pt_vv = f_vv( u, v );
+          }
+
           void promote_u()
           {
             typedef Eigen::Matrix<data_type, Eigen::Dynamic, dim__> control_row_type;

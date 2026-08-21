@@ -2400,6 +2400,34 @@ namespace eli
             pt_v = patches[uk][vk].f_v(uu, vv)/delta_v;
           }
 
+          // As above, with the second derivatives.  find_patch is a pair of map lookups and the
+          // separate accessors each repeat it, so asking for all six one at a time locates the
+          // patch six times over.  The minimum distance solver wants exactly this set, to form the
+          // Hessian of the squared distance.
+          void f_pt_derivs2(const data_type &u, const data_type &v, point_type &pt, point_type &pt_u, point_type &pt_v,
+                            point_type &pt_uu, point_type &pt_uv, point_type &pt_vv ) const
+          {
+            index_type uk, vk;
+            typename keymap_type::const_iterator uit, vit;
+            data_type uu(0), vv(0);
+
+            find_patch(uk, vk, uit, vit, uu, vv, u, v);
+
+            assert((uk != -1) && (vk != -1));
+
+            data_type delta_u = ukey.get_delta_parm(uit);
+            data_type delta_v = vkey.get_delta_parm(vit);
+
+            pt = patches[uk][vk].f(uu, vv);
+
+            pt_u = patches[uk][vk].f_u(uu, vv)/delta_u;
+            pt_v = patches[uk][vk].f_v(uu, vv)/delta_v;
+
+            pt_uu = patches[uk][vk].f_uu(uu, vv)/(delta_u*delta_u);
+            pt_uv = patches[uk][vk].f_uv(uu, vv)/(delta_u*delta_v);
+            pt_vv = patches[uk][vk].f_vv(uu, vv)/(delta_v*delta_v);
+          }
+
           static void order_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
           {
             index_type nu1 = s1.number_u_patches();
