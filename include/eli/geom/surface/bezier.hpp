@@ -52,6 +52,13 @@ namespace eli
 
           typedef bezier<data_type, 1, tolerance_type> onedbezsurf;
 
+          // Needed so product1d() can reach the scalar surface's control points, the same
+          // way the curve class befriends its own dimensional variants.
+          friend class bezier<data_type, 1, tolerance_type>;
+          friend class bezier<data_type, 2, tolerance_type>;
+          friend class bezier<data_type, 3, tolerance_type>;
+          friend class bezier<data_type, 4, tolerance_type>;
+
         private:
           typedef Eigen::Map<Eigen::Matrix<data_type, Eigen::Dynamic, dim__>,
                              Eigen::Unaligned,
@@ -1956,6 +1963,86 @@ namespace eli
                     jc = ja + jb;
 
                     B_u[jc].row(ic) = B_u[jc].row(ic) + a_u[ja].row(ia).cwiseProduct( b_u[jb].row(ib) );
+                  }
+                }
+              }
+            }
+
+            for (i=0; i<=mu+nu; ++i)
+            {
+              eli::geom::utility::scaled_bezier_to_control_points_bezier( B_v[i] );
+            }
+
+            for (i=0; i<=mv+nv; ++i)
+            {
+              eli::geom::utility::scaled_bezier_to_control_points_bezier( B_u[i] );
+            }
+            invalidate_deriv();
+          }
+
+          // Multiply a surface by a scalar valued (one dimensional) surface.  product() is
+          // componentwise, so scaling by a scalar field through it means padding the
+          // multiplier out to dim__ equal components; this takes the scalar surface
+          // directly.  The result degree is the sum of the two in each direction, so the
+          // product is exact.
+          void product1d( const bezier<data_type, dim__, tol__> &a, const onedbezsurf &b )
+          {
+            index_type i, mu(a.degree_u()), mv(a.degree_v()), nu(b.degree_u()), nv(b.degree_v());
+
+            u_control_point_matrix_container a_u;
+            v_control_point_matrix_container a_v;
+            control_point_container a_data;
+
+            typename onedbezsurf::u_control_point_matrix_container b_u;
+            typename onedbezsurf::v_control_point_matrix_container b_v;
+            typename onedbezsurf::control_point_container b_data;
+
+            a_data = a.point_data;
+            set_Bs( a_u, a_v, a_data, mu, mv );
+
+            b_data = b.point_data;
+            onedbezsurf::set_Bs( b_u, b_v, b_data, nu, nv );
+
+            resize( mu + nu, mv + nv );
+
+            for ( size_t k = 0; k < point_data.size(); k++ )
+            {
+              point_data[k] = 0.0;
+            }
+
+            for (i=0; i<=mu; ++i)
+            {
+              eli::geom::utility::bezier_control_points_to_scaled_bezier( a_v[i] );
+            }
+            for (i=0; i<=mv; ++i)
+            {
+              eli::geom::utility::bezier_control_points_to_scaled_bezier( a_u[i] );
+            }
+            for (i=0; i<=nu; ++i)
+            {
+              eli::geom::utility::bezier_control_points_to_scaled_bezier( b_v[i] );
+            }
+            for (i=0; i<=nv; ++i)
+            {
+              eli::geom::utility::bezier_control_points_to_scaled_bezier( b_u[i] );
+            }
+
+            index_type ia, ib, ic;
+            index_type ja, jb, jc;
+
+            for (ia = 0; ia <= mu; ia++ )
+            {
+              for (ib = 0; ib <= nu; ib++ )
+              {
+                ic = ia + ib;
+
+                for (ja = 0; ja <= mv; ja++ )
+                {
+                  for (jb = 0; jb <= nv; jb++ )
+                  {
+                    jc = ja + jb;
+
+                    B_u[jc].row(ic) = B_u[jc].row(ic) + b_u[jb]( ib, 0 ) * a_u[ja].row(ia);
                   }
                 }
               }
