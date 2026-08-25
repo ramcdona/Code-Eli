@@ -2540,6 +2540,46 @@ namespace eli
             }
           }
 
+          // Multiply two surfaces, patch by patch, in the Bernstein basis.  The
+          // parameterizations need not agree; both are split to a common one first, the
+          // same way scaledsum does.  Each patch product raises the degree to the sum of
+          // the two patch degrees, so the result represents a * b exactly rather than
+          // approximating it.
+          //
+          // The product is componentwise, matching bezier::product.  To scale a surface
+          // by a scalar field, give the multiplier the same value in every component.
+          //
+          // The piecewise curve class has carried product() and product1d() for a while;
+          // this is the surface quilt counterpart.
+          void product( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
+          {
+            typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
+
+            piecewise_surf_type s1(a);
+            piecewise_surf_type s2(b);
+
+            std::vector<data_type> upmap, vpmap;
+
+            parm_match_u( s1, s2 );
+            parm_match_v( s1, s2 );
+
+            s1.get_pmap_uv( upmap, vpmap );
+
+            init_uv( upmap, vpmap );
+
+            for ( index_type iu = 0; iu < nu; iu++ )
+            {
+              for ( index_type iv = 0; iv < nv; iv++ )
+              {
+                surface_type *p1 = s1.get_patch( iu, iv );
+                surface_type *p2 = s2.get_patch( iu, iv );
+                surface_type *p = get_patch( iu, iv );
+
+                p->product( *p1, *p2 );
+              }
+            }
+          }
+
           void scaledsum( const data_type &ka, const piecewise<surface__, data_type, dim__, tol__> &a, const data_type &kb, const piecewise<surface__, data_type, dim__, tol__> &b )
           {
             typedef piecewise<surface__, data_type, dim__, tol__> piecewise_surf_type;
