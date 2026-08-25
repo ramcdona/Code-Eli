@@ -1915,7 +1915,7 @@ namespace eli
 
             resize( mu + nu, mv + nv );
 
-            for ( size_t i=1; i<point_data.size(); i++)
+            for ( size_t i=0; i<point_data.size(); i++)
             {
               point_data[i] = 0.0;
             }
