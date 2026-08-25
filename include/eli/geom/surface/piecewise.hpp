@@ -2494,7 +2494,10 @@ namespace eli
             }
           }
 
-          static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          // Templated on the second surface's dimension so a scalar surface can be matched
+          // against a spatial one for product1d.
+          template < unsigned short dim2__ >
+          static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
             s1.get_pmap_uv( upmap1, vpmap1 );
@@ -2517,7 +2520,10 @@ namespace eli
             }
           }
 
-          static void parm_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim__, tol__> &s2 )
+          // Templated on the second surface's dimension so a scalar surface can be matched
+          // against a spatial one for product1d.
+          template < unsigned short dim2__ >
+          static void parm_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
             s1.get_pmap_uv( upmap1, vpmap1 );
@@ -2576,6 +2582,39 @@ namespace eli
                 surface_type *p = get_patch( iu, iv );
 
                 p->product( *p1, *p2 );
+              }
+            }
+          }
+
+          // Multiply a surface by a scalar valued (one dimensional) surface, patch by patch.
+          // The parameterizations need not agree; both are split to a common one first.
+          //
+          // This is the natural way to scale a surface by a varying weight.  Doing it
+          // through the componentwise product() instead means building the weight with
+          // dim__ equal components, which works but carries the value redundantly.
+          void product1d( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, 1, tol__> &b )
+          {
+            piecewise<surface__, data_type, dim__, tol__> s1(a);
+            piecewise<surface__, data_type, 1, tol__> s2(b);
+
+            std::vector<data_type> upmap, vpmap;
+
+            parm_match_u( s1, s2 );
+            parm_match_v( s1, s2 );
+
+            s1.get_pmap_uv( upmap, vpmap );
+
+            init_uv( upmap, vpmap );
+
+            for ( index_type iu = 0; iu < nu; iu++ )
+            {
+              for ( index_type iv = 0; iv < nv; iv++ )
+              {
+                surface_type *p1 = s1.get_patch( iu, iv );
+                typename piecewise<surface__, data_type, 1, tol__>::surface_type *p2 = s2.get_patch( iu, iv );
+                surface_type *p = get_patch( iu, iv );
+
+                p->product1d( *p1, *p2 );
               }
             }
           }
