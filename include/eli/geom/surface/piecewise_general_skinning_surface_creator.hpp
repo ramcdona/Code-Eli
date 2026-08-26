@@ -150,6 +150,33 @@ namespace eli
               std::swap(joints, jts_out);
             }
 
+            // Where a rib changes what it enforces, the surface needs a joint.  Conditions are
+            // not interpolated, so a v-segment straddling such a change would have no single
+            // answer for what it imposes.  Splitting there gives every segment one.
+            for (i=0; i<nribs; ++i)
+            {
+              std::vector<data_type> brks, jts_out;
+
+              rbs[i].get_condition_breaks(brks);
+              if (brks.empty())
+              {
+                continue;
+              }
+
+              std::vector<data_type> inrange;
+              for (size_t b=0; b<brks.size(); ++b)
+              {
+                if (tol.approximately_less_than(t0, brks[b]) && tol.approximately_less_than(brks[b], tmax))
+                {
+                  inrange.push_back(brks[b]);
+                }
+              }
+              std::sort(inrange.begin(), inrange.end(), comp);
+
+              std::set_union(joints.begin(), joints.end(), inrange.begin(), inrange.end(), std::back_inserter(jts_out), comp);
+              std::swap(joints, jts_out);
+            }
+
             // record where the joints need to be for create()
             index_type njoints(static_cast<index_type>(joints.size()));
 
@@ -212,6 +239,15 @@ namespace eli
 
               std::vector<surface_type> surfs(nu);
 
+              // Every v-segment lies inside a single condition region, so its midpoint speaks
+              // for the whole strip.
+              data_type vmid(this->get_v0());
+              for (index_type vv=0; vv<v; ++vv)
+              {
+                vmid+=this->get_segment_dv(vv);
+              }
+              vmid+=static_cast<data_type>(0.5)*this->get_segment_dv(v);
+
               for (j=0; j<=max_jdegs[v]; ++j)
               {
                 // cycle through each rib to set corresponding joint info
@@ -223,22 +259,22 @@ namespace eli
 
                   rib_states[u].get_f().get(jcrv, v);
                   joints[u].set_f(jcrv.get_control_point(j));
-                  if (rib_states[u].use_left_fp())
+                  if (rib_states[u].use_left_fp(vmid))
                   {
                     rib_states[u].get_left_fp().get(jcrv, v);
                     joints[u].set_left_fp(jcrv.get_control_point(j));
                   }
-                  if (rib_states[u].use_right_fp())
+                  if (rib_states[u].use_right_fp(vmid))
                   {
                     rib_states[u].get_right_fp().get(jcrv, v);
                     joints[u].set_right_fp(jcrv.get_control_point(j));
                   }
-                  if (rib_states[u].use_left_fpp())
+                  if (rib_states[u].use_left_fpp(vmid))
                   {
                     rib_states[u].get_left_fpp().get(jcrv, v);
                     joints[u].set_left_fpp(jcrv.get_control_point(j));
                   }
-                  if (rib_states[u].use_right_fpp())
+                  if (rib_states[u].use_right_fpp(vmid))
                   {
                     rib_states[u].get_right_fpp().get(jcrv, v);
                     joints[u].set_right_fpp(jcrv.get_control_point(j));

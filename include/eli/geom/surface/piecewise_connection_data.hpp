@@ -58,9 +58,109 @@ namespace eli
           {
           }
 
+          // Where each condition is actually enforced around the cross section.
+          //
+          // The flags above say a curve was supplied; this says on which stretches of v it is
+          // imposed.  It has to be a function of the parameter rather than an array indexed by
+          // segment, because the caller does not know how the ribs will be split -- the creator
+          // splits every rib to the union of all their joints, so a segment array would be
+          // meaningless by the time it was read.  Conditions cannot be interpolated the way
+          // values can, so the function is piecewise constant: masks[i] applies on
+          // [breaks[i], breaks[i+1]).
+          //
+          // Leave it empty and every query falls back to the flags, which is the old behavior.
+          // One mask per interval, so one more break than masks.  Returns false and changes
+          // nothing on a mismatch: quietly ignoring it would leave the rib enforcing
+          // everywhere, which is the opposite of what the caller asked for and the worst way
+          // for this to fail.
+          //
+          // The breaks must also be strictly increasing.  get_conditions_at scans them in order
+          // and stops at the first one past v, so an unsorted list answers from whichever break
+          // it happens to reach first and never consults the rest -- while the skinning creator
+          // merges the same list into its joint set and does split the surface there.  The two
+          // would then disagree about where a condition changes, which is the failure the
+          // regions exist to prevent.  Equal neighbours are refused for the same reason: they
+          // survive the creator's set_union and produce a zero width v segment.
+          bool set_condition_regions(const std::vector<data_type> &brks,
+                                     const std::vector<unsigned int> &msks)
+          {
+            if (brks.size() != msks.size()+1)
+            {
+              return false;
+            }
+
+            for (size_t i=1; i<brks.size(); ++i)
+            {
+              if (!(brks[i-1]<brks[i]))
+              {
+                return false;
+              }
+            }
+
+            cond_breaks=brks;
+            cond_masks=msks;
+            return true;
+          }
+
+          void clear_condition_regions()
+          {
+            cond_breaks.clear();
+            cond_masks.clear();
+          }
+
+          void get_condition_breaks(std::vector<data_type> &brks) const
+          {
+            brks=cond_breaks;
+          }
+
+          unsigned int get_conditions_at(const data_type &v) const
+          {
+            if (cond_masks.empty())
+            {
+              return conditions;
+            }
+
+            // Outside the stated range the ends carry on, so a rib never loses its conditions
+            // to a rounding error at the seam.
+            if (v<=cond_breaks[0])
+            {
+              return cond_masks[0] & conditions;
+            }
+
+            for (size_t i=0; i+1<cond_breaks.size(); ++i)
+            {
+              if (v<cond_breaks[i+1])
+              {
+                return cond_masks[i] & conditions;
+              }
+            }
+
+            return cond_masks[cond_masks.size()-1] & conditions;
+          }
+
+          // The per-v queries the creator uses.  A condition holds only where the curve was
+          // supplied and the region mask asks for it.
+          bool use_left_fp(const data_type &v) const
+          {
+            return ((get_conditions_at(v) & LEFT_FP_SET) == LEFT_FP_SET);
+          }
+          bool use_right_fp(const data_type &v) const
+          {
+            return ((get_conditions_at(v) & RIGHT_FP_SET) == RIGHT_FP_SET);
+          }
+          bool use_left_fpp(const data_type &v) const
+          {
+            return ((get_conditions_at(v) & LEFT_FPP_SET) == LEFT_FPP_SET);
+          }
+          bool use_right_fpp(const data_type &v) const
+          {
+            return ((get_conditions_at(v) & RIGHT_FPP_SET) == RIGHT_FPP_SET);
+          }
+
           connection_data(const connection_data &cd)
             : f(cd.f), fp_left(cd.fp_left), fp_right(cd.fp_right), fpp_left(cd.fpp_left),
-              fpp_right(cd.fpp_right), conditions(cd.conditions), continuity(cd.continuity)
+              fpp_right(cd.fpp_right), conditions(cd.conditions), continuity(cd.continuity),
+                  cond_breaks(cd.cond_breaks), cond_masks(cd.cond_masks)
           {
           }
 
@@ -76,6 +176,8 @@ namespace eli
               fpp_left=cd.fpp_left;
               fpp_right=cd.fpp_right;
               conditions=cd.conditions;
+              cond_breaks=cd.cond_breaks;
+              cond_masks=cd.cond_masks;
               continuity=cd.continuity;
             }
 
@@ -86,6 +188,10 @@ namespace eli
           {
             tolerance_type tol;
 
+            if (cond_breaks!=cd.cond_breaks)
+              return false;
+            if (cond_masks!=cd.cond_masks)
+              return false;
             if (conditions!=cd.conditions)
               return false;
             if (continuity!=cd.continuity)
@@ -658,6 +764,8 @@ namespace eli
           curve_type fp_left, fp_right;
           curve_type fpp_left, fpp_right;
           unsigned int conditions;
+          std::vector<data_type> cond_breaks;
+          std::vector<unsigned int> cond_masks;
           connection_continuity continuity;
       };
     }

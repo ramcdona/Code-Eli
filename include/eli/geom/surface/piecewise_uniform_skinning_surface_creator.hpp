@@ -69,8 +69,33 @@ namespace eli
           void set_validate(bool v) {validate=v;}
           bool get_validate() const {return validate;}
 
+          // This creator reads each rib's conditions once and applies them across the whole
+          // cross section, which is the whole point of it -- one factored solve instead of one
+          // per strip.  A rib carrying condition regions is asking for something else entirely,
+          // and applying its full mask everywhere would silently enforce conditions where the
+          // caller asked for none.  Refuse rather than mislead.
+          bool ribs_carry_regions() const
+          {
+            for (typename std::vector<rib_data_type>::const_iterator rit=this->ribs.begin();
+                 rit!=this->ribs.end(); ++rit)
+            {
+              std::vector<data_type> brks;
+              rit->get_condition_breaks(brks);
+              if (!brks.empty())
+              {
+                return true;
+              }
+            }
+            return false;
+          }
+
           virtual bool create(piecewise_surface_type &ps) const
           {
+            if (ribs_carry_regions())
+            {
+              return false;
+            }
+
             typedef typename piecewise_surface_type::surface_type surface_type;
             typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
             typedef typename piecewise_curve_type::curve_type curve_type;
