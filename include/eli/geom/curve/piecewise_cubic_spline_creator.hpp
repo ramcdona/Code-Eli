@@ -388,6 +388,222 @@ namespace eli
 
           /**
            * This creates a 3rd order piecewise Bezier curve that interpolates the given
+           * points with Piecewise Cubic Hermite Interpolating Polynomials, limited so that
+           * the curve is monotonic wherever the data is.
+           *
+           * set_chip takes its joint slopes from 2nd order finite differences and uses them
+           * as they come, which lets the curve leave the range of the data: three points at
+           * 0, 0, 30, 0 give a curve reaching -2.2 between them, below every point it
+           * interpolates. The slopes here are the same to begin with, then limited by the
+           * Fritsch-Carlson condition, which is what makes a PCHIP a PCHIP.
+           *
+           * On each interval, with d the secant slope and a, b the slopes at its ends:
+           * a slope opposing the secant is set to zero, a flat secant flattens both ends,
+           * and (a/d, b/d) is drawn back onto the circle of radius three when it falls
+           * outside -- the region Fritsch and Carlson showed to be sufficient for
+           * monotonicity. Where the data is already monotonic and gently sloped nothing is
+           * touched and the result is identical to set_chip.
+           *
+           * Limiting is per dimension, so a curve is monotonic in whichever coordinates its
+           * data is. The result is C1, since the joint slopes stay shared between the
+           * intervals either side of them, except at a C0 seam where they are one sided by
+           * construction.
+           */
+          template<typename point_it__>
+          void set_monotonic_chip(point_it__ itb, const eli::geom::general::continuity &end_cont)
+          {
+            index_type i, j, nsegs(this->get_number_segments()), npts;
+            bool closed;
+
+            npts=nsegs;
+            closed=true;
+            if (end_cont==eli::geom::general::NOT_CONNECTED)
+            {
+              ++npts;
+              closed=false;
+            }
+            else if ((end_cont!=eli::geom::general::C0) && (end_cont!=eli::geom::general::C1)
+                     && (end_cont!=eli::geom::general::G1))
+            {
+              assert(false);
+              return;
+            }
+
+            // can't work with less than three points
+            if (npts<3)
+            {
+              assert(false);
+              return;
+            }
+
+            // gather the points and the spacing
+            std::vector<point_type> p(npts);
+            point_it__ it(itb);
+            for (i=0; i<npts; ++i, ++it)
+            {
+              p[i]=*it;
+            }
+
+            std::vector<data_type> h(nsegs);
+            for (i=0; i<nsegs; ++i)
+            {
+              h[i]=this->get_segment_dt(i);
+            }
+
+            // secant slope of each interval, the interval closing onto the first point when
+            // the curve is closed
+            std::vector<point_type> delta(nsegs);
+            for (i=0; i<nsegs; ++i)
+            {
+              index_type inext(i+1);
+              if (inext>=npts)
+              {
+                inext=0;
+              }
+              delta[i]=(p[inext]-p[i])/h[i];
+            }
+
+            // Joint slopes, shared between the intervals either side of each joint so the
+            // curve stays C1 through the limiting.  Interior joints take the 2nd order
+            // central difference, which for uneven spacing is the secants weighted by the
+            // opposite intervals.
+            std::vector<point_type> m(npts);
+            for (i=0; i<npts; ++i)
+            {
+              index_type ileft(i-1), iright(i);
+
+              if (i==0)
+              {
+                ileft=nsegs-1;
+              }
+              if (iright>=nsegs)
+              {
+                iright=nsegs-1;
+              }
+
+              if ((i==0 || i==npts-1) && !closed)
+              {
+                continue;
+              }
+              if (i==0 && !(end_cont==eli::geom::general::C1 || end_cont==eli::geom::general::G1))
+              {
+                continue;
+              }
+
+              m[i]=(h[iright]*delta[ileft]+h[ileft]*delta[iright])/(h[ileft]+h[iright]);
+            }
+
+            // One sided ends, second order, wherever a joint is not carried through: the two
+            // ends of an open curve, and both sides of a C0 seam.
+            point_type mfirst, mlast;
+
+            mfirst=((2*h[0]+h[1])*delta[0]-h[0]*delta[1])/(h[0]+h[1]);
+            mlast=((2*h[nsegs-1]+h[nsegs-2])*delta[nsegs-1]-h[nsegs-1]*delta[nsegs-2])
+                  /(h[nsegs-1]+h[nsegs-2]);
+
+            if (!closed)
+            {
+              m[0]=mfirst;
+              m[npts-1]=mlast;
+            }
+            else if (end_cont==eli::geom::general::C0)
+            {
+              m[0]=mfirst;
+            }
+
+            // The slope at the start of each interval and at its end.  These alias the
+            // shared joint slopes, so limiting one interval is seen by its neighbour, except
+            // at a C0 seam where the closing slope is the curve's own.
+            std::vector<point_type *> ms(nsegs), me(nsegs);
+            point_type mseam(mlast);
+
+            for (i=0; i<nsegs; ++i)
+            {
+              index_type inext(i+1);
+              if (inext>=npts)
+              {
+                inext=0;
+              }
+
+              ms[i]=&m[i];
+              me[i]=&m[inext];
+            }
+
+            if (closed && (end_cont==eli::geom::general::C0))
+            {
+              me[nsegs-1]=&mseam;
+            }
+
+            // Fritsch-Carlson, one sweep, each dimension on its own.
+            for (i=0; i<nsegs; ++i)
+            {
+              for (j=0; j<dim__; ++j)
+              {
+                data_type d(delta[i](j)), a((*ms[i])(j)), b((*me[i])(j));
+
+                if (d==0)
+                {
+                  a=0;
+                  b=0;
+                }
+                else
+                {
+                  data_type alpha(a/d), beta(b/d);
+
+                  if (alpha<0)
+                  {
+                    alpha=0;
+                  }
+                  if (beta<0)
+                  {
+                    beta=0;
+                  }
+
+                  // A secant that is tiny rather than exactly zero -- two points meant to be
+                  // duplicates but a few ulp apart -- sends alpha or beta to infinity, and
+                  // then tau is zero and inf*0 is NaN.  The data says the interval is flat;
+                  // treat it as flat, the same as an exact zero secant does above.
+                  if (!std::isfinite(alpha) || !std::isfinite(beta))
+                  {
+                    alpha=0;
+                    beta=0;
+                  }
+
+                  data_type s(alpha*alpha+beta*beta);
+                  if (s>9)
+                  {
+                    data_type tau(3/std::sqrt(s));
+                    alpha*=tau;
+                    beta*=tau;
+                  }
+
+                  a=alpha*d;
+                  b=beta*d;
+                }
+
+                (*ms[i])(j)=a;
+                (*me[i])(j)=b;
+              }
+            }
+
+            // lay down the segments
+            for (i=0; i<nsegs; ++i)
+            {
+              index_type inext(i+1);
+              if (inext>=npts)
+              {
+                inext=0;
+              }
+
+              data_type dt(h[i]);
+
+              set_segment_control_points(p[i], p[i]+dt*(*ms[i])/3, p[inext]-dt*(*me[i])/3,
+                                         p[inext], i);
+            }
+          }
+
+          /**
+           * This creates a 3rd order piecewise Bezier curve that interpolates the given
            * points using a cardinal spline. The cardinal spline requires a tension  parameter
            * which controls to strength of the slopes. The end slopes use the same tension
            * term, but are one-sided differences unless the end condition is C1-continuous,
