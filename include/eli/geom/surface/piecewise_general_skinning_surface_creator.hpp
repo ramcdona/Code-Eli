@@ -206,9 +206,37 @@ namespace eli
 
           virtual bool create(piecewise_surface_type &ps) const
           {
+            std::vector<data_type> none;
+            return create(ps, none, none);
+          }
+
+          // Solve only the v segments whose middle falls inside one of the given intervals.
+          // Empty intervals mean all of them.
+          //
+          // A blended skin needs each strip from at most the two rib sets on either side of
+          // it, however many sets there are in total, so solving every set over the whole
+          // cross section is work thrown away.  The caller says where each set is wanted.
+          //
+          // ps is cleared and re-parameterized first, as always, so a skipped segment does
+          // not keep whatever was there before: it comes back as a default patch, and the
+          // surface is only complete once the caller has filled or ignored every one it
+          // asked to skip.  This is not a merge.
+          virtual bool create(piecewise_surface_type &ps,
+                              const std::vector<data_type> &vlo,
+                              const std::vector<data_type> &vhi) const
+          {
             typedef typename piecewise_surface_type::surface_type surface_type;
 
             index_type i, j;
+
+            // One interval is a low and a high, so the two lists have to be the same length.
+            // The loop below walks vlo and indexes vhi with the same counter, so a short vhi
+            // would be read past its end and the segments kept or dropped on whatever was
+            // there.  Refuse instead.
+            if (vlo.size()!=vhi.size())
+            {
+              return false;
+            }
 
             // FIX: Should be able to handle closed surfaces
             assert(!closed);
@@ -247,6 +275,23 @@ namespace eli
                 vmid+=this->get_segment_dv(vv);
               }
               vmid+=static_cast<data_type>(0.5)*this->get_segment_dv(v);
+
+              if (!vlo.empty())
+              {
+                bool wanted(false);
+                for (size_t iv=0; iv<vlo.size() && !wanted; ++iv)
+                {
+                  if ((vmid>=vlo[iv]) && (vmid<=vhi[iv]))
+                  {
+                    wanted=true;
+                  }
+                }
+
+                if (!wanted)
+                {
+                  continue;
+                }
+              }
 
               for (j=0; j<=max_jdegs[v]; ++j)
               {

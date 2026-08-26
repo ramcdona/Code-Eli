@@ -89,6 +89,23 @@ namespace eli
             return false;
           }
 
+          // Declaring create(ps) alone would hide the base's create(ps, vlo, vhi) on this type
+          // while leaving it reachable through a base reference -- where it would run the
+          // unfactored algorithm and skip the refusal above, losing both of this class's
+          // guarantees at once.  Override it instead, refuse the same way, and hand the rest
+          // to the base: there is no factored form of a partial solve to offer.
+          virtual bool create(piecewise_surface_type &ps,
+                              const std::vector<data_type> &vlo,
+                              const std::vector<data_type> &vhi) const
+          {
+            if (ribs_carry_regions())
+            {
+              return false;
+            }
+
+            return base_class_type::create(ps, vlo, vhi);
+          }
+
           virtual bool create(piecewise_surface_type &ps) const
           {
             if (ribs_carry_regions())
