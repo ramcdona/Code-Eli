@@ -2167,6 +2167,74 @@ namespace eli
             return retsurf;
           }
 
+          // Has this patch any area at all?
+          //
+          // The area integrand |Su x Sv| is never negative, so it integrates to zero only if
+          // it is everywhere zero.  There is therefore no need to integrate: it is enough
+          // that every control point of |Su x Sv|^2 vanish, since the Bernstein polynomials
+          // are a basis and a Bezier is the zero function exactly when its control points are.
+          //
+          // A patch with no area has collapsed onto a curve or onto a point.  It need not be
+          // a straight line, and no assumption is made about how the patch is oriented.
+          //
+          // |Su x Sv|^2 is |Su|^2 |Sv|^2 - (Su.Sv)^2 by Lagrange's identity, and each of those
+          // is a dot product of derivatives -- products and sums of Beziers, all exact.  The
+          // square root that stands between this and the area integrand is the one thing that
+          // cannot be taken on a Bezier, and it does not need to be.
+          //
+          // The comparison is made against |Su|^2 |Sv|^2, whose control points carry the same
+          // units and the same scaling in the patch's own parameters, so the answer does not
+          // depend on the size of the model or on how the patch is parameterized.
+          bool degenerate_area( const data_type &tol ) const
+          {
+            validate_u();
+            validate_v();
+
+            bezier<data_type, dim__, tol__> puu, pvv, puv;
+
+            puu.product( *deriv_u, *deriv_u );
+            pvv.product( *deriv_v, *deriv_v );
+            puv.product( *deriv_u, *deriv_v );
+
+            onedbezsurf euu( puu.sumcompsurf() );
+            onedbezsurf evv( pvv.sumcompsurf() );
+            onedbezsurf euv( puv.sumcompsurf() );
+
+            onedbezsurf a, b, g;
+
+            a.product( euu, evv );
+            b.product( euv, euv );
+            g.scaledsum( static_cast<data_type>(1), a, static_cast<data_type>(-1), b );
+
+            data_type gmax(0), amax(0);
+
+            for ( index_type i=0; i<=g.degree_u(); ++i )
+            {
+              for ( index_type j=0; j<=g.degree_v(); ++j )
+              {
+                data_type v( std::abs( g.get_control_point(i,j)(0) ) );
+                if ( v > gmax ) { gmax = v; }
+              }
+            }
+
+            for ( index_type i=0; i<=a.degree_u(); ++i )
+            {
+              for ( index_type j=0; j<=a.degree_v(); ++j )
+              {
+                data_type v( std::abs( a.get_control_point(i,j)(0) ) );
+                if ( v > amax ) { amax = v; }
+              }
+            }
+
+            if ( amax <= static_cast<data_type>(0) )
+            {
+              // Neither derivative goes anywhere; the patch is a point.
+              return true;
+            }
+
+            return gmax <= tol * amax;
+          }
+
           onedbezsurf intaxissurf( const point_type & pt, const index_type & iax ) const
           {
             onedbezsurf retsurf;
