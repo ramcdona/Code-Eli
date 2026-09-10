@@ -400,19 +400,27 @@ namespace eli
 
           void reflect(const point_type &normal)
           {
-            point_type n(normal);
-
-            n.normalize();
-            B=B-2*(B*n.transpose())*n;
-            invalidate_deriv();
+            reflect(normal, static_cast<data_type>(0));
           }
 
           void reflect(const point_type &normal, const data_type &d)
           {
+            // Written a control point at a time for the same reason as rotate.  Reflecting the
+            // whole block took the product of it with the normal, which has a dynamic number of
+            // rows and so lands on the heap, then multiplied that out to another block of the
+            // same shape -- and the offset form built a column of ones as long as the control
+            // polygon purely to subtract a constant.  Each point is three numbers, so none of
+            // that has to leave the stack.
             point_type n(normal);
 
             n.normalize();
-            B=B-2*(B*n.transpose()-d*Eigen::Matrix<data_type, Eigen::Dynamic, 1>::Ones(degree()+1, 1))*n;
+
+            index_type i, deg(degree());
+            for (i=0; i<=deg; ++i)
+            {
+              const point_type p(B.row(i));
+              B.row(i)=p-2*(p.dot(n)-d)*n;
+            }
             invalidate_deriv();
           }
 
