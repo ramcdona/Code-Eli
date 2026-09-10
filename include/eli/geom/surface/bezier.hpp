@@ -338,10 +338,20 @@ namespace eli
 
           void rotate(const rotation_matrix_type &rmat)
           {
-            index_type j, degv(degree_v());
+            // Multiplying a whole block of control points by the rotation aliases, so Eigen
+            // evaluates the product into a temporary -- and the block has a dynamic number of
+            // rows, so that temporary comes off the heap, once per patch every time a surface is
+            // transformed.  A control point is three numbers; taking them one at a time keeps the
+            // temporary a fixed size, which puts it on the stack.
+            index_type i, j, degu(degree_u()), degv(degree_v());
+            const rotation_matrix_type rmatT(rmat.transpose());
             for (j=0; j<=degv; ++j)
             {
-              B_u[j]*=rmat.transpose();
+              for (i=0; i<=degu; ++i)
+              {
+                const point_type p(B_u[j].row(i)*rmatT);
+                B_u[j].row(i)=p;
+              }
             }
             invalidate_deriv();
           }

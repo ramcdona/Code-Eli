@@ -444,7 +444,16 @@ namespace eli
 
           void rotate(const rotation_matrix_type &rmat)
           {
-            B*=rmat.transpose();
+            // Same as the surface: the product aliases and has a dynamic number of rows, so
+            // Eigen puts the temporary on the heap.  One control point at a time keeps it fixed
+            // size and on the stack.
+            index_type i, deg(degree());
+            const rotation_matrix_type rmatT(rmat.transpose());
+            for (i=0; i<=deg; ++i)
+            {
+              const point_type p(B.row(i)*rmatT);
+              B.row(i)=p;
+            }
             invalidate_deriv();
           }
 
