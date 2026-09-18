@@ -102,7 +102,7 @@ namespace eli
           mutable temp_buffer_type temp_v;
 
         public:
-          bezier() : point_data(3, 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( CLOSE_UNKNOWN ), vclose_cache( CLOSE_UNKNOWN )
+          bezier() : point_data(dim__*(1+1)*(1+1), 0), deriv_u( NULL ), deriv_v( NULL ), deriv_u_valid( false ), deriv_v_valid( false ), uclose_cache( CLOSE_UNKNOWN ), vclose_cache( CLOSE_UNKNOWN )
           {
             // set the B_u and B_v maps
             set_Bs(1, 1);
@@ -210,12 +210,9 @@ namespace eli
 
           void resize(const index_type &u_dim, const index_type &v_dim)
           {
-            // Only rebuild the control-point storage and the B_u/B_v maps when something actually
-            // changes; when the surface is already exactly this size they are valid, so resize
-            // becomes just a cache invalidation, which makes reuse of a correctly-sized surface
-            // cheap.  Both the reported degree AND the raw point_data size must match: the default
-            // constructor reports degree (1,1) but sizes point_data for (0,0), so the size check is
-            // needed to force a real resize in that case.
+            // Reuse the storage and the maps when they already describe this size, so resize
+            // becomes just a cache invalidation.  Both the degree and the raw point_data size
+            // have to match, since the maps are only valid over storage of the matching size.
             if ( u_dim != degree_u() || v_dim != degree_v()
                  || static_cast<index_type>( point_data.size() ) != dim__ * ( u_dim + 1 ) * ( v_dim + 1 ) )
             {
