@@ -701,15 +701,44 @@ namespace eli
             typename surface__::data_type g0( r.dot( su ) ), g1( r.dot( sv ) );
             typename surface__::data_type rmag( r.norm() ), sumag( su.norm() ), svmag( sv.norm() );
 
+            // A parameter on its bound with the gradient pushing it outward is held there.  The
+            // answer is a constrained one in that parameter, so its gradient need not vanish, and
+            // the step is the one dimensional Newton step in the other parameter.  Solving the
+            // full system and then clamping would leave the free parameter with a step computed
+            // for a move the bound does not allow.
+            bool ufix = false;
+            bool vfix = false;
+
+            if ( ( u <= umin + edge*( umax - umin ) ) && ( g0 > 0 ) )
+            {
+              ufix = true;
+            }
+            else if ( ( u >= umax - edge*( umax - umin ) ) && ( g0 < 0 ) )
+            {
+              ufix = true;
+            }
+
+            if ( s.open_v() )
+            {
+              if ( ( v <= vmin + edge*( vmax - vmin ) ) && ( g1 > 0 ) )
+              {
+                vfix = true;
+              }
+              else if ( ( v >= vmax - edge*( vmax - vmin ) ) && ( g1 < 0 ) )
+              {
+                vfix = true;
+              }
+            }
+
             bool stationary = true;
 
             if ( rmag > 0 )
             {
-              if ( ( sumag > 0 ) && ( std::abs( g0 ) > edge*sumag*rmag ) )
+              if ( !ufix && ( sumag > 0 ) && ( std::abs( g0 ) > edge*sumag*rmag ) )
               {
                 stationary = false;
               }
-              if ( ( svmag > 0 ) && ( std::abs( g1 ) > edge*svmag*rmag ) )
+              if ( !vfix && ( svmag > 0 ) && ( std::abs( g1 ) > edge*svmag*rmag ) )
               {
                 stationary = false;
               }
@@ -741,6 +770,14 @@ namespace eli
             else if ( ( sumag <= 0 ) && ( h11 > 0 ) )
             {
               dv = -g1/h11;
+            }
+            else if ( ufix && ( h11 > 0 ) )
+            {
+              dv = -g1/h11;
+            }
+            else if ( vfix && ( h00 > 0 ) )
+            {
+              du = -g0/h00;
             }
             else if ( ( det > 0 ) && ( h00 > 0 ) )
             {
