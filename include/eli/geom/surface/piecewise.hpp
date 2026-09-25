@@ -477,18 +477,19 @@ namespace eli
             }
           }
 
+          // One degree per u strip, in parameter order.
           void degree_u( std::vector<index_type> &deg)
           {
-            index_type vk, j;
-            typename keymap_type::const_iterator vit;
+            index_type uk, i;
+            typename keymap_type::const_iterator uit;
 
-            deg.resize( nv );
+            deg.resize( nu );
 
-            for ( j = 0, vit = vkey.key.begin(); vit != vkey.key.end(); ++vit, ++j )
+            for ( i = 0, uit = ukey.key.begin(); uit != ukey.key.end(); ++uit, ++i )
             {
-              vk = vit->second;
+              uk = uit->second;
 
-              deg[j] = patches[0][vk].degree_u();
+              deg[i] = patches[uk][0].degree_u();
             }
           }
 
@@ -522,18 +523,19 @@ namespace eli
             }
           }
 
+          // One degree per v strip, in parameter order.
           void degree_v( std::vector<index_type> &deg)
           {
-            index_type uk, i;
-            typename keymap_type::const_iterator uit;
+            index_type vk, j;
+            typename keymap_type::const_iterator vit;
 
-            deg.resize( nu );
+            deg.resize( nv );
 
-            for ( i = 0, uit = ukey.key.begin(); uit != ukey.key.end(); ++uit, ++i )
+            for ( j = 0, vit = vkey.key.begin(); vit != vkey.key.end(); ++vit, ++j )
             {
-              uk = uit->second;
+              vk = vit->second;
 
-              deg[i] = patches[uk][0].degree_v();
+              deg[j] = patches[0][vk].degree_v();
             }
           }
 

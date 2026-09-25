@@ -68,6 +68,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<float>::trim_v_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::order_match_test);
     }
     void AddTests(const double &)
     {
@@ -90,6 +91,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<double>::trim_v_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::order_match_test);
     }
     void AddTests(const long double &)
     {
@@ -112,6 +114,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test2);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<long double>::trim_v_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::order_match_test);
     }
 
   public:
@@ -2886,6 +2889,106 @@ class piecewise_surface_test_suite : public Test::Suite
         }
 
       }
+    }
+
+    // degree_u reports one degree per u strip and degree_v one per v strip, and order_match_u/v
+    // raise two quilts' strips to their common degree without moving either surface.  The quilt
+    // has more u patches than v patches, so a report with its directions crossed cannot pass.
+    void order_match_test()
+    {
+      surface_type s, s1, s2, s3, s4, s5, s6;
+      piecewise_surface_type ps1, ps2, ps1_orig, diff;
+      index_type i, j, n(3), m(3);
+      point_type pt[3+1][3+1];
+
+      pt[0][0] << -15, 0,  15;
+      pt[1][0] <<  -5, 5,  15;
+      pt[2][0] <<   5, 5,  15;
+      pt[3][0] <<  15, 0,  15;
+      pt[0][1] << -15, 5,   5;
+      pt[1][1] <<  -5, 5,   5;
+      pt[2][1] <<   5, 5,   5;
+      pt[3][1] <<  15, 5,   5;
+      pt[0][2] << -15, 5,  -5;
+      pt[1][2] <<  -5, 5,  -5;
+      pt[2][2] <<   5, 5,  -5;
+      pt[3][2] <<  15, 5,  -5;
+      pt[0][3] << -15, 0, -15;
+      pt[1][3] <<  -5, 5, -15;
+      pt[2][3] <<   5, 5, -15;
+      pt[3][3] <<  15, 0, -15;
+      s.resize(n, m);
+      for (i=0; i<=n; ++i)
+      {
+        for (j=0; j<=m; ++j)
+        {
+          s.set_control_point(pt[i][j], i, j);
+        }
+      }
+
+      // Three patches in u, two in v.
+      ps1.init_uv(3, 2);
+      s.split_v(s1, s2, 0.5);
+      s1.split_u(s3, s4, 0.5);
+      ps1.set(s3, 0, 0);
+      s2.split_u(s5, s6, 0.5);
+      ps1.set(s5, 0, 1);
+      s4.split_u(s1, s2, 0.5);
+      ps1.set(s1, 1, 0);
+      ps1.set(s2, 2, 0);
+      s6.split_u(s1, s2, 0.5);
+      ps1.set(s1, 1, 1);
+      ps1.set(s2, 2, 1);
+
+      // The same surface with its middle u strip and its upper v strip raised.
+      ps2 = ps1;
+      for (j=0; j<2; ++j)
+      {
+        ps2.get_patch(1, j)->promote_u_to(5);
+      }
+      for (i=0; i<3; ++i)
+      {
+        ps2.get_patch(i, 1)->promote_v_to(4);
+      }
+
+      std::vector<index_type> degu, degv;
+      ps2.degree_u(degu);
+      ps2.degree_v(degv);
+      TEST_ASSERT(degu.size()==3);
+      TEST_ASSERT(degu[0]==3 && degu[1]==5 && degu[2]==3);
+      TEST_ASSERT(degv.size()==2);
+      TEST_ASSERT(degv[0]==3 && degv[1]==4);
+
+      ps1_orig = ps1;
+      piecewise_surface_type::order_match_u(ps1, ps2);
+      piecewise_surface_type::order_match_v(ps1, ps2);
+
+      ps1.degree_u(degu);
+      ps1.degree_v(degv);
+      TEST_ASSERT(degu.size()==3);
+      TEST_ASSERT(degu[0]==3 && degu[1]==5 && degu[2]==3);
+      TEST_ASSERT(degv.size()==2);
+      TEST_ASSERT(degv[0]==3 && degv[1]==4);
+
+      data_type eps = 10000*std::numeric_limits<data_type>::epsilon();
+      data_type u, v;
+      for (i=0; i<=12; ++i)
+      {
+        for (j=0; j<=8; ++j)
+        {
+          u = static_cast<data_type>(i)/4;
+          v = static_cast<data_type>(j)/4;
+          TEST_ASSERT((ps1.f(u, v)-ps1_orig.f(u, v)).norm() < eps);
+          TEST_ASSERT((ps1.f(u, v)-ps2.f(u, v)).norm() < eps);
+        }
+      }
+
+      // Matched patch for patch, the two differ by nothing.
+      diff.scaledsum(1, ps1, -1, ps2);
+      typename piecewise_surface_type::bounding_box_type bb;
+      diff.get_bounding_box(bb);
+      TEST_ASSERT(bb.get_min().norm() < eps);
+      TEST_ASSERT(bb.get_max().norm() < eps);
     }
 
     void trim_v_test()
