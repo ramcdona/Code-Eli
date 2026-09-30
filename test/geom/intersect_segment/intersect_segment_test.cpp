@@ -22,6 +22,7 @@
 
 #include "intersect_segment_triangle_test_suite.hpp"
 #include "intersect_segment_surface_test_suite.hpp"
+#include "intersect_surface_surface_test_suite.hpp"
 
 enum TestType {testTypeText, testTypeCompiler, testTypeHTML};
 
@@ -158,6 +159,7 @@ int main(int argc, char *argv[])
     ts.add(std::unique_ptr<Test::Suite>(new intersect_segment_surface_test_suite<float>()));
     ts.add(std::unique_ptr<Test::Suite>(new intersect_segment_surface_test_suite<double>()));
     ts.add(std::unique_ptr<Test::Suite>(new intersect_segment_surface_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new intersect_surface_surface_test_suite<double>()));
 
     //
     // NOTE: End of section that should be changed
