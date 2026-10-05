@@ -53,12 +53,16 @@ namespace eli
 
             if ( !(tt>=pc->get_t0()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance curve g_functor, tt less than minimum.  tt: " << tt << " t0: " << pc->get_t0() << std::endl;
+#endif
               tt=pc->get_t0();
             }
             if ( !(tt<=pc->get_tmax()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance curve g_functor, tt greater than maximum.  tt: " << tt << " tmax: " << pc->get_tmax() << std::endl;
+#endif
               tt=pc->get_tmax();
             }
 

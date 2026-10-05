@@ -57,23 +57,31 @@ namespace eli
 
             if ( !(t1>=pc->get_t0()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Specified thickness curve g_functor, t1 less than minimum.  t1: " << t1 << " t0: " << pc->get_t0() << std::endl;
+#endif
               t1=pc->get_t0();
             }
             if ( !(t1<=pc->get_tmax()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Specified thickness curve g_functor, t1 greater than maximum.  t1: " << t1 << " tmax: " << pc->get_tmax() << std::endl;
+#endif
               t1=pc->get_tmax();
             }
 
             if ( !(t2>=pc->get_t0()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Specified thickness curve g_functor, t2 less than minimum.  t2: " << t2 << " t0: " << pc->get_t0() << std::endl;
+#endif
               t2=pc->get_t0();
             }
             if ( !(t2<=pc->get_tmax()) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Specified thickness curve g_functor, t2 greater than maximum.  t2: " << t2 << " tmax: " << pc->get_tmax() << std::endl;
+#endif
               t2=pc->get_tmax();
             }
 

@@ -56,34 +56,46 @@ namespace eli
 
             if ( !(r>=rmin) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, r less than minimum.  r: " << r << " rmin: " << rmin << std::endl;
+#endif
               r=rmin;
             }
             if ( !(r<=rmax) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, r greater than maximum.  r: " << r << " ramx: " << rmax << std::endl;
+#endif
               r=rmax;
             }
 
             if ( !(s>=smin) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, s less than minimum.  s: " << s << " smin: " << smin << std::endl;
+#endif
               s=smin;
             }
             if ( !(s<=smax) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, s greater than maximum.  s: " << s << " smax: " << smax << std::endl;
+#endif
               s=smax;
             }
 
             if ( !(t>=tmin) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, t less than minimum.  t: " << t << " tmin: " << tmin << std::endl;
+#endif
               t=tmin;
             }
             if ( !(t<=tmax) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "rst_g_functor, t greater than maximum.  t: " << t << " tmax: " << tmax << std::endl;
+#endif
               t=tmax;
             }
             typename surface__::point_type tmp;

@@ -307,23 +307,31 @@ namespace eli
 
             if ( !(uu>=umin) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance surface g_functor, u less than minimum.  uu: " << uu << " umin: " << umin << std::endl;
+#endif
               uu=umin;
             }
             if ( !(uu<=umax) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance surface g_functor, u greater than maximum.  uu: " << uu << " uamx: " << umax << std::endl;
+#endif
               uu=umax;
             }
 
             if ( !(vv>=vmin) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance surface g_functor, v less than minimum.  vv: " << vv << " vmin: " << vmin << std::endl;
+#endif
               vv=vmin;
             }
             if ( !(vv<=vmax) )
             {
+#ifdef ELI_DEBUG_CLAMP
               std::cout << "Minimum distance surface g_functor, v greater than maximum.  vv: " << vv << " vmax: " << vmax << std::endl;
+#endif
               vv=vmax;
             }
 
