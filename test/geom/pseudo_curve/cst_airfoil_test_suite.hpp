@@ -54,6 +54,7 @@ class cst_airfoil_test_suite : public Test::Suite
       TEST_ADD(cst_airfoil_test_suite<float>::assignment_test);
       TEST_ADD(cst_airfoil_test_suite<float>::evaluation_test);
       TEST_ADD(cst_airfoil_test_suite<float>::derivative_test);
+      TEST_ADD(cst_airfoil_test_suite<float>::class_function_test);
       TEST_ADD(cst_airfoil_test_suite<float>::promotion_test);
       TEST_ADD(cst_airfoil_test_suite<float>::demotion_test);
     }
@@ -63,6 +64,7 @@ class cst_airfoil_test_suite : public Test::Suite
       TEST_ADD(cst_airfoil_test_suite<double>::assignment_test);
       TEST_ADD(cst_airfoil_test_suite<double>::evaluation_test);
       TEST_ADD(cst_airfoil_test_suite<double>::derivative_test);
+      TEST_ADD(cst_airfoil_test_suite<double>::class_function_test);
       TEST_ADD(cst_airfoil_test_suite<double>::promotion_test);
       TEST_ADD(cst_airfoil_test_suite<double>::demotion_test);
     }
@@ -72,6 +74,7 @@ class cst_airfoil_test_suite : public Test::Suite
       TEST_ADD(cst_airfoil_test_suite<long double>::assignment_test);
       TEST_ADD(cst_airfoil_test_suite<long double>::evaluation_test);
       TEST_ADD(cst_airfoil_test_suite<long double>::derivative_test);
+      TEST_ADD(cst_airfoil_test_suite<long double>::class_function_test);
       TEST_ADD(cst_airfoil_test_suite<long double>::promotion_test);
       TEST_ADD(cst_airfoil_test_suite<long double>::demotion_test);
     }
@@ -335,6 +338,135 @@ class cst_airfoil_test_suite : public Test::Suite
         {
           TEST_ASSERT(tol.approximately_equal(xp, xp_ref));
           TEST_ASSERT((xpp-xpp_ref).norm()<8e-5);
+        }
+      }
+    }
+
+    // Class function t^N1 (1 - t)^N2 and its derivatives, with s = 1 - t carried apart so the
+    // t = 1 limit can be taken as s -> 0.
+    static long double class_pow(long double x, long double e)
+    {
+      if (e==0)
+      {
+        return 1;
+      }
+      return std::pow(x, e);
+    }
+
+    static long double class_ref(int d, long double t, long double s, long double N1, long double N2)
+    {
+      long double r(0);
+
+      if (d==0)
+      {
+        r=class_pow(t, N1)*class_pow(s, N2);
+      }
+      else if (d==1)
+      {
+        if (N1!=0)
+        {
+          r+=N1*class_pow(t, N1-1)*class_pow(s, N2);
+        }
+        if (N2!=0)
+        {
+          r-=N2*class_pow(t, N1)*class_pow(s, N2-1);
+        }
+      }
+      else
+      {
+        if ((N1!=0) && (N1!=1))
+        {
+          r+=N1*(N1-1)*class_pow(t, N1-2)*class_pow(s, N2);
+        }
+        if ((N1!=0) && (N2!=0))
+        {
+          r-=2*N1*N2*class_pow(t, N1-1)*class_pow(s, N2-1);
+        }
+        if ((N2!=0) && (N2!=1))
+        {
+          r+=N2*(N2-1)*class_pow(t, N1)*class_pow(s, N2-2);
+        }
+      }
+
+      return r;
+    }
+
+    bool class_close(const data_type &x, long double r, long double rel)
+    {
+      const data_type max_val(std::numeric_limits<data_type>::max());
+
+      // An infinite limit is returned as +-max.
+      if (r>1e12)
+      {
+        return x==max_val;
+      }
+      if (r<-1e12)
+      {
+        return x==-max_val;
+      }
+
+      return std::abs(static_cast<long double>(x)-r)<=rel*std::max(static_cast<long double>(1), std::abs(r));
+    }
+
+    void class_function_test()
+    {
+      typedef eli::geom::curve::pseudo::cst_base<data_type> cst_base_type;
+      typedef typename cst_base_type::control_point_type base_control_point_type;
+
+      const data_type N[]={static_cast<data_type>(0), static_cast<data_type>(0.5), static_cast<data_type>(1),
+                           static_cast<data_type>(0.25), static_cast<data_type>(0.75), static_cast<data_type>(1.75),
+                           static_cast<data_type>(2), static_cast<data_type>(3)};
+      const data_type t[]={static_cast<data_type>(0.05), static_cast<data_type>(0.25), static_cast<data_type>(0.5),
+                           static_cast<data_type>(0.75), static_cast<data_type>(0.95)};
+      const long double tiny(1e-60L);
+      const long double rel(1e3*std::numeric_limits<data_type>::epsilon());
+      base_control_point_type one;
+      point_type pt;
+      size_t i, j, k;
+
+      one << static_cast<data_type>(1);
+
+      for (i=0; i<sizeof(N)/sizeof(N[0]); ++i)
+      {
+        for (j=0; j<sizeof(N)/sizeof(N[0]); ++j)
+        {
+          // A degree zero shape function of one leaves the class function alone.
+          cst_base_type cst(N[i], N[j], 0, true);
+          cst.set_control_point(one, 0);
+
+          for (k=0; k<sizeof(t)/sizeof(t[0]); ++k)
+          {
+            long double tt(t[k]), ss(1-tt);
+
+            pt=cst.f(t[k]);
+            TEST_ASSERT(class_close(pt(1), class_ref(0, tt, ss, N[i], N[j]), rel));
+            pt=cst.fp(t[k]);
+            TEST_ASSERT(class_close(pt(1), class_ref(1, tt, ss, N[i], N[j]), rel));
+            pt=cst.fpp(t[k]);
+            TEST_ASSERT(class_close(pt(1), class_ref(2, tt, ss, N[i], N[j]), rel));
+          }
+
+          // The ends take the limits.
+          pt=cst.f(0);
+          TEST_ASSERT(class_close(pt(1), class_ref(0, tiny, 1, N[i], N[j]), rel));
+          pt=cst.f(1);
+          TEST_ASSERT(class_close(pt(1), class_ref(0, 1, tiny, N[i], N[j]), rel));
+          pt=cst.fp(0);
+          TEST_ASSERT(class_close(pt(1), class_ref(1, tiny, 1, N[i], N[j]), rel));
+          pt=cst.fp(1);
+          TEST_ASSERT(class_close(pt(1), class_ref(1, 1, tiny, N[i], N[j]), rel));
+          // fpp adds twice the slope times the shape function's slope, so an end with an
+          // infinite slope is left out.
+          if (std::abs(class_ref(1, tiny, 1, N[i], N[j]))<1e12)
+          {
+            pt=cst.fpp(0);
+            TEST_ASSERT(class_close(pt(1), class_ref(2, tiny, 1, N[i], N[j]), rel));
+          }
+          if (std::abs(class_ref(1, 1, tiny, N[i], N[j]))<1e12)
+          {
+            pt=cst.fpp(1);
+            TEST_ASSERT(class_close(pt(1), class_ref(2, 1, tiny, N[i], N[j]), rel));
+          }
         }
       }
     }
