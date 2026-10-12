@@ -295,7 +295,6 @@ namespace eli
             data_type class_fp(const data_type &t) const
             {
               const data_type one_half(static_cast<data_type>(0.5)), three_half(static_cast<data_type>(1.5));
-              const data_type one_quarter(static_cast<data_type>(0.25));
               const data_type max_val(std::numeric_limits<data_type>::max());
 
               // front is special
@@ -417,7 +416,7 @@ namespace eli
               {
                 if (N2==0)
                 {
-                  return 1;
+                  return 0;
                 }
                 if (N2==1)
                 {
@@ -425,10 +424,10 @@ namespace eli
                 }
                 if (N2==one_half)
                 {
-                  return one_half/std::sqrt(1-t);
+                  return -one_half/std::sqrt(1-t);
                 }
 
-                return N2*std::pow(1-t, N2-1);
+                return -N2*std::pow(1-t, N2-1);
               }
               if (N1==1)
               {
@@ -449,7 +448,7 @@ namespace eli
               {
                 if (N2==0)
                 {
-                  return -one_quarter/(t*std::sqrt(t));
+                  return one_half/std::sqrt(t);
                 }
                 if (N2==1)
                 {
@@ -460,7 +459,7 @@ namespace eli
                   return one_half*(1-2*t)/std::sqrt(t*(1-t));
                 }
 
-                return one_half*std::sqrt(t)*std::pow(1-t, N2-1)*(1-(1+2*N2)*t);
+                return one_half*std::pow(1-t, N2-1)*(1-(1+2*N2)*t)/std::sqrt(t);
               }
               if (N2==0)
               {
