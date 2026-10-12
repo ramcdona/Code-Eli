@@ -271,7 +271,7 @@ namespace eli
                 }
                 if (N2==one_half)
                 {
-                  return std::sqrt(t*(t-1));
+                  return std::sqrt(t*(1-t));
                 }
 
                 return std::sqrt(t)*std::pow(1-t, N2);
