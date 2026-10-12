@@ -219,8 +219,22 @@ namespace eli
               const data_type one_half(static_cast<data_type>(0.5));
 
               // front and back are special
-              if ((t==0) || (t==1))
+              if (t==0)
               {
+                if (N1==0)
+                {
+                  return 1;
+                }
+
+                return 0;
+              }
+              if (t==1)
+              {
+                if (N2==0)
+                {
+                  return 1;
+                }
+
                 return 0;
               }
 
@@ -302,113 +316,37 @@ namespace eli
               {
                 if (N1==0)
                 {
-                  if (N2==0)
-                  {
-                    return 0;
-                  }
-                  if (N2==1)
-                  {
-                    return -N2;
-                  }
-                  if (N2==one_half)
-                  {
-                    return N2;
-                  }
-
-                  return N2;
+                  return -N2;
                 }
                 if (N1==1)
                 {
-                  return N1;
+                  return 1;
                 }
-                if (N1==one_half)
-                {
-                  return max_val;
-                }
-                if (N2==0)
-                {
-                  return max_val;
-                }
-                if (N2==1)
-                {
-                  return max_val;
-                }
-                if (N2==one_half)
+                if (N1<1)
                 {
                   return max_val;
                 }
 
-                return max_val;
+                return 0;
               }
 
               // back is special
               if (t==1)
               {
-                if (N1==0)
-                {
-                  if (N2==0)
-                  {
-                    return N2;
-                  }
-                  if (N2==1)
-                  {
-                    return -N2;
-                  }
-                  if (N2==one_half)
-                  {
-                    return max_val;
-                  }
-
-                  return max_val;
-                }
-                if (N1==1)
-                {
-                  if (N2==0)
-                  {
-                    return N1;
-                  }
-                  if (N2==1)
-                  {
-                    return -N1;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -max_val;
-                  }
-
-                  return -max_val;
-                }
-                if (N1==one_half)
-                {
-                  if (N2==0)
-                  {
-                    return N1;
-                  }
-                  if (N2==1)
-                  {
-                    return -N2;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -max_val;
-                  }
-
-                  return -max_val;
-                }
                 if (N2==0)
                 {
                   return N1;
                 }
                 if (N2==1)
                 {
-                  return -N2;
+                  return -1;
                 }
-                if (N2==one_half)
+                if (N2<1)
                 {
                   return -max_val;
                 }
 
-                return -max_val;
+                return 0;
               }
 
               // special class functions
@@ -488,126 +426,53 @@ namespace eli
               {
                 if (N1==0)
                 {
-                  if (N2==0)
-                  {
-                    return 0;
-                  }
-                  if (N2==1)
-                  {
-                    return 0;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -one_quarter;
-                  }
-
                   return N2*(N2-1);
                 }
                 if (N1==1)
                 {
-                  if (N2==0)
-                  {
-                    return 0;
-                  }
-                  if (N2==1)
-                  {
-                    return -2;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -1;
-                  }
-
                   return -2*N2;
                 }
-                if (N1==one_half)
+                if (N1<1)
                 {
                   return -max_val;
                 }
-                if (N2==0)
+                if (N1<2)
                 {
-                  return -max_val;
+                  return max_val;
                 }
-                if (N2==1)
+                if (N1==2)
                 {
-                  return -max_val;
-                }
-                if (N2==one_half)
-                {
-                  return -max_val;
+                  return 2;
                 }
 
-                return -max_val;
+                return 0;
               }
 
               // back is special
               if (t==1)
               {
-                if (N1==0)
-                {
-                  if (N2==0)
-                  {
-                    return 0;
-                  }
-                  if (N2==1)
-                  {
-                    return 0;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -max_val;
-                  }
-
-                  return -max_val;
-                }
-                if (N1==1)
-                {
-                  if (N2==0)
-                  {
-                    return 0;
-                  }
-                  if (N2==1)
-                  {
-                    return -2;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -max_val;
-                  }
-
-                  return -max_val;
-                }
-                if (N1==one_half)
-                {
-                  if (N2==0)
-                  {
-                    return -one_quarter;
-                  }
-                  if (N2==1)
-                  {
-                    return -1;
-                  }
-                  if (N2==one_half)
-                  {
-                    return -max_val;
-                  }
-
-                  return -max_val;
-                }
                 if (N2==0)
                 {
-                  return N2*(N2-1);
+                  return N1*(N1-1);
                 }
                 if (N2==1)
                 {
                   return -2*N1;
                 }
-                if (N2==one_half)
+                if (N2<1)
                 {
                   return -max_val;
                 }
+                if (N2<2)
+                {
+                  return max_val;
+                }
+                if (N2==2)
+                {
+                  return 2;
+                }
 
-                return -max_val;
+                return 0;
               }
 
               // special class functions
