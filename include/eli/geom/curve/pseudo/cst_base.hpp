@@ -643,7 +643,7 @@ namespace eli
                   return (three_quarter*t-1)/((1-t)*std::sqrt(1-t));
                 }
 
-                return std::pow(1-t, N2-2)*(N2*((N2-1)*t-2));
+                return std::pow(1-t, N2-2)*(N2*((N2+1)*t-2));
               }
               if (N1==one_half)
               {
@@ -661,7 +661,7 @@ namespace eli
                   return -one_quarter/(tmp*std::sqrt(tmp));
                 }
 
-                return one_quarter*std::pow(1-t, N2-2)*((2*N2-1)*t*((2*N2-1)*t-2)-1)/(t*std::sqrt(t));
+                return one_quarter*std::pow(1-t, N2-2)*((2*N2-1)*t*((2*N2+1)*t-2)-1)/(t*std::sqrt(t));
               }
               if (N2==0)
               {
@@ -677,7 +677,7 @@ namespace eli
                 return one_quarter*(((4*N12-1)*t+4*(N1-2*N12))*t+4*(N12-N1))*std::pow(t, N1-2)/((1-t)*std::sqrt(1-t));
               }
 
-              return (t*(t*(N1*(1-N1)+N2*(1-N2))+2*N1*(1-(N1+N2)))+N1*(1-N1))*std::pow(t, N1-2)*std::pow(1-t, N2-2);
+              return (t*(t*(N1+N2)*(N1+N2-1)+2*N1*(1-(N1+N2)))+N1*(N1-1))*std::pow(t, N1-2)*std::pow(1-t, N2-2);
             }
         };
       }
