@@ -24,6 +24,7 @@
 #include "piecewise_general_skinning_surface_creator_test_suite.hpp"  // piecewise_general_skinning_surface_creator_test_suite
 #include "piecewise_capped_surface_creator_test_suite.hpp"            // piecewise_capped_surface_creator_test_suite
 #include "piecewise_uniform_skinning_surface_creator_test_suite.hpp"  // piecewise_uniform_skinning_surface_creator_test_suite
+#include "piecewise_cubic_spline_skinning_surface_creator_test_suite.hpp"  // piecewise_cubic_spline_skinning_surface_creator_test_suite
 
 enum TestType {testTypeText, testTypeCompiler, testTypeHTML};
 
@@ -166,6 +167,9 @@ int main(int argc, char *argv[])
     ts.add(std::unique_ptr<Test::Suite>(new piecewise_uniform_skinning_surface_creator_test_suite<float>()));
     ts.add(std::unique_ptr<Test::Suite>(new piecewise_uniform_skinning_surface_creator_test_suite<double>()));
     ts.add(std::unique_ptr<Test::Suite>(new piecewise_uniform_skinning_surface_creator_test_suite<long double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new piecewise_cubic_spline_skinning_surface_creator_test_suite<float>()));
+    ts.add(std::unique_ptr<Test::Suite>(new piecewise_cubic_spline_skinning_surface_creator_test_suite<double>()));
+    ts.add(std::unique_ptr<Test::Suite>(new piecewise_cubic_spline_skinning_surface_creator_test_suite<long double>()));
 
     //
     // NOTE: End of section that should be changed

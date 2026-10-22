@@ -228,12 +228,18 @@ namespace eli
               uvalvec[u+1] = uvalvec[u] + this->get_segment_du( u );
             }
 
+            // Each discontinuity is the first rib at or past it, within tolerance, since the
+            // rib parameters are sums of the differences and can round either side of it.
             u = 0;
             for ( i = 0; i < tdisc.size(); i++ )
             {
-              while ( u <= nu && uvalvec[u] < tdisc[i] )
+              while ( u < nu && tol.approximately_less_than( uvalvec[u], tdisc[i] ) )
               {
                 u++;
+              }
+              if ( u > nu )
+              {
+                u = nu;
               }
               idisc[i] = u;
               u++;
