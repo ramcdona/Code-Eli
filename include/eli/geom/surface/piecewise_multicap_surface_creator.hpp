@@ -1692,7 +1692,9 @@ namespace eli
             return true;
           }
 
-          virtual bool prep() const
+          // Copy the surface, and split and promote it so the two halves of the edge to cap match segment
+          // for segment.
+          virtual bool prep_surface() const
           {
             typedef typename piecewise_curve_type::curve_type curve_type;
             typedef typename piecewise_surface_type::surface_type surface_type;
@@ -1864,6 +1866,16 @@ namespace eli
                 assert(edge_to_cap==CAP_NONE);
                 return false;
               }
+            }
+
+            return true;
+          }
+
+          virtual bool prep() const
+          {
+            if ( !prep_surface() )
+            {
+              return false;
             }
 
             // extract the curve corresponding to the edge of surface wanting to cap
