@@ -195,6 +195,25 @@ struct my_coupled_nonlinear_system_functor_derivative
 };
 
 template<typename data__>
+Eigen::Matrix<data__, 3, 3> my_singular_linear_system_function_derivative(const Eigen::Matrix<data__, 3, 1> &)
+{
+  Eigen::Matrix<data__, 3, 3> rtn_mat;
+
+  // Singular, and no diagonal entry is smaller than one.
+  rtn_mat << 2, 2, 0,
+             2, 2, 0,
+             0, 0, 3;
+
+  return rtn_mat;
+}
+
+template<typename data__>
+Eigen::Matrix<data__, 3, 1> my_singular_linear_system_function(const Eigen::Matrix<data__, 3, 1> &x)
+{
+  return my_singular_linear_system_function_derivative(x)*x;
+}
+
+template<typename data__>
 class nls_test_suite : public Test::Suite
 {
   protected:
@@ -206,6 +225,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<float>::newton_raphson_constrained_method_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_constrained_system_method_test);
+      TEST_ADD(nls_test_suite<float>::newton_raphson_singular_system_method_test);
     }
 
     void AddTests(const double &)
@@ -216,6 +236,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<double>::newton_raphson_constrained_method_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_constrained_system_method_test);
+      TEST_ADD(nls_test_suite<double>::newton_raphson_singular_system_method_test);
     }
 
     void AddTests(const long double &)
@@ -226,6 +247,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<long double>::newton_raphson_constrained_method_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_constrained_system_method_test);
+      TEST_ADD(nls_test_suite<long double>::newton_raphson_singular_system_method_test);
     }
 
   public:
@@ -551,6 +573,29 @@ class nls_test_suite : public Test::Suite
       TEST_ASSERT(stat==nrcs_type::converged);
       TEST_ASSERT(nrcm.get_iteration_count()<nrcm.get_max_iteration());
       TEST_ASSERT((x_exact-root).norm()<delta);
+    }
+
+    void newton_raphson_singular_system_method_test()
+    {
+      typedef eli::mutil::nls::newton_raphson_system_method<data__, 3, 1> nr_system;
+
+      data__ delta(std::sqrt(std::numeric_limits<data__>::epsilon()));
+      nr_system nrm;
+      typename nr_system::solution_matrix rhs, root, x0, x_exact;
+      int stat;
+
+      nrm.set_absolute_f_tolerance(delta);
+      nrm.set_max_iteration(200);
+      nrm.set_norm_type(nr_system::max_norm);
+
+      x_exact << 2, 3, 1;
+      rhs = my_singular_linear_system_function<data__>(x_exact);
+      x0 << 1.5, 2.5, 1.5;
+      nrm.set_initial_guess(x0);
+
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_singular_linear_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_singular_linear_system_function_derivative<data__>), rhs);
+      TEST_ASSERT(stat==nr_system::converged);
+      TEST_ASSERT((my_singular_linear_system_function<data__>(root)-rhs).norm()<=2*delta);
     }
 };
 

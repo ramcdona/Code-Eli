@@ -126,12 +126,12 @@ namespace eli
                   size_t itries = 0;
                   while ( itries < N__ && !invertible )
                   {
-                    size_t ismall = -1;
-                    data__ fsmall = 1;
+                    size_t ismall = 0;
+                    data__ fsmall = std::numeric_limits<data__>::max();
 
                     for (size_t i=0; i<N__; ++i)
                     {
-                      if ( std::abs( fpx( i, i ) ) < fsmall )
+                      if ( !zerodx[i] && std::abs( fpx( i, i ) ) < fsmall )
                       {
                         fsmall = std::abs( fpx ( i, i ) );
                         ismall = i;
