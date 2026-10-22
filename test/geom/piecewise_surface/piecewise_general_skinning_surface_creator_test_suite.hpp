@@ -70,6 +70,7 @@ class piecewise_general_skinning_surface_creator_test_suite : public Test::Suite
       TEST_ADD(piecewise_general_skinning_surface_creator_test_suite<double>::create_multirib_surface_test);
       TEST_ADD(piecewise_general_skinning_surface_creator_test_suite<double>::create_multirib_coupled_surface_test);
       TEST_ADD(piecewise_general_skinning_surface_creator_test_suite<double>::create_max_degree_surface_test);
+      TEST_ADD(piecewise_general_skinning_surface_creator_test_suite<double>::near_joint_surface_test);
     }
     void AddTests(const long double &)
     {
@@ -5246,6 +5247,58 @@ class piecewise_general_skinning_surface_creator_test_suite : public Test::Suite
 //          eli::test::octave_print(1, ribs[2].get_f(), "rib2", true);
 //          eli::test::octave_finish(1, false);
 //        }
+      }
+    }
+
+    // Two straight segments at height y along x, joined at t = tj, on [0, 2].
+    piecewise_curve_type make_joined_rib(const data_type &y, const data_type &tj)
+    {
+      piecewise_curve_type pc;
+      typename piecewise_curve_type::curve_type c(1);
+      typename piecewise_curve_type::curve_type::control_point_type cp;
+
+      pc.set_t0(0);
+      cp << 0, y, 0;
+      c.set_control_point(cp, 0);
+      cp << tj, y, 0;
+      c.set_control_point(cp, 1);
+      pc.push_back(c, tj);
+      cp << tj, y, 0;
+      c.set_control_point(cp, 0);
+      cp << 2, y, 0;
+      c.set_control_point(cp, 1);
+      pc.push_back(c, 2-tj);
+      return pc;
+    }
+
+    // Ribs whose joints differ by less than the tolerance the joints are merged by.  The
+    // surface has one joint there, and every rib is split to match it.
+    void near_joint_surface_test()
+    {
+      std::vector<rib_data_type> ribs(2);
+      std::vector<index_type> maxd(1, 1);
+      general_creator_type gc;
+      piecewise_surface_type ps;
+
+      ribs[0].set_f(make_joined_rib(0, static_cast<data_type>(1+1e-9)));
+      ribs[1].set_f(make_joined_rib(1, 1));
+
+      TEST_ASSERT(gc.set_conditions(ribs, maxd, false));
+      gc.set_u0(0);
+      gc.set_segment_du(1, 0);
+      TEST_ASSERT(gc.create(ps));
+      TEST_ASSERT(ps.number_v_patches()==2);
+
+      // The surface passes through both ribs on both sides of the joint.
+      data_type v[2] = {static_cast<data_type>(0.5), static_cast<data_type>(1.5)};
+      for (index_type j=0; j<2; ++j)
+      {
+        for (index_type i=0; i<2; ++i)
+        {
+          point_type p(ps.f(static_cast<data_type>(i), v[j]));
+          TEST_ASSERT(tol.approximately_equal(p.y(), static_cast<data_type>(i)));
+          TEST_ASSERT(std::abs(p.x()-v[j])<std::sqrt(std::numeric_limits<data_type>::epsilon()));
+        }
       }
     }
 };

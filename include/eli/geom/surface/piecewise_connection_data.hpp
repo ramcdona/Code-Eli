@@ -335,23 +335,23 @@ namespace eli
             {
               if (use_f())
               {
-                f.split(*it);
+                split_at_joint(f, *it);
               }
               if (use_left_fp())
               {
-                fp_left.split(*it);
+                split_at_joint(fp_left, *it);
               }
               if (use_right_fp())
               {
-                fp_right.split(*it);
+                split_at_joint(fp_right, *it);
               }
               if (use_left_fpp())
               {
-                fpp_left.split(*it);
+                split_at_joint(fpp_left, *it);
               }
               if (use_right_fpp())
               {
-                fpp_right.split(*it);
+                split_at_joint(fpp_right, *it);
               }
             }
 
@@ -760,6 +760,25 @@ namespace eli
           }
 
         private:
+          // Split c at t unless one of its joints is already there, by the same tolerance
+          // get_joints merges joints with.
+          static void split_at_joint(curve_type &c, const data_type &t)
+          {
+            tolerance_type tol;
+            std::vector<data_type> pmap;
+            c.get_parameters(std::back_inserter(pmap));
+
+            for (size_t k=0; k<pmap.size(); ++k)
+            {
+              if (tol.approximately_equal(pmap[k], t))
+              {
+                return;
+              }
+            }
+
+            c.split(t);
+          }
+
           curve_type f;
           curve_type fp_left, fp_right;
           curve_type fpp_left, fpp_right;
