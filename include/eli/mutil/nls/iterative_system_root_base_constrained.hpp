@@ -170,6 +170,22 @@ namespace eli
           }
 
         protected:
+          // Hold each bounded component of x on its interval.  The negated tests send NaN to the bound as well.
+          void keep_within_bounds(typename iterative_system_root_base<data_type, N__, NSOL__>::solution_matrix &x) const
+          {
+            for (size_t i=0; i<N__; ++i)
+            {
+              if ( (xmin_cond[i]!=IRC_NOT_USED) && !(x(i)>=xmin[i]) )
+              {
+                x(i)=xmin[i];
+              }
+              if ( (xmax_cond[i]!=IRC_NOT_USED) && !(x(i)<=xmax[i]) )
+              {
+                x(i)=xmax[i];
+              }
+            }
+          }
+
           virtual typename iterative_system_root_base<data_type, N__, NSOL__>::solution_matrix
                   calculate_delta_factor(const typename iterative_system_root_base<data_type, N__, NSOL__>::solution_matrix &x,
                                          const typename iterative_system_root_base<data_type, N__, NSOL__>::solution_matrix &dx) const

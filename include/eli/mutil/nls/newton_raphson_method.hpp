@@ -104,6 +104,9 @@ namespace eli
 
               dx=this->calculate_delta_factor(x, -eval/fpx);
               x+=dx;
+
+              // A step cut to a bound can round past it.
+              this->keep_within_bounds(x);
               ffprime( fx, fpx, x );
               eval=fx-f0;
               eval_abs=std::abs(eval);

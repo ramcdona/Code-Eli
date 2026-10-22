@@ -213,6 +213,74 @@ Eigen::Matrix<data__, 3, 1> my_singular_linear_system_function(const Eigen::Matr
   return my_singular_linear_system_function_derivative(x)*x;
 }
 
+// Identity function that records the smallest argument it is evaluated at.
+template<typename data__>
+struct bound_record_functor
+{
+    data__ *xlow;
+
+    data__ operator()(const data__ &x) const
+    {
+      if (x<*xlow)
+      {
+        *xlow=x;
+      }
+      return x;
+    }
+};
+
+template<typename data__>
+struct bound_record_derivative
+{
+    data__ operator()(const data__ &) const
+    {
+      return 1;
+    }
+};
+
+template<typename data__>
+struct bound_record_system_functor
+{
+    data__ *xlow;
+
+    Eigen::Matrix<data__, 2, 1> operator()(const Eigen::Matrix<data__, 2, 1> &x) const
+    {
+      if (x(0)<*xlow)
+      {
+        *xlow=x(0);
+      }
+      return x;
+    }
+};
+
+template<typename data__>
+struct bound_record_system_derivative
+{
+    Eigen::Matrix<data__, 2, 2> operator()(const Eigen::Matrix<data__, 2, 1> &) const
+    {
+      return Eigen::Matrix<data__, 2, 2>::Identity();
+    }
+};
+
+// Find a start x above lo for which x+(lo-x) rounds below lo.
+template<typename data__>
+bool find_bound_round_start(data__ &x, const data__ &lo)
+{
+  for (int i=1; i<200; ++i)
+  {
+    for (int k=1; k<40; ++k)
+    {
+      data__ xt(lo+std::ldexp(static_cast<data__>(i), -k));
+      if (xt+(lo-xt)<lo)
+      {
+        x=xt;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 template<typename data__>
 class nls_test_suite : public Test::Suite
 {
@@ -226,6 +294,8 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<float>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_constrained_system_method_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_singular_system_method_test);
+      TEST_ADD(nls_test_suite<float>::newton_raphson_bound_round_test);
+      TEST_ADD(nls_test_suite<float>::newton_raphson_system_bound_round_test);
     }
 
     void AddTests(const double &)
@@ -237,6 +307,8 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<double>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_constrained_system_method_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_singular_system_method_test);
+      TEST_ADD(nls_test_suite<double>::newton_raphson_bound_round_test);
+      TEST_ADD(nls_test_suite<double>::newton_raphson_system_bound_round_test);
     }
 
     void AddTests(const long double &)
@@ -248,6 +320,8 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<long double>::newton_raphson_system_method_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_constrained_system_method_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_singular_system_method_test);
+      TEST_ADD(nls_test_suite<long double>::newton_raphson_bound_round_test);
+      TEST_ADD(nls_test_suite<long double>::newton_raphson_system_bound_round_test);
     }
 
   public:
@@ -596,6 +670,61 @@ class nls_test_suite : public Test::Suite
       stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_singular_linear_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_singular_linear_system_function_derivative<data__>), rhs);
       TEST_ASSERT(stat==nr_system::converged);
       TEST_ASSERT((my_singular_linear_system_function<data__>(root)-rhs).norm()<=2*delta);
+    }
+
+    // Steps toward a root below the lower bound from a start whose cut step rounds past the bound.
+    void newton_raphson_bound_round_test()
+    {
+      typedef eli::mutil::nls::newton_raphson_method<data__> nrcm_type;
+      data__ lo(static_cast<data__>(0.1)), x0(0), root, xlow;
+      nrcm_type nrcm;
+      bound_record_functor<data__> g;
+      bound_record_derivative<data__> gp;
+
+      TEST_ASSERT(find_bound_round_start(x0, lo));
+
+      g.xlow=&xlow;
+      xlow=x0;
+
+      nrcm.set_absolute_f_tolerance(std::sqrt(std::numeric_limits<data__>::epsilon()));
+      nrcm.set_max_iteration(20);
+      nrcm.set_lower_condition(lo, nrcm_type::IRC_EXCLUSIVE);
+      nrcm.set_upper_condition(lo+4, nrcm_type::IRC_EXCLUSIVE);
+      nrcm.set_initial_guess(x0);
+
+      nrcm.find_root(root, g, gp, lo-1);
+      TEST_ASSERT(xlow>=lo);
+      TEST_ASSERT(root>=lo);
+    }
+
+    // The same, for one component of a system.
+    void newton_raphson_system_bound_round_test()
+    {
+      typedef eli::mutil::nls::newton_raphson_system_method<data__, 2, 1> nrcs_type;
+      data__ lo(static_cast<data__>(0.1)), xs(0), xlow;
+      nrcs_type nrcm;
+      typename nrcs_type::solution_matrix rhs, root, x0;
+      bound_record_system_functor<data__> g;
+      bound_record_system_derivative<data__> gp;
+
+      TEST_ASSERT(find_bound_round_start(xs, lo));
+
+      g.xlow=&xlow;
+      xlow=xs;
+
+      nrcm.set_absolute_f_tolerance(std::sqrt(std::numeric_limits<data__>::epsilon()));
+      nrcm.set_max_iteration(20);
+      nrcm.set_norm_type(nrcs_type::max_norm);
+      nrcm.set_lower_condition(0, lo, nrcs_type::IRC_EXCLUSIVE);
+      nrcm.set_upper_condition(0, lo+4, nrcs_type::IRC_EXCLUSIVE);
+
+      x0 << xs, 1;
+      rhs << lo-1, 1;
+      nrcm.set_initial_guess(x0);
+
+      nrcm.find_root(root, g, gp, rhs);
+      TEST_ASSERT(xlow>=lo);
+      TEST_ASSERT(root(0)>=lo);
     }
 };
 

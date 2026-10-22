@@ -111,6 +111,19 @@ namespace eli
           }
 
         protected:
+          // Hold x on its interval.  The negated tests send NaN to the bound as well.
+          void keep_within_bounds(data_type &x) const
+          {
+            if ( (xmin_cond!=IRC_NOT_USED) && !(x>=xmin) )
+            {
+              x=xmin;
+            }
+            if ( (xmax_cond!=IRC_NOT_USED) && !(x<=xmax) )
+            {
+              x=xmax;
+            }
+          }
+
           virtual data_type calculate_delta_factor(const data_type &x, const data_type &dx) const
           {
             data_type xnew(x+dx);

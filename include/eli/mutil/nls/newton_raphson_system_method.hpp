@@ -172,6 +172,9 @@ namespace eli
 
               dx=this->calculate_delta_factor(x, dx);
               x+=dx;
+
+              // A step cut to a bound can round past it.
+              this->keep_within_bounds(x);
               ffprime( fx, fpx, x );
               eval1=fx-f0;
               abs_tol_norm=this->calculate_norm(eval1);
@@ -319,6 +322,9 @@ namespace eli
 
                   dx = this->calculate_delta_factor( x, dx );
                   x += dx;
+
+                  // A step cut to a bound can round past it.
+                  this->keep_within_bounds( x );
                   ffprime( fx, fpx, x );
                   eval1 = fx - f0;
                   abs_tol_norm = this->calculate_norm( eval1 );
