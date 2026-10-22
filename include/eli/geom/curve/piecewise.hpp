@@ -2258,6 +2258,7 @@ namespace eli
 
           void fp(const piecewise<curve__, data_type, dim__> &a)
           {
+            clear();
             set_t0( a.get_t0() );
             point_type C0;
 
@@ -2441,6 +2442,7 @@ namespace eli
 
           void integral(const piecewise<curve__, data_type, dim__> &a)
           {
+            clear();
             set_t0( a.get_t0() );
             point_type C0;
             C0.setZero();
@@ -2462,6 +2464,7 @@ namespace eli
 
           void product(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, dim__> &b)
           {
+            clear();
             set_t0( a.get_t0() );
 
             typename segment_collection_type::const_iterator scita, scitb;
@@ -2479,6 +2482,7 @@ namespace eli
 
           void product1d(const piecewise<curve__, data_type, dim__> &a, const piecewise<curve__, data_type, 1> &b)
           {
+            clear();
             set_t0( a.get_t0() );
 
             typename segment_collection_type::const_iterator scita;
@@ -2497,6 +2501,7 @@ namespace eli
 
           void square(const piecewise<curve__, data_type, dim__> &a)
           {
+            clear();
             set_t0( a.get_t0() );
 
             typename segment_collection_type::const_iterator scita;
@@ -2512,6 +2517,7 @@ namespace eli
 
           void scaledsum(const data_type &ka, const piecewise<curve__, data_type, dim__> &a, const data_type &kb, const piecewise<curve__, data_type, dim__> &b)
           {
+            clear();
             set_t0( a.get_t0() );
 
             typename segment_collection_type::const_iterator scita, scitb;
