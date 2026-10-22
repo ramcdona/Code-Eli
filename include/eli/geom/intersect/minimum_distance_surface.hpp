@@ -222,6 +222,10 @@ namespace eli
                 dx = this->calculate_delta_factor(x, dx);
                 x+=dx;
 
+                // A step to a bound can round past it, and the surface is undefined there.
+                x(0)=std::min(std::max(x(0), umin), umax);
+                x(1)=std::min(std::max(x(1), vmin), vmax);
+
                 prev_dx = abs_x_norm;
                 abs_x_norm = this->calculate_norm(dx);
 

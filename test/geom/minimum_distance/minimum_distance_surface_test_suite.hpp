@@ -63,6 +63,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<float>::point_piecewise_trange_smooth_test);
       TEST_ADD(minimum_distance_surface_test_suite<float>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<float>::dist_surf_test);
+      TEST_ADD(minimum_distance_surface_test_suite<float>::point_piecewise_offset_bound_test);
     }
     void AddTests(const double &)
     {
@@ -73,6 +74,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<double>::point_piecewise_trange_smooth_test);
       TEST_ADD(minimum_distance_surface_test_suite<double>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<double>::dist_surf_test);
+      TEST_ADD(minimum_distance_surface_test_suite<double>::point_piecewise_offset_bound_test);
     }
     void AddTests(const long double &)
     {
@@ -83,6 +85,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<long double>::point_piecewise_trange_smooth_test);
       TEST_ADD(minimum_distance_surface_test_suite<long double>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<long double>::dist_surf_test);
+      TEST_ADD(minimum_distance_surface_test_suite<long double>::point_piecewise_offset_bound_test);
     }
 
   public:
@@ -4570,6 +4573,73 @@ class minimum_distance_surface_test_suite : public Test::Suite
 
     }
 
+
+    // A seeded search toward an edge of a surface whose parameters do not start at zero.  The
+    // step that takes the iterate to the bound can round past it.
+    void point_piecewise_offset_bound_test()
+    {
+      const index_type n(3), m(3);
+      surface_type s(n, m);
+      point_type cp[3+1][3+1], pt;
+      data_type u, v;
+      index_type i, j, k, ks;
+      piecewise_surface_type pws;
+      typename piecewise_surface_type::error_code err;
+
+      pws.init_uv(1, 1);
+
+      cp[0][0] << -15, 0,  15;
+      cp[1][0] <<  -5, 5,  15;
+      cp[2][0] <<   5, 5,  15;
+      cp[3][0] <<  15, 0,  15;
+      cp[0][1] << -15, 5,   5;
+      cp[1][1] <<  -5, 5,   5;
+      cp[2][1] <<   5, 5,   5;
+      cp[3][1] <<  15, 5,   5;
+      cp[0][2] << -15, 5,  -5;
+      cp[1][2] <<  -5, 5,  -5;
+      cp[2][2] <<   5, 5,  -5;
+      cp[3][2] <<  15, 5,  -5;
+      cp[0][3] << -15, 0, -15;
+      cp[1][3] <<  -5, 5, -15;
+      cp[2][3] <<   5, 5, -15;
+      cp[3][3] <<  15, 0, -15;
+
+      for (i=0; i<=n; ++i)
+      {
+        for (j=0; j<=m; ++j)
+        {
+          s.set_control_point(cp[i][j], i, j);
+        }
+      }
+
+      err=pws.set(s, 0, 0);
+      TEST_ASSERT(err==piecewise_surface_type::NO_ERRORS);
+
+      pws.set_u0(static_cast<data_type>(3));
+      pws.set_v0(static_cast<data_type>(0.004));
+
+      data_type umin(pws.get_u0()), umax(pws.get_umax()), vmin(pws.get_v0()), vmax(pws.get_vmax());
+
+      index_type nout(0);
+      for (k=0; k<=10; ++k)
+      {
+        pt << -12+static_cast<data_type>(2.4)*k, 3, 25;
+
+        for (ks=1; ks<20; ++ks)
+        {
+          data_type us(umin+(umax-umin)*ks/20), vs(vmin+(vmax-vmin)*ks/20);
+
+          eli::geom::intersect::minimum_distance(u, v, pws, pt, us, vs);
+
+          if (!((u>=umin) && (u<=umax) && (v>=vmin) && (v<=vmax)))
+          {
+            ++nout;
+          }
+        }
+      }
+      TEST_ASSERT(nout==0);
+    }
 };
 
 #endif
