@@ -282,6 +282,25 @@ bool find_bound_round_start(data__ &x, const data__ &lo)
 }
 
 template<typename data__>
+Eigen::Matrix<data__, 3, 3> my_nan_diagonal_system_function_derivative(const Eigen::Matrix<data__, 3, 1> &)
+{
+  Eigen::Matrix<data__, 3, 3> rtn_mat;
+
+  // Singular, with a NaN on the diagonal after the first column.
+  rtn_mat << 2, 2, 0,
+             2, 2, 0,
+             0, 0, std::numeric_limits<data__>::quiet_NaN();
+
+  return rtn_mat;
+}
+
+template<typename data__>
+Eigen::Matrix<data__, 3, 1> my_nan_diagonal_system_function(const Eigen::Matrix<data__, 3, 1> &x)
+{
+  return my_singular_linear_system_function_derivative(x)*x;
+}
+
+template<typename data__>
 class nls_test_suite : public Test::Suite
 {
   protected:
@@ -296,6 +315,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<float>::newton_raphson_singular_system_method_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_bound_round_test);
       TEST_ADD(nls_test_suite<float>::newton_raphson_system_bound_round_test);
+      TEST_ADD(nls_test_suite<float>::newton_raphson_nan_diagonal_system_method_test);
     }
 
     void AddTests(const double &)
@@ -309,6 +329,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<double>::newton_raphson_singular_system_method_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_bound_round_test);
       TEST_ADD(nls_test_suite<double>::newton_raphson_system_bound_round_test);
+      TEST_ADD(nls_test_suite<double>::newton_raphson_nan_diagonal_system_method_test);
     }
 
     void AddTests(const long double &)
@@ -322,6 +343,7 @@ class nls_test_suite : public Test::Suite
       TEST_ADD(nls_test_suite<long double>::newton_raphson_singular_system_method_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_bound_round_test);
       TEST_ADD(nls_test_suite<long double>::newton_raphson_system_bound_round_test);
+      TEST_ADD(nls_test_suite<long double>::newton_raphson_nan_diagonal_system_method_test);
     }
 
   public:
@@ -725,6 +747,30 @@ class nls_test_suite : public Test::Suite
       nrcm.find_root(root, g, gp, rhs);
       TEST_ASSERT(xlow>=lo);
       TEST_ASSERT(root(0)>=lo);
+    }
+
+    void newton_raphson_nan_diagonal_system_method_test()
+    {
+      typedef eli::mutil::nls::newton_raphson_system_method<data__, 3, 1> nr_system;
+
+      data__ delta(std::sqrt(std::numeric_limits<data__>::epsilon()));
+      nr_system nrm;
+      typename nr_system::solution_matrix rhs, root, x0, x_exact;
+      int stat;
+
+      nrm.set_absolute_f_tolerance(delta);
+      nrm.set_max_iteration(200);
+      nrm.set_norm_type(nr_system::max_norm);
+
+      x_exact << 2, 3, 1;
+      rhs = my_nan_diagonal_system_function<data__>(x_exact);
+      x0 << 1.5, 2.5, 1.5;
+      nrm.set_initial_guess(x0);
+
+      // Every column is dropped in turn, so the step is zero and the solve stops where it began.
+      stat = nrm.find_root(root, std::function<typename nr_system::solution_matrix(typename nr_system::solution_matrix)>(my_nan_diagonal_system_function<data__>), std::function<typename nr_system::jacobian_matrix(typename nr_system::solution_matrix)>(my_nan_diagonal_system_function_derivative<data__>), rhs);
+      TEST_ASSERT(stat==nr_system::hit_constraint);
+      TEST_ASSERT(root==x0);
     }
 };
 

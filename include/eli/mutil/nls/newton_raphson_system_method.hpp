@@ -126,10 +126,15 @@ namespace eli
                   size_t itries = 0;
                   while ( itries < N__ && !invertible )
                   {
+                    // Start from the first column not yet dropped; one remains while itries < N__.
                     size_t ismall = 0;
-                    data__ fsmall = std::numeric_limits<data__>::max();
+                    while ( zerodx[ ismall ] )
+                    {
+                      ++ismall;
+                    }
+                    data__ fsmall = std::abs( fpx( ismall, ismall ) );
 
-                    for (size_t i=0; i<N__; ++i)
+                    for (size_t i=ismall+1; i<N__; ++i)
                     {
                       if ( !zerodx[i] && std::abs( fpx( i, i ) ) < fsmall )
                       {
