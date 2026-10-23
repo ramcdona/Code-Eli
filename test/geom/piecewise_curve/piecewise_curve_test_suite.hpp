@@ -56,6 +56,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<float>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<float>::roll_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::product_test);
     }
     void AddTests(const double &)
     {
@@ -73,6 +74,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<double>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<double>::roll_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::product_test);
     }
     void AddTests(const long double &)
     {
@@ -90,6 +92,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::continuity_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::roll_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::product_test);
     }
 
   public:
@@ -2243,6 +2246,53 @@ class piecewise_curve_test_suite : public Test::Suite
       // std::cout << "C5:" << std::endl;
       // c5.parameter_report();
       // c5.octave_print( 5 );
+    }
+
+    // A straight piecewise curve whose every coordinate runs from t0 to the last break,
+    // with a segment between each pair of breaks.
+    template<typename pc__>
+    pc__ make_line(const data_type *brk, const index_type &nbrk)
+    {
+      pc__ pc;
+      typename pc__::curve_type c(1);
+      typename pc__::curve_type::control_point_type cp;
+
+      pc.set_t0(brk[0]);
+      for (index_type i=0; i+1<nbrk; ++i)
+      {
+        cp.setConstant(brk[i]);
+        c.set_control_point(cp, 0);
+        cp.setConstant(brk[i+1]);
+        c.set_control_point(cp, 1);
+        pc.push_back(c, brk[i+1]-brk[i]);
+      }
+      return pc;
+    }
+
+    // Curves with more segments than their multiplier are multiplied only as far as the
+    // multiplier's segments go.
+    void product_test()
+    {
+      typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data__, 1> piecewise_curve1d_type;
+      data_type brka[4] = {0, 1, 2, 3};
+      data_type brkb[3] = {0, 1, 3};
+      piecewise_curve_type a, b3, c;
+      piecewise_curve1d_type b1;
+      point_type p;
+
+      a = make_line<piecewise_curve_type>(brka, 4);
+      b3 = make_line<piecewise_curve_type>(brkb, 3);
+      b1 = make_line<piecewise_curve1d_type>(brkb, 3);
+
+      c.product1d(a, b1);
+      TEST_ASSERT(c.number_segments()==2);
+      p = c.f(static_cast<data_type>(0.5));
+      TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(0.25))<std::numeric_limits<data__>::epsilon());
+
+      c.product(a, b3);
+      TEST_ASSERT(c.number_segments()==2);
+      p = c.f(static_cast<data_type>(0.5));
+      TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(0.25))<std::numeric_limits<data__>::epsilon());
     }
 
 };
