@@ -69,6 +69,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<float>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<float>::order_match_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::split_nan_test);
     }
     void AddTests(const double &)
     {
@@ -92,6 +93,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<double>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<double>::order_match_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::split_nan_test);
     }
     void AddTests(const long double &)
     {
@@ -115,6 +117,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_test3);
       TEST_ADD(piecewise_surface_test_suite<long double>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::order_match_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::split_nan_test);
     }
 
   public:
@@ -2989,6 +2992,68 @@ class piecewise_surface_test_suite : public Test::Suite
       diff.get_bounding_box(bb);
       TEST_ASSERT(bb.get_min().norm() < eps);
       TEST_ASSERT(bb.get_max().norm() < eps);
+    }
+
+    // A flat surface in z = 0 whose x and y equal u and v, with a patch between each pair
+    // of breaks in each direction.
+    piecewise_surface_type make_plane(const data_type *ubrk, const index_type &nubrk, const data_type *vbrk, const index_type &nvbrk) const
+    {
+      piecewise_surface_type ps;
+      std::vector<data_type> du, dv;
+      index_type i, j;
+
+      for (i=0; i+1<nubrk; ++i)
+      {
+        du.push_back(ubrk[i+1]-ubrk[i]);
+      }
+      for (j=0; j+1<nvbrk; ++j)
+      {
+        dv.push_back(vbrk[j+1]-vbrk[j]);
+      }
+      ps.init_uv(du.begin(), du.end(), dv.begin(), dv.end(), ubrk[0], vbrk[0]);
+
+      for (i=0; i+1<nubrk; ++i)
+      {
+        for (j=0; j+1<nvbrk; ++j)
+        {
+          surface_type s(1, 1);
+          point_type pt;
+
+          pt << ubrk[i], vbrk[j], 0;
+          s.set_control_point(pt, 0, 0);
+          pt << ubrk[i+1], vbrk[j], 0;
+          s.set_control_point(pt, 1, 0);
+          pt << ubrk[i], vbrk[j+1], 0;
+          s.set_control_point(pt, 0, 1);
+          pt << ubrk[i+1], vbrk[j+1], 0;
+          s.set_control_point(pt, 1, 1);
+          ps.set(s, i, j);
+        }
+      }
+      return ps;
+    }
+
+    // A NaN split parameter is out of range, and the surface is left as it was.
+    void split_nan_test()
+    {
+      data_type ubrk[3] = {0, 1, 2};
+      data_type vbrk[3] = {0, 1, 2};
+      data_type nan(std::numeric_limits<data_type>::quiet_NaN());
+      piecewise_surface_type ps, before, after;
+      point_type pt;
+
+      ps = make_plane(ubrk, 3, vbrk, 3);
+
+      TEST_ASSERT(ps.split_u(nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.split_v(nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.split_u(before, after, nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.split_v(before, after, nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.number_u_patches()==2);
+      TEST_ASSERT(ps.number_v_patches()==2);
+
+      pt = ps.f(static_cast<data_type>(1.5), static_cast<data_type>(1.5));
+      TEST_ASSERT(std::abs(pt.x()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
+      TEST_ASSERT(std::abs(pt.y()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
     }
 
     void trim_v_test()

@@ -1310,6 +1310,9 @@ namespace eli
 
           error_code split(const data_type &t)
           {
+            if (std::isnan(t))
+              return INVALID_PARAM;
+
             // find segment that corresponds to given t
             typename segment_collection_type::iterator it;
             data_type tt;
@@ -1333,6 +1336,9 @@ namespace eli
             typename segment_collection_type::const_iterator it, iit;
             data_type tt;
             error_code ec;
+
+            if (std::isnan(tsplit))
+              return INVALID_PARAM;
 
             find_segment(it, tt, tsplit);
 

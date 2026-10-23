@@ -57,6 +57,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<float>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<float>::product_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::split_nan_test);
     }
     void AddTests(const double &)
     {
@@ -75,6 +76,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<double>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<double>::product_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::split_nan_test);
     }
     void AddTests(const long double &)
     {
@@ -93,6 +95,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::integration_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::product_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::split_nan_test);
     }
 
   public:
@@ -2293,6 +2296,24 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ASSERT(c.number_segments()==2);
       p = c.f(static_cast<data_type>(0.5));
       TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(0.25))<std::numeric_limits<data__>::epsilon());
+    }
+
+    // A NaN split parameter is out of range, and the curve is left as it was.
+    void split_nan_test()
+    {
+      data_type brk[3] = {0, 1, 2};
+      data_type nan(std::numeric_limits<data_type>::quiet_NaN());
+      piecewise_curve_type c, before, after;
+      point_type p;
+
+      c = make_line<piecewise_curve_type>(brk, 3);
+
+      TEST_ASSERT(c.split(nan)==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c.split(before, after, nan)==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c.number_segments()==2);
+
+      p = c.f(static_cast<data_type>(1.5));
+      TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(1.5))<std::numeric_limits<data__>::epsilon());
     }
 
 };

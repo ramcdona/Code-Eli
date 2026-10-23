@@ -985,6 +985,9 @@ namespace eli
 
           error_code split_u(const data_type &u_in)
           {
+            if (std::isnan(u_in))
+              return INVALID_PARAM;
+
             index_type uk, vk;
             typename keymap_type::iterator uit, vit;
             data_type uu(0), vv(0);
@@ -1010,6 +1013,9 @@ namespace eli
           {
             before.clear();
             after.clear();
+
+            if (std::isnan(u_in))
+              return INVALID_PARAM;
 
             if (u_in <= ukey.get_pmin())
             {
@@ -1048,6 +1054,9 @@ namespace eli
 
           error_code split_v(const data_type &v_in)
           {
+            if (std::isnan(v_in))
+              return INVALID_PARAM;
+
             index_type uk, vk;
             typename keymap_type::iterator uit, vit;
             data_type uu(0), vv(0);
@@ -1073,6 +1082,9 @@ namespace eli
           {
             before.clear();
             after.clear();
+
+            if (std::isnan(v_in))
+              return INVALID_PARAM;
 
             if (v_in <= vkey.get_pmin())
             {
