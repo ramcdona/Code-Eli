@@ -106,7 +106,7 @@ namespace eli
         data_type tnrm = t0_safe;
         ret = nrm.find_root(tnrm, ggp, 0);
 
-        if ( (ret == nrm.converged) && (t>=tmin) && (t<=tmax))
+        if ( (ret == nrm.converged) && (tnrm>=tmin) && (tnrm<=tmax))
         {
           val0 = c.f(tnrm)(0);
           if ( std::abs(val0) <= std::abs(val) )
@@ -156,7 +156,7 @@ namespace eli
       template<typename onedcurve__>
       typename onedcurve__::data_type find_zero(typename onedcurve__::data_type &t, int &ret, const onedcurve__ &c, const typename onedcurve__::data_type &t0 )
       {
-        return find_zero( t, ret, c, t0, c.get_t0(), c.get_tmax(), ret );
+        return find_zero( t, ret, c, t0, c.get_t0(), c.get_tmax() );
       }
 
       template<typename onedcurve__>

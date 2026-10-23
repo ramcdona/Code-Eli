@@ -19,6 +19,7 @@
 
 #include "eli/geom/curve/bezier.hpp"
 #include "eli/geom/intersect/minimum_distance_curve.hpp"
+#include "eli/geom/intersect/one_d_curve_solver.hpp"
 #include "eli/geom/curve/piecewise.hpp"
 
 template<typename data__>
@@ -55,6 +56,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<float>::point_piecewise_01_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<float>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<float>::dist_surf_test);
+      TEST_ADD(minimum_distance_curve_test_suite<float>::find_zero_test);
     }
     void AddTests(const double &)
     {
@@ -66,6 +68,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<double>::point_piecewise_01_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<double>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<double>::dist_surf_test);
+      TEST_ADD(minimum_distance_curve_test_suite<double>::find_zero_test);
     }
     void AddTests(const long double &)
     {
@@ -77,6 +80,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<long double>::point_piecewise_01_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<long double>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<long double>::dist_surf_test);
+      TEST_ADD(minimum_distance_curve_test_suite<long double>::find_zero_test);
     }
 
   public:
@@ -1920,6 +1924,39 @@ class minimum_distance_curve_test_suite : public Test::Suite
 //        octave_print( 1, ans );
 //      }
 
+    }
+
+    // Every find_zero overload finds the zero of a line through zero at t = 1.
+    void find_zero_test()
+    {
+      typedef eli::geom::curve::piecewise<eli::geom::curve::bezier, data__, 1> piecewise_curve_type1;
+      piecewise_curve_type1 pc;
+      curve_type1 c(1);
+      typename curve_type1::control_point_type cp;
+      data_type t, t0(static_cast<data_type>(0.3));
+      int ret;
+
+      cp << -1;
+      c.set_control_point(cp, 0);
+      cp << 1;
+      c.set_control_point(cp, 1);
+      pc.push_back(c, 2);
+
+      t = -1;
+      ret = -1;
+      eli::geom::intersect::find_zero(t, ret, pc, t0);
+      TEST_ASSERT(ret==0);
+      TEST_ASSERT(std::abs(t-1)<tol.get_absolute_tolerance());
+
+      t = -1;
+      eli::geom::intersect::find_zero(t, pc, t0);
+      TEST_ASSERT(std::abs(t-1)<tol.get_absolute_tolerance());
+
+      t = -1;
+      ret = -1;
+      eli::geom::intersect::find_zero(t, ret, pc, t0, static_cast<data_type>(0), static_cast<data_type>(2));
+      TEST_ASSERT(ret==0);
+      TEST_ASSERT(std::abs(t-1)<tol.get_absolute_tolerance());
     }
 
 };
