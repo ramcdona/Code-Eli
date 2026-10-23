@@ -1163,9 +1163,20 @@ namespace eli
           {
             typename segment_collection_type::iterator scit0, scit1;
 
+            // NaN included
+            if ( !( t0 < t1 ) )
+            {
+              return INVALID_PARAM;
+            }
+
             data_type tt0, tt1;
             find_segment(scit0, tt0, t0 );
             find_segment(scit1, tt1, t1 );
+
+            if ( scit0 == segments.end() || scit1 == segments.end() )
+            {
+              return INVALID_PARAM;
+            }
 
             data_type t = scit0->first;
             data_type tprm = scit1->first;
@@ -1174,29 +1185,18 @@ namespace eli
             {
               if ( tt0 > 0.5 )
               {
-                if ( scit0 != segments.end() )
+                scit0++;
+                if ( scit0 == segments.end() )
                 {
-                  scit0++;
-                  t = scit0->first;
+                  return INVALID_PARAM;
                 }
+                t = scit0->first;
               }
-            }
-
-            if ( scit0 == segments.end() )
-            {
-              return INVALID_PARAM;
             }
 
             if ( tprm != t1 ) // failed to find target segment, at last segment
             {
-              if ( scit1 != segments.end() ) // safely increment to end
-              {
-                scit1++;
-              }
-              else
-              {
-                return INVALID_PARAM;
-              }
+              scit1++;
             }
 
             typename segment_collection_type::iterator itguess;

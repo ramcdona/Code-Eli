@@ -20,6 +20,7 @@
 #include <sstream>  // std::stringstream
 #include <iomanip>  // std::setw
 #include <limits>   // std::numeric_limits
+#include <memory>   // std::unique_ptr
 
 #include "eli/constants/math.hpp"
 #include "eli/geom/point/distance.hpp"
@@ -59,6 +60,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::product_test);
       TEST_ADD(piecewise_curve_test_suite<float>::split_nan_test);
       TEST_ADD(piecewise_curve_test_suite<float>::length_range_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::replace_t_range_test);
     }
     void AddTests(const double &)
     {
@@ -79,6 +81,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::product_test);
       TEST_ADD(piecewise_curve_test_suite<double>::split_nan_test);
       TEST_ADD(piecewise_curve_test_suite<double>::length_range_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::replace_t_range_test);
     }
     void AddTests(const long double &)
     {
@@ -99,6 +102,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::product_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::split_nan_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::length_range_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::replace_t_range_test);
     }
 
   public:
@@ -2344,6 +2348,44 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ASSERT(std::abs(len-static_cast<data_type>(0.5)*s3)<tol);
       eli::geom::curve::length(len, c, static_cast<data_type>(3), static_cast<data_type>(4), tol);
       TEST_ASSERT(len==0);
+    }
+
+    // replace_t refuses a range that does not start on the curve, or whose start rounds to
+    // the end of the curve, and leaves the curve as it was.  The curve is on the heap so a
+    // read past it is caught by AddressSanitizer.
+    void replace_t_range_test()
+    {
+      data_type brk[2] = {0, 1};
+      data_type brk2[3] = {0, 1, 2};
+      data_type nan(std::numeric_limits<data_type>::quiet_NaN());
+      std::unique_ptr<piecewise_curve_type> c(new piecewise_curve_type);
+      piecewise_curve_type c2;
+      curve_type bc(1);
+      typename curve_type::control_point_type cp;
+      point_type p;
+
+      *c = make_line<piecewise_curve_type>(brk, 2);
+
+      TEST_ASSERT(c->replace_t(bc, static_cast<data_type>(0.8), 1)==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c->replace_t(bc, static_cast<data_type>(0.2), 3)==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c->replace_t(bc, -1, static_cast<data_type>(0.5))==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c->replace_t(bc, static_cast<data_type>(0.6), static_cast<data_type>(0.4))==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c->replace_t(bc, nan, 1)==piecewise_curve_type::INVALID_PARAM);
+      TEST_ASSERT(c->number_segments()==1);
+      p = c->f(static_cast<data_type>(0.5));
+      TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(0.5))<std::numeric_limits<data__>::epsilon());
+
+      // A range covering one segment replaces it.
+      c2 = make_line<piecewise_curve_type>(brk2, 3);
+      cp.setConstant(5);
+      bc.set_control_point(cp, 0);
+      bc.set_control_point(cp, 1);
+      TEST_ASSERT(c2.replace_t(bc, 0, 1)==piecewise_curve_type::NO_ERRORS);
+      TEST_ASSERT(c2.number_segments()==2);
+      p = c2.f(static_cast<data_type>(0.5));
+      TEST_ASSERT(p.x()==5);
+      p = c2.f(static_cast<data_type>(1.5));
+      TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(1.5))<std::numeric_limits<data__>::epsilon());
     }
 
 };
