@@ -359,15 +359,21 @@ namespace eli
         upper.reverse_v();
         upper.set_v0( vmin );
 
-        piecewise_type::parm_match_u( lower, upper );
-        piecewise_type::parm_match_v( lower, upper );
+        bool matched = ( piecewise_type::parm_match_u( lower, upper ) == piecewise_type::NO_ERRORS );
+        matched = ( piecewise_type::parm_match_v( lower, upper ) == piecewise_type::NO_ERRORS ) && matched;
 
         // Not needed as no in-depth control point manipulations happen.
         // piecewise_type::order_match_u( lower, upper );
         // piecewise_type::order_match_v( lower, upper );
 
-        index_type nu = lower.number_u_patches();
-        index_type nv = lower.number_v_patches();
+        // Without matched halves, no patch is searched and the surface projection is used.
+        index_type nu = 0;
+        index_type nv = 0;
+        if ( matched )
+        {
+          nu = lower.number_u_patches();
+          nv = lower.number_v_patches();
+        }
 
         // std::cout << "Number of patches " << nu * nv << std::endl;
 
@@ -587,15 +593,21 @@ namespace eli
         upper.reverse_v();
         upper.set_v0( vmin );
 
-        piecewise_type::parm_match_u( lower, upper );
-        piecewise_type::parm_match_v( lower, upper );
+        bool matched = ( piecewise_type::parm_match_u( lower, upper ) == piecewise_type::NO_ERRORS );
+        matched = ( piecewise_type::parm_match_v( lower, upper ) == piecewise_type::NO_ERRORS ) && matched;
 
         // Not needed as no in-depth control point manipulations happen.
         // piecewise_type::order_match_u( lower, upper );
         // piecewise_type::order_match_v( lower, upper );
 
-        index_type nu = lower.number_u_patches();
-        index_type nv = lower.number_v_patches();
+        // Without matched halves, no patch is searched and the surface projection is used.
+        index_type nu = 0;
+        index_type nv = 0;
+        if ( matched )
+        {
+          nu = lower.number_u_patches();
+          nv = lower.number_v_patches();
+        }
 
         std::vector < std::vector < bounding_box_type > > bbmat( nu );
 

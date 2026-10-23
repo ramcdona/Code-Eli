@@ -2447,7 +2447,10 @@ namespace eli
             index_type nu1 = s1.number_u_patches();
             index_type nu2 = s2.number_u_patches();
 
-            assert ( nu1 == nu2 );
+            if ( nu1 != nu2 )
+            {
+              return;
+            }
 
             index_type nv1 = s1.number_v_patches();
             index_type nv2 = s2.number_v_patches();
@@ -2483,7 +2486,10 @@ namespace eli
             index_type nv1 = s1.number_v_patches();
             index_type nv2 = s2.number_v_patches();
 
-            assert ( nv1 == nv2 );
+            if ( nv1 != nv2 )
+            {
+              return;
+            }
 
             std::vector < index_type > deg1, deg2;
             s1.degree_v( deg1 );
@@ -2511,7 +2517,7 @@ namespace eli
           // Templated on the second surface's dimension so a scalar surface can be matched
           // against a spatial one for product1d.
           template < unsigned short dim2__ >
-          static void parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
+          static error_code parm_match_u( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
             s1.get_pmap_uv( upmap1, vpmap1 );
@@ -2532,12 +2538,20 @@ namespace eli
               s1.split_u( upmap[i] );
               s2.split_u( upmap[i] );
             }
+
+            // A split is skipped within tolerance of a break, or refused off the surface, so
+            // the two can still differ.
+            if ( s1.number_u_patches() != s2.number_u_patches() )
+            {
+              return INVALID_PARAM;
+            }
+            return NO_ERRORS;
           }
 
           // Templated on the second surface's dimension so a scalar surface can be matched
           // against a spatial one for product1d.
           template < unsigned short dim2__ >
-          static void parm_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
+          static error_code parm_match_v( piecewise<surface__, data_type, dim__, tol__> &s1, piecewise<surface__, data_type, dim2__, tol__> &s2 )
           {
             std::vector<data_type> upmap1, upmap2, vpmap1, vpmap2, upmap, vpmap;
             s1.get_pmap_uv( upmap1, vpmap1 );
@@ -2558,6 +2572,14 @@ namespace eli
               s1.split_v( vpmap[i] );
               s2.split_v( vpmap[i] );
             }
+
+            // A split is skipped within tolerance of a break, or refused off the surface, so
+            // the two can still differ.
+            if ( s1.number_v_patches() != s2.number_v_patches() )
+            {
+              return INVALID_PARAM;
+            }
+            return NO_ERRORS;
           }
 
           // Multiply two surfaces, patch by patch, in the Bernstein basis.  The
@@ -2580,8 +2602,11 @@ namespace eli
 
             std::vector<data_type> upmap, vpmap;
 
-            parm_match_u( s1, s2 );
-            parm_match_v( s1, s2 );
+            if ( parm_match_u( s1, s2 ) != NO_ERRORS || parm_match_v( s1, s2 ) != NO_ERRORS )
+            {
+              clear();
+              return;
+            }
 
             s1.get_pmap_uv( upmap, vpmap );
 
@@ -2613,8 +2638,11 @@ namespace eli
 
             std::vector<data_type> upmap, vpmap;
 
-            parm_match_u( s1, s2 );
-            parm_match_v( s1, s2 );
+            if ( parm_match_u( s1, s2 ) != NO_ERRORS || parm_match_v( s1, s2 ) != NO_ERRORS )
+            {
+              clear();
+              return;
+            }
 
             s1.get_pmap_uv( upmap, vpmap );
 
@@ -2643,8 +2671,11 @@ namespace eli
 
             std::vector<data_type> upmap, vpmap;
 
-            parm_match_u( s1, s2 );
-            parm_match_v( s1, s2 );
+            if ( parm_match_u( s1, s2 ) != NO_ERRORS || parm_match_v( s1, s2 ) != NO_ERRORS )
+            {
+              clear();
+              return;
+            }
 
             s1.get_pmap_uv( upmap, vpmap );
 

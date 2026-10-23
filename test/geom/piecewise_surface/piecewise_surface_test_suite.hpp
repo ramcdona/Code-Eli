@@ -71,6 +71,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<float>::split_nan_test);
       TEST_ADD(piecewise_surface_test_suite<float>::rst_empty_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::parm_match_test);
     }
     void AddTests(const double &)
     {
@@ -96,6 +97,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<double>::split_nan_test);
       TEST_ADD(piecewise_surface_test_suite<double>::rst_empty_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::parm_match_test);
     }
     void AddTests(const long double &)
     {
@@ -121,6 +123,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::split_nan_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::rst_empty_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::parm_match_test);
     }
 
   public:
@@ -3057,6 +3060,60 @@ class piecewise_surface_test_suite : public Test::Suite
       pt = ps.f(static_cast<data_type>(1.5), static_cast<data_type>(1.5));
       TEST_ASSERT(std::abs(pt.x()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
       TEST_ASSERT(std::abs(pt.y()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
+    }
+
+    // Surfaces split to a common parameterization are combined patch by patch.  Surfaces
+    // that cannot be, because their domains differ or because one would be left with a
+    // sliver patch the other is not split for, are reported and give an empty result.
+    void parm_match_test()
+    {
+      data_type ub3[4] = {0, 1, 2, 3};
+      data_type ub2[3] = {0, 1, 2};
+      data_type ubh[3] = {0, static_cast<data_type>(0.5), 2};
+      data_type vb[2] = {0, 1};
+      data_type sliver(2*tol.get_absolute_tolerance());
+      data_type ubs[3] = {0, sliver, 10};
+      data_type ub1[2] = {0, 10};
+      piecewise_surface_type a, b, a2, b2, r;
+      point_type pt;
+
+      // Same domain, different breaks.
+      a = make_plane(ub2, 3, vb, 2);
+      b = make_plane(ubh, 3, vb, 2);
+      a2 = a;
+      b2 = b;
+      TEST_ASSERT(piecewise_surface_type::parm_match_u(a2, b2)==piecewise_surface_type::NO_ERRORS);
+      TEST_ASSERT(piecewise_surface_type::parm_match_v(a2, b2)==piecewise_surface_type::NO_ERRORS);
+      TEST_ASSERT(a2.number_u_patches()==3);
+      TEST_ASSERT(b2.number_u_patches()==3);
+      r.scaledsum(1, a, -1, b);
+      TEST_ASSERT(r.number_u_patches()==3);
+      pt = r.f(static_cast<data_type>(1.5), static_cast<data_type>(0.5));
+      TEST_ASSERT(pt.norm()<std::numeric_limits<data_type>::epsilon());
+
+      // Different domains.
+      a = make_plane(ub3, 4, vb, 2);
+      b = make_plane(ub2, 3, vb, 2);
+      a2 = a;
+      b2 = b;
+      TEST_ASSERT(piecewise_surface_type::parm_match_u(a2, b2)==piecewise_surface_type::INVALID_PARAM);
+      piecewise_surface_type::order_match_u(a2, b2);
+      r.scaledsum(1, a, -1, b);
+      TEST_ASSERT(r.number_u_patches()==0);
+      r.product(a, b);
+      TEST_ASSERT(r.number_u_patches()==0);
+
+      // A break a sliver from the start of a long patch: the split of the other surface
+      // there is skipped as already at its start.
+      a = make_plane(ubs, 3, vb, 2);
+      b = make_plane(ub1, 2, vb, 2);
+      a2 = a;
+      b2 = b;
+      TEST_ASSERT(piecewise_surface_type::parm_match_u(a2, b2)==piecewise_surface_type::INVALID_PARAM);
+      r.scaledsum(1, a, -1, b);
+      TEST_ASSERT(r.number_u_patches()==0);
+      r.product(a, b);
+      TEST_ASSERT(r.number_u_patches()==0);
     }
 
     // On a surface with no patches nothing is nearer than the initial maximum, and
