@@ -73,16 +73,16 @@ namespace eli
 
 
           piecewise_multicap_surface_creator()
-            : piecewise_creator_base<data__, dim__, tol__>(0, 0), delta_param(1), edge_to_cap(CAP_NONE), prep_done(false)
+            : piecewise_creator_base<data__, dim__, tol__>(0, 0), curves_given(false), prep_done(false), surface_prep_done(false), delta_param(1), edge_to_cap(CAP_NONE)
           {
           }
           piecewise_multicap_surface_creator(const piecewise_surface_type &os, const data_type &dp, edge_cap_identifier ec)
-            : piecewise_creator_base<data__, dim__, tol__>(0, 0), orig_surface(os), delta_param(dp), edge_to_cap(ec), prep_done(false)
+            : piecewise_creator_base<data__, dim__, tol__>(0, 0), orig_surface(os), curves_given(false), prep_done(false), surface_prep_done(false), delta_param(dp), edge_to_cap(ec)
           {
           }
           piecewise_multicap_surface_creator(const piecewise_multicap_surface_creator<data_type, dim__, tolerance_type> & gs)
             : piecewise_creator_base<data_type, dim__, tolerance_type>(gs), orig_surface(gs.orig_surface),
-              delta_param(gs.delta_param), edge_to_cap(gs.edge_to_cap), prep_done(false)
+              orig_edge(gs.orig_edge), orig_edge_next(gs.orig_edge_next), curves_given(gs.curves_given), prep_done(false), surface_prep_done(false), delta_param(gs.delta_param), edge_to_cap(gs.edge_to_cap)
           {
           }
           virtual ~piecewise_multicap_surface_creator()
@@ -97,6 +97,7 @@ namespace eli
 
             cap_type = typ;
             orig_surface = os;
+            curves_given = false;
             edge_to_cap = ec;
             delta_param = dp;
             len_factor = lf;
@@ -106,6 +107,36 @@ namespace eli
             sweep_correct = sc;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
+            {
+              return false;
+            }
+
+            return true;
+          }
+
+          // As above, given the row of control points along the edge to cap and the row next to it, as
+          // get_edge_curves finds them, in place of the surface.  The tip curve and the curves built on it
+          // can be created; create has no surface to join a cap to, and fails.
+          bool set_conditions(const piecewise_curve_type &e, const piecewise_curve_type &n, const index_type & typ, const data_type &dp, const data_type &lf, const data_type &of, const data_type &sf, const point_type & pnt, const bool &sc )
+          {
+            // all deltas are positive, even on the min edges
+            if (dp<=0)
+              return false;
+
+            cap_type = typ;
+            orig_surface.clear();
+            orig_edge = e;
+            orig_edge_next = n;
+            curves_given = true;
+            edge_to_cap = CAP_NONE;
+            delta_param = dp;
+            len_factor = lf;
+            off_factor = of;
+            pnt_offset = pnt;
+            str_factor = sf;
+            sweep_correct = sc;
+
+            if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
             {
               return false;
             }
@@ -135,9 +166,23 @@ namespace eli
 
             tolerance_type tol;
 
+            if ( curves_given )
+            {
+              return false;
+            }
+
             if ( !prep_done )
             {
               bool rval = prep();
+              if ( !rval )
+              {
+                return rval;
+              }
+            }
+
+            if ( !surface_prep_done )
+            {
+              bool rval = prep_surface();
               if ( !rval )
               {
                 return rval;
@@ -1868,52 +1913,228 @@ namespace eli
               }
             }
 
+            surface_prep_done = true;
+
             return true;
           }
 
+          // Find the edge to cap and the unit vectors across it, from the edge's two rows of control points
+          // alone.  The rows are split and promoted as prep_surface splits and promotes the surface.
           virtual bool prep() const
           {
-            if ( !prep_surface() )
+            typedef typename piecewise_curve_type::curve_type curve_type;
+
+            tolerance_type tol;
+
+            piecewise_curve_type edgnext;
+            if ( curves_given )
+            {
+              edge = orig_edge;
+              edgnext = orig_edge_next;
+            }
+            else if ( !get_edge_curves( orig_surface, edge_to_cap, edge, edgnext ) )
             {
               return false;
             }
 
-            // extract the curve corresponding to the edge of surface wanting to cap
-            switch (edge_to_cap)
+            // Ensure opposing halves of the edge have mid split and matching parameter splits
+            data_type tmin( edge.get_t0() ), tmax( edge.get_tmax() ), tsplit( ( tmin + tmax ) / 2 );
+
+            // Make sure split exists.
+            edge.split( tsplit );
+            edgnext.split( tsplit );
+
+            // make sure that the split location is different than the start/end location otherwise
+            // the edge is a point and no need to cap
+            if (tol.approximately_equal(edge.f(tmin), edge.f(tsplit)))
             {
-              case (CAP_UMIN):
+              return false;
+            }
+
+            std::vector<data_type> pmap, rpmap, cmap;
+            // Get original parameter map
+            edge.get_pmap( pmap );
+
+            // Get reversed parameter map
+            piecewise_curve_type redg( edge );
+            redg.reverse();
+            redg.get_pmap( rpmap );
+
+            tolerance_type ttol;
+
+            // Comparison function for set_union.
+            auto comp = [&ttol](const data_type &x1, const data_type &x2)->bool
+            {
+              return ttol.approximately_less_than(x1, x2);
+            };
+
+            // Place union of pmap and omap into cmap.
+            std::set_union( pmap.begin(), pmap.end(), rpmap.begin(), rpmap.end(), std::back_inserter(cmap), comp );
+
+            for ( index_type i = 0; i < cmap.size(); i++ )
+            {
+              edge.split( cmap[i] );
+              edgnext.split( cmap[i] );
+            }
+
+            // Ensure opposing halves of the edge have matching order
+            std::vector<index_type> ord;
+            edge.degrees( std::back_inserter( ord ) );
+
+            index_type n = ord.size();
+            for ( index_type i = 0; i < n/2; i++ )
+            {
+              index_type j = n-i-1;
+              ord[i] = std::max( ord[i], ord[j] );
+              ord[j] = ord[i];
+            }
+
+            for ( index_type i = 0; i < n; i++ )
+            {
+              edge.degree_promote_to( i, ord[i] );
+              edgnext.degree_promote_to( i, ord[i] );
+            }
+
+            // Unit vectors from the next row out to the edge, control point by control point.
+            ndelta = edge;
+            for ( index_type i = 0; i < n; i++ )
+            {
+              curve_type ce, cn;
+              edge.get( ce, i );
+              edgnext.get( cn, i );
+              for ( index_type j = 0; j <= ce.degree(); j++ )
               {
-                surface_copy.get_umin_bndy_curve( edge );
-                surface_copy.get_umin_ndelta_pcurve( ndelta );
+                point_type p = ce.get_control_point( j ) - cn.get_control_point( j );
+
+                data_type len = p.norm();
+                if ( tol.approximately_equal(len, 0) )
+                {
+                  p << 0, 0, 0;
+                }
+                else
+                {
+                  p = p / len;
+                }
+                ce.set_control_point( p, j );
+              }
+              ndelta.replace( ce, i );
+            }
+
+            // The edge less the next row, control point by control point.  Along the end it is the
+            // surface's derivative across the end, outward, to a positive factor.
+            piecewise_curve_type negnext( edgnext );
+            negnext.scale( -1.0 );
+            edelta.sum( edge, negnext );
+
+            prep_done = true;
+
+            return true;
+          }
+
+          // The control points of the row of patches along an edge, and of the row next to it, as curves.
+          // A patch of degree zero across the edge gives its edge row for both.
+          static bool get_edge_curves( const piecewise_surface_type &s, edge_cap_identifier ec, piecewise_curve_type &e,
+                                       piecewise_curve_type &n )
+          {
+            typedef typename piecewise_curve_type::curve_type curve_type;
+            typedef typename piecewise_surface_type::surface_type surface_type;
+
+            e.clear();
+            n.clear();
+
+            index_type nu( s.number_u_patches() ), nv( s.number_v_patches() );
+            if ( nu == 0 || nv == 0 )
+            {
+              return false;
+            }
+
+            switch ( ec )
+            {
+              case ( CAP_UMIN ):
+              case ( CAP_UMAX ):
+              {
+                index_type iu = 0;
+                if ( ec == CAP_UMAX )
+                {
+                  iu = nu - 1;
+                }
+
+                e.set_t0( s.get_v0() );
+                n.set_t0( s.get_v0() );
+                for ( index_type iv = 0; iv < nv; iv++ )
+                {
+                  surface_type patch;
+                  data_type du, dv;
+                  s.get( patch, du, dv, iu, iv );
+
+                  index_type deg( patch.degree_v() ), ie( 0 ), in( 1 );
+                  if ( ec == CAP_UMAX )
+                  {
+                    ie = patch.degree_u();
+                    in = ie - 1;
+                  }
+                  if ( patch.degree_u() <= 0 )
+                  {
+                    in = ie;
+                  }
+
+                  curve_type ce( deg ), cn( deg );
+                  for ( index_type j = 0; j <= deg; j++ )
+                  {
+                    ce.set_control_point( patch.get_control_point( ie, j ), j );
+                    cn.set_control_point( patch.get_control_point( in, j ), j );
+                  }
+                  e.push_back( ce, dv );
+                  n.push_back( cn, dv );
+                }
                 break;
               }
-              case (CAP_UMAX):
+              case ( CAP_VMIN ):
+              case ( CAP_VMAX ):
               {
-                surface_copy.get_umax_bndy_curve( edge );
-                surface_copy.get_umax_ndelta_pcurve( ndelta );
-                break;
-              }
-              case (CAP_VMIN):
-              {
-                surface_copy.get_vmin_bndy_curve( edge );
-                surface_copy.get_vmin_ndelta_pcurve( ndelta );
-                break;
-              }
-              case (CAP_VMAX):
-              {
-                surface_copy.get_vmax_bndy_curve( edge );
-                surface_copy.get_vmax_ndelta_pcurve( ndelta );
+                index_type iv = 0;
+                if ( ec == CAP_VMAX )
+                {
+                  iv = nv - 1;
+                }
+
+                e.set_t0( s.get_u0() );
+                n.set_t0( s.get_u0() );
+                for ( index_type iu = 0; iu < nu; iu++ )
+                {
+                  surface_type patch;
+                  data_type du, dv;
+                  s.get( patch, du, dv, iu, iv );
+
+                  index_type deg( patch.degree_u() ), je( 0 ), jn( 1 );
+                  if ( ec == CAP_VMAX )
+                  {
+                    je = patch.degree_v();
+                    jn = je - 1;
+                  }
+                  if ( patch.degree_v() <= 0 )
+                  {
+                    jn = je;
+                  }
+
+                  curve_type ce( deg ), cn( deg );
+                  for ( index_type i = 0; i <= deg; i++ )
+                  {
+                    ce.set_control_point( patch.get_control_point( i, je ), i );
+                    cn.set_control_point( patch.get_control_point( i, jn ), i );
+                  }
+                  e.push_back( ce, du );
+                  n.push_back( cn, du );
+                }
                 break;
               }
               default:
               {
                 // must not want any edge capped
-                assert(edge_to_cap==CAP_NONE);
+                assert(ec==CAP_NONE);
                 return false;
               }
             }
-
-            prep_done = true;
 
             return true;
           }
@@ -1921,17 +2142,24 @@ namespace eli
           void dirty_prep()
           {
             prep_done = false;
+            surface_prep_done = false;
             surface_copy.clear();
             edge.clear();
             ndelta.clear();
+            edelta.clear();
           }
 
         private:
           piecewise_surface_type orig_surface;
+          piecewise_curve_type orig_edge;
+          piecewise_curve_type orig_edge_next;
+          bool curves_given;
           mutable piecewise_surface_type surface_copy;
           mutable piecewise_curve_type edge;
           mutable piecewise_curve_type ndelta;
+          mutable piecewise_curve_type edelta;
           mutable bool prep_done;
+          mutable bool surface_prep_done;
 
           data_type delta_param;
           edge_cap_identifier edge_to_cap;
