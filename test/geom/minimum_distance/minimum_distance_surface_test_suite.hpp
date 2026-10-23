@@ -64,6 +64,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<float>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<float>::dist_surf_test);
       TEST_ADD(minimum_distance_surface_test_suite<float>::point_piecewise_offset_bound_test);
+      TEST_ADD(minimum_distance_surface_test_suite<float>::empty_surface_test);
     }
     void AddTests(const double &)
     {
@@ -75,6 +76,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<double>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<double>::dist_surf_test);
       TEST_ADD(minimum_distance_surface_test_suite<double>::point_piecewise_offset_bound_test);
+      TEST_ADD(minimum_distance_surface_test_suite<double>::empty_surface_test);
     }
     void AddTests(const long double &)
     {
@@ -86,6 +88,7 @@ class minimum_distance_surface_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_surface_test_suite<long double>::degen_point_test);
       TEST_ADD(minimum_distance_surface_test_suite<long double>::dist_surf_test);
       TEST_ADD(minimum_distance_surface_test_suite<long double>::point_piecewise_offset_bound_test);
+      TEST_ADD(minimum_distance_surface_test_suite<long double>::empty_surface_test);
     }
 
   public:
@@ -4639,6 +4642,24 @@ class minimum_distance_surface_test_suite : public Test::Suite
         }
       }
       TEST_ASSERT(nout==0);
+    }
+
+    // On a surface with no patches nothing is nearer than the initial maximum, and the
+    // parameters returned are the surface's parameter minimum.
+    void empty_surface_test()
+    {
+      piecewise_surface_type pws;
+      point_type pt;
+      data_type u, v, umin, vmin, d;
+
+      pt << 1, 2, 3;
+      pws.get_parameter_min(umin, vmin);
+      u = 12345;
+      v = 12345;
+      d = eli::geom::intersect::minimum_distance(u, v, pws, pt);
+      TEST_ASSERT(d==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(u==umin);
+      TEST_ASSERT(v==vmin);
     }
 };
 

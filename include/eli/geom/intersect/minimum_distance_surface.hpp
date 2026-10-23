@@ -1256,6 +1256,9 @@ namespace eli
         typedef std::vector< std::pair<data_type, itpair > > dvec;
         dvec minbbdist;
 
+        // u and v when no patch gives a distance below the initial maximum
+        ps.get_parameter_min(u, v);
+
         // Find closest corner of bounding boxes, add them to vector
         // Simple linear search, would be more efficient with some sort of tree.
         for(keyit uit = ps.ukey.key.begin(); uit != ps.ukey.key.end(); ++uit)

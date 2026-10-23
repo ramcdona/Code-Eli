@@ -70,6 +70,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<float>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<float>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<float>::split_nan_test);
+      TEST_ADD(piecewise_surface_test_suite<float>::rst_empty_test);
     }
     void AddTests(const double &)
     {
@@ -94,6 +95,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<double>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<double>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<double>::split_nan_test);
+      TEST_ADD(piecewise_surface_test_suite<double>::rst_empty_test);
     }
     void AddTests(const long double &)
     {
@@ -118,6 +120,7 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ADD(piecewise_surface_test_suite<long double>::trim_v_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::order_match_test);
       TEST_ADD(piecewise_surface_test_suite<long double>::split_nan_test);
+      TEST_ADD(piecewise_surface_test_suite<long double>::rst_empty_test);
     }
 
   public:
@@ -3054,6 +3057,40 @@ class piecewise_surface_test_suite : public Test::Suite
       pt = ps.f(static_cast<data_type>(1.5), static_cast<data_type>(1.5));
       TEST_ASSERT(std::abs(pt.x()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
       TEST_ASSERT(std::abs(pt.y()-static_cast<data_type>(1.5))<std::numeric_limits<data_type>::epsilon());
+    }
+
+    // On a surface with no patches nothing is nearer than the initial maximum, and
+    // find_rst returns r = s = t = 0 and a failure code, for one point and for a vector
+    // of them.
+    void rst_empty_test()
+    {
+      piecewise_surface_type ps;
+      point_type pt;
+      data_type r, s, t, d;
+      index_type ret;
+
+      pt << 1, 2, 3;
+
+      r = 12345;
+      s = 12345;
+      t = 12345;
+      ret = 0;
+      d = eli::geom::intersect::find_rst(r, s, t, ps, pt, ret);
+      TEST_ASSERT(d==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(r==0);
+      TEST_ASSERT(s==0);
+      TEST_ASSERT(t==0);
+      TEST_ASSERT(ret!=0);
+
+      std::vector<data_type> rvec(1, 12345), svec(1, 12345), tvec(1, 12345), dvec(1, 0);
+      std::vector<index_type> retvec(1, 0);
+      std::vector<point_type> ptvec(1, pt);
+      eli::geom::intersect::find_rst(rvec, svec, tvec, dvec, ps, ptvec, retvec);
+      TEST_ASSERT(dvec[0]==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(rvec[0]==0);
+      TEST_ASSERT(svec[0]==0);
+      TEST_ASSERT(tvec[0]==0);
+      TEST_ASSERT(retvec[0]!=0);
     }
 
     void trim_v_test()

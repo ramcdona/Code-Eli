@@ -199,6 +199,9 @@ namespace eli
         typedef std::vector< std::pair<data_type,segit> > dvec;
         dvec minbbdist;
 
+        // t when no segment gives a dimension below the initial maximum
+        t=pc.get_parameter_min();
+
         // Find closest corner of bounding boxes, add them to vector
         // Simple linear search, would be more efficient with some sort of tree.
         for (segit seg=pc.segments.begin(); seg!=pc.segments.end(); ++seg)

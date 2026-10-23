@@ -337,6 +337,12 @@ namespace eli
 
         bool dbg = false;
 
+        // r, s, t and ret when no patch gives a distance below the initial maximum
+        r = 0;
+        s = 0;
+        t = 0;
+        ret = eli::mutil::nls::iterative_root_base< data_type >::no_root_found;
+
         data_type vmin, vmid, vmax;
         data_type umin, umax;
         data_type urng, vrng;
@@ -619,6 +625,13 @@ namespace eli
         for ( index_type ipt = 0; ipt < npt; ipt++ )
         {
           dvec minbbdist;
+
+          // the point's results when no patch gives a distance below the initial maximum
+          r[ipt] = 0;
+          s[ipt] = 0;
+          t[ipt] = 0;
+          d[ipt] = std::numeric_limits< data_type >::max();
+          ret[ipt] = eli::mutil::nls::iterative_root_base< data_type >::no_root_found;
 
         // std::cout << "Number of patches " << nu * nv << std::endl;
 

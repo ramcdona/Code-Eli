@@ -20,6 +20,7 @@
 #include "eli/geom/curve/bezier.hpp"
 #include "eli/geom/intersect/minimum_distance_curve.hpp"
 #include "eli/geom/intersect/one_d_curve_solver.hpp"
+#include "eli/geom/intersect/minimum_dimension_curve.hpp"
 #include "eli/geom/curve/piecewise.hpp"
 
 template<typename data__>
@@ -57,6 +58,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<float>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<float>::dist_surf_test);
       TEST_ADD(minimum_distance_curve_test_suite<float>::find_zero_test);
+      TEST_ADD(minimum_distance_curve_test_suite<float>::nan_point_test);
     }
     void AddTests(const double &)
     {
@@ -69,6 +71,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<double>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<double>::dist_surf_test);
       TEST_ADD(minimum_distance_curve_test_suite<double>::find_zero_test);
+      TEST_ADD(minimum_distance_curve_test_suite<double>::nan_point_test);
     }
     void AddTests(const long double &)
     {
@@ -81,6 +84,7 @@ class minimum_distance_curve_test_suite : public Test::Suite
       TEST_ADD(minimum_distance_curve_test_suite<long double>::point_piecewise_trange_smooth_3d_test);
       TEST_ADD(minimum_distance_curve_test_suite<long double>::dist_surf_test);
       TEST_ADD(minimum_distance_curve_test_suite<long double>::find_zero_test);
+      TEST_ADD(minimum_distance_curve_test_suite<long double>::nan_point_test);
     }
 
   public:
@@ -1957,6 +1961,48 @@ class minimum_distance_curve_test_suite : public Test::Suite
       eli::geom::intersect::find_zero(t, ret, pc, t0, static_cast<data_type>(0), static_cast<data_type>(2));
       TEST_ASSERT(ret==0);
       TEST_ASSERT(std::abs(t-1)<tol.get_absolute_tolerance());
+    }
+
+    // With nothing nearer than the initial maximum, the parameter returned is the curve's
+    // parameter minimum.
+    void nan_point_test()
+    {
+      data_type nan(std::numeric_limits<data_type>::quiet_NaN());
+      piecewise_curve_type3 pc, pcnan, pcempty;
+      curve_type3 c(1);
+      typename curve_type3::control_point_type cp;
+      point_type3 pt;
+      data_type t, d;
+
+      cp << 0, 0, 0;
+      c.set_control_point(cp, 0);
+      cp << 1, 1, 1;
+      c.set_control_point(cp, 1);
+      pc.set_t0(1);
+      pc.push_back(c, 1);
+      pc.push_back(c, 1);
+
+      pt << nan, 0, 0;
+      t = 12345;
+      d = eli::geom::intersect::minimum_distance(t, pc, pt);
+      TEST_ASSERT(d==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(t==1);
+
+      pt << 0, 0, 0;
+      pcempty.set_t0(1);
+      t = 12345;
+      d = eli::geom::intersect::minimum_distance(t, pcempty, pt);
+      TEST_ASSERT(d==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(t==1);
+
+      cp << nan, nan, nan;
+      c.set_control_point(cp, 1);
+      pcnan.set_t0(1);
+      pcnan.push_back(c, 1);
+      t = 12345;
+      d = eli::geom::intersect::minimum_dimension(t, pcnan, 0);
+      TEST_ASSERT(d==std::numeric_limits<data_type>::max());
+      TEST_ASSERT(t==1);
     }
 
 };
