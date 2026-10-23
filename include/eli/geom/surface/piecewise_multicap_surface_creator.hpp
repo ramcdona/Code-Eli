@@ -158,6 +158,18 @@ namespace eli
             extendte = te;
           }
 
+          // Whether a cap of type typ closes on a single point.
+          static bool closes_on_point( const index_type &typ )
+          {
+            switch ( typ )
+            {
+              case POINT:
+                return true;
+              default:
+                return false;
+            }
+          }
+
           virtual bool create(piecewise_surface_type &ps) const
           {
             typedef typename eli::geom::curve::piecewise<eli::geom::curve::bezier, data_type, dim__, tolerance_type> piecewise_curve_type;
@@ -203,6 +215,13 @@ namespace eli
 
             data_type tmidseam = ( seam.get_t0() + seam.get_tmax() ) * 0.5;
             point_type porigin = seam.f( tmidseam );
+
+            // A cap that closes on a point closes on the middle of the edge cap's tip curve.
+            point_type ppoint;
+            if ( !cap_point( cap_type, porigin, tmidseam, len_factor, off_factor, ppoint ) )
+            {
+              return false;
+            }
 
             // Split the ndelta pseudocurve.  Since this isn't really a curve, it only works because the split
             // point already exists and this becomes reordering and manipulating of existing values, and should
@@ -311,10 +330,10 @@ namespace eli
 
                       // Build linear upper side curve
                       s1.set_control_point( pup, 0, j );
-                      s1.set_control_point( porigin + pnt_offset, 1, j );
+                      s1.set_control_point( ppoint + pnt_offset, 1, j );
 
                       // Build linear lower side curve
-                      s2.set_control_point( porigin + pnt_offset, 0, j );
+                      s2.set_control_point( ppoint + pnt_offset, 0, j );
                       s2.set_control_point( pdn, 1, j );
                     }
                   }
@@ -1053,6 +1072,12 @@ namespace eli
 
           virtual bool create_curve( piecewise_curve_type &c ) const
           {
+            return create_curve( c, cap_type, len_factor, off_factor );
+          }
+
+          // Curve where the cap seam comes together, for cap type typ, length factor lf and offset factor of.
+          bool create_curve( piecewise_curve_type &c, const index_type &typ, const data_type &lf, const data_type &of ) const
+          {
             typedef typename piecewise_curve_type::curve_type curve_type;
             typedef typename piecewise_surface_type::surface_type surface_type;
 
@@ -1084,6 +1109,13 @@ namespace eli
             data_type tmidseam = ( seam.get_t0() + seam.get_tmax() ) * 0.5;
             point_type porigin = seam.f( tmidseam );
 
+            // A cap that closes on a point closes on the middle of the edge cap's tip curve.
+            point_type ppoint;
+            if ( !cap_point( typ, porigin, tmidseam, lf, of, ppoint ) )
+            {
+              return false;
+            }
+
             // Split the ndelta pseudocurve.  Since this isn't really a curve, it only works because the split
             // point already exists and this becomes reordering and manipulating of existing values, and should
             // not change any values of control points.
@@ -1103,7 +1135,7 @@ namespace eli
             }
 
             index_type i_hmax = 0;
-            if ( cap_type == ROUND_EXT )
+            if ( typ == ROUND_EXT )
             {
               i_hmax = seam.find( v_hmax );
             }
@@ -1141,7 +1173,7 @@ namespace eli
 
                 curve_type c1, c2;
 
-                switch( cap_type ){
+                switch( typ ){
                 case FLAT:
                   {
                     c1.resize( deg );
@@ -1172,7 +1204,7 @@ namespace eli
                       pdn = cfirst.get_control_point( j );
 
                       // Build linear upper side curve
-                      c1.set_control_point( porigin + pnt_offset, j );
+                      c1.set_control_point( ppoint + pnt_offset, j );
                     }
                   }
                   break;
@@ -1244,14 +1276,14 @@ namespace eli
 
                         // Extrapolated tip up/down points.
                         point_type ptup, ptdn;
-                        ptup = pup + tanup * b * len_factor * ksweep;
-                        ptdn = pdn + tandn * b * len_factor * ksweep;
+                        ptup = pup + tanup * b * lf * ksweep;
+                        ptdn = pdn + tandn * b * lf * ksweep;
 
                         // Displacement vector at extrapolated tip
                         point_type dispt = ptup - ptdn;
 
                         // Point on center of circle.
-                        psplit = ( ptup + ptdn ) * 0.5 + dispt * off_factor;
+                        psplit = ( ptup + ptdn ) * 0.5 + dispt * of;
 
                         c1.set_control_point( psplit, j );
                       }
@@ -1335,8 +1367,8 @@ namespace eli
 
                           // Extrapolated tip up/down points.
                           point_type ptup, ptdn;
-                          ptup = pup + tanup * b * len_factor / ksweep;
-                          ptdn = pdn + tandn * b * len_factor / ksweep;
+                          ptup = pup + tanup * b * lf / ksweep;
+                          ptdn = pdn + tandn * b * lf / ksweep;
 
                           // Point on center of circle.
                           point_type pcir = ( ptup + ptdn ) * 0.5;
@@ -1399,7 +1431,7 @@ namespace eli
 
                         data_type h = ( hmax - hcorr ) / sweepfactor;
 
-                        data_type w = len_factor * tan( theta / 4.0 ) / ksweep;
+                        data_type w = lf * tan( theta / 4.0 ) / ksweep;
                         data_type a = base_chord / 2.0;
                         data_type x = ( h - w * a ) / (1.0 - w / tan( theta / 2.0 ) );
 
@@ -1426,7 +1458,7 @@ namespace eli
 
                         data_type m = h_target / sweepfactor - l;
 
-                        data_type b = ( m / sin( theta / 2.0 ) ) / ( len_factor / ksweep );
+                        data_type b = ( m / sin( theta / 2.0 ) ) / ( lf / ksweep );
 
 
                           // Displacement vector
@@ -1471,14 +1503,14 @@ namespace eli
 
                         // Extrapolated tip up/down points.
                         point_type ptup, ptdn;
-                        ptup = peup + tanup * b * len_factor / ksweep;
-                        ptdn = pedn + tandn * b * len_factor / ksweep;
+                        ptup = peup + tanup * b * lf / ksweep;
+                        ptdn = pedn + tandn * b * lf / ksweep;
 
                         // Displacement vector at extrapolated tip
                         point_type dispt = ptup - ptdn;
 
                         // Point on center of new cap.
-                        point_type psplit_cap = ( ptup + ptdn ) * 0.5 + dispt * off_factor;
+                        point_type psplit_cap = ( ptup + ptdn ) * 0.5 + dispt * of;
 
                         c1.set_control_point( psplit_cap, j );
                       }
@@ -1529,13 +1561,13 @@ namespace eli
 
                         // Extrapolated tip up/down points.
                         point_type ptup, ptdn;
-                        ptup = pup + tanup * circ_chord * len_factor * ksweep * 0.5;
-                        ptdn = pdn + tandn * circ_chord * len_factor * ksweep * 0.5;
+                        ptup = pup + tanup * circ_chord * lf * ksweep * 0.5;
+                        ptdn = pdn + tandn * circ_chord * lf * ksweep * 0.5;
 
                         // Displacement vector at extrapolated tip
                         point_type dispt = ptup - ptdn;
 
-                        psplit = ( ptup + ptdn ) * 0.5 + dispt * off_factor;
+                        psplit = ( ptup + ptdn ) * 0.5 + dispt * of;
 
                         // Build linear upper side curve
                         c1.set_control_point( psplit, j );
@@ -1586,13 +1618,13 @@ namespace eli
 
                         // Extrapolated tip up/down points.
                         point_type ptup, ptdn;
-                        ptup = pup + tanup * circ_chord * len_factor * ksweep * 0.5;
-                        ptdn = pdn + tandn * circ_chord * len_factor * ksweep * 0.5;
+                        ptup = pup + tanup * circ_chord * lf * ksweep * 0.5;
+                        ptdn = pdn + tandn * circ_chord * lf * ksweep * 0.5;
 
                         // Displacement vector at extrapolated tip
                         point_type dispt = ptup - ptdn;
 
-                        psplit = ( ptup + ptdn ) * 0.5 + dispt * off_factor;
+                        psplit = ( ptup + ptdn ) * 0.5 + dispt * of;
 
                         c1.set_control_point( psplit, j );
                       }
@@ -1606,6 +1638,71 @@ namespace eli
 
               }
             }
+
+            return true;
+          }
+
+          // Squared length and offset scales along the curve where the cap seam comes together.  The tip
+          // is len_factor times a length curve from the tip with no length, plus off_factor times an
+          // offset curve.  lensq is the square of the length curve's component across the forward direction,
+          // and offsq the square of the offset curve's magnitude.  Both curves can depend on len_factor.
+          virtual bool create_scale_sq_curves( oned_piecewise_curve_type &lensq, oned_piecewise_curve_type &offsq ) const
+          {
+            lensq.clear();
+            offsq.clear();
+
+            // The tip with no length: the middle of the uncapped end, which is the flat cap's tip, or for a
+            // cap that closes on a point, the point at its middle.
+            index_type midtyp = FLAT;
+            if ( closes_on_point( cap_type ) )
+            {
+              midtyp = POINT;
+            }
+            piecewise_curve_type cmid, ctip, ctipoff;
+            if ( !create_curve( cmid, midtyp, 0.0, 0.0 ) ||
+                 !create_curve( ctip, cap_type, len_factor, 0.0 ) ||
+                 !create_curve( ctipoff, cap_type, len_factor, 1.0 ) )
+            {
+              return false;
+            }
+            cmid.scale( -1.0 );
+
+            // The tip moves linearly with off_factor.
+            piecewise_curve_type offc, negtip( ctip );
+            negtip.scale( -1.0 );
+            offc.sum( ctipoff, negtip );
+
+            piecewise_curve_type lenc;
+            if ( len_factor > 0 )
+            {
+              lenc.sum( ctip, cmid );
+              lenc.scale( 1.0 / len_factor );
+            }
+            else if ( cap_type != ROUND_EXT )
+            {
+              // These tips move linearly with len_factor, so a unit length gives the scale.
+              if ( !create_curve( ctip, cap_type, 1.0, 0.0 ) )
+              {
+                return false;
+              }
+              lenc.sum( ctip, cmid );
+            }
+            else
+            {
+              // The extended round cap's height is set for its length.
+              return false;
+            }
+
+            if ( length_across_forward() )
+            {
+              remove_forward_component( lenc );
+            }
+
+            piecewise_curve_type sq;
+            sq.square( lenc );
+            lensq = sq.sumcompcurve();
+            sq.square( offc );
+            offsq = sq.sumcompcurve();
 
             return true;
           }
@@ -2136,6 +2233,85 @@ namespace eli
               }
             }
 
+            return true;
+          }
+
+          // Unit vector along the upper half of the end edge, as create_curve finds it.  Zero for a
+          // collapsed edge.
+          point_type forward_direction() const
+          {
+            tolerance_type tol;
+
+            data_type tsplit( ( edge.get_t0() + edge.get_tmax() ) * 0.5 );
+
+            piecewise_curve_type first_half, second_half;
+            edge.split(first_half, second_half, tsplit);
+
+            // Vector along upper curve in average 'forward' direction
+            point_type fwd;
+            fwd = ( first_half.f( tsplit ) - first_half.f( first_half.get_t0() ) );
+            data_type fwdlen = fwd.norm();
+            if ( tol.approximately_equal( fwdlen, 0.0 ) )
+            {
+              fwd << 0, 0, 0;
+            }
+            else
+            {
+              fwd = fwd / fwdlen;
+            }
+            return fwd;
+          }
+
+          // Whether a cap's length is the tip's height across the forward direction, which the extended round
+          // cap holds.
+          bool length_across_forward() const
+          {
+            return true;
+          }
+
+          // Remove the forward direction's component from a curve of displacements, leaving their height
+          // across it.  The forward direction is constant, so this is exact along the whole curve.
+          void remove_forward_component( piecewise_curve_type &c ) const
+          {
+            typedef typename piecewise_curve_type::curve_type curve_type;
+
+            if ( !prep_done )
+            {
+              prep();
+            }
+
+            point_type fwd = forward_direction();
+            for ( index_type i = 0; i < c.number_segments(); i++ )
+            {
+              curve_type cseg;
+              c.get( cseg, i );
+              for ( index_type j = 0; j <= cseg.degree(); j++ )
+              {
+                point_type cp = cseg.get_control_point( j );
+                cseg.set_control_point( cp - fwd * fwd.dot( cp ), j );
+              }
+              c.replace( cseg, i );
+            }
+          }
+
+          // The point a cap of type typ closes on, for length and offset factors lf and of, from porigin, the
+          // middle of the end's seam at tmidseam: the middle of the edge cap's tip curve.  A cap that does not
+          // close on a point has porigin.
+          bool cap_point( const index_type &typ, const point_type &porigin, const data_type &tmidseam,
+                          const data_type &lf, const data_type &of, point_type &ppoint ) const
+          {
+            ppoint = porigin;
+            if ( !closes_on_point( typ ) )
+            {
+              return true;
+            }
+
+            piecewise_curve_type cedge;
+            if ( !create_curve( cedge, EDGE, lf, of ) )
+            {
+              return false;
+            }
+            ppoint = cedge.f( tmidseam );
             return true;
           }
 
