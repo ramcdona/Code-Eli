@@ -51,8 +51,19 @@ namespace eli
         typedef piecewise<curve__, data__, dim__, tol__> piecewise_type;
         typedef typename piecewise_type::data_type data_type;
 
-        // short circuit for invalid parameters
-        if (t0>=t1)
+        // the part of [t0, t1] on the curve
+        data_type ta(t0), tb(t1);
+        if (ta<pc.get_parameter_min())
+        {
+          ta=pc.get_parameter_min();
+        }
+        if (tb>pc.get_parameter_max())
+        {
+          tb=pc.get_parameter_max();
+        }
+
+        // short circuit for invalid parameters, NaN included
+        if (!(ta<tb))
         {
           len=0;
           return;
@@ -62,8 +73,8 @@ namespace eli
         data_type tt0, tt1, seg_len;
 
         // calculate the length of the start and end pieces
-        pc.find_segment(it0, tt0, t0);
-        pc.find_segment(it1, tt1, t1);
+        pc.find_segment(it0, tt0, ta);
+        pc.find_segment(it1, tt1, tb);
         if (it0==it1)
         {
           length(len, it0->second, tt0, tt1, tol);

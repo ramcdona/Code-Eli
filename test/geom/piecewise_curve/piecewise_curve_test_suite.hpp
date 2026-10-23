@@ -58,6 +58,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<float>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<float>::product_test);
       TEST_ADD(piecewise_curve_test_suite<float>::split_nan_test);
+      TEST_ADD(piecewise_curve_test_suite<float>::length_range_test);
     }
     void AddTests(const double &)
     {
@@ -77,6 +78,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<double>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<double>::product_test);
       TEST_ADD(piecewise_curve_test_suite<double>::split_nan_test);
+      TEST_ADD(piecewise_curve_test_suite<double>::length_range_test);
     }
     void AddTests(const long double &)
     {
@@ -96,6 +98,7 @@ class piecewise_curve_test_suite : public Test::Suite
       TEST_ADD(piecewise_curve_test_suite<long double>::roll_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::product_test);
       TEST_ADD(piecewise_curve_test_suite<long double>::split_nan_test);
+      TEST_ADD(piecewise_curve_test_suite<long double>::length_range_test);
     }
 
   public:
@@ -2314,6 +2317,33 @@ class piecewise_curve_test_suite : public Test::Suite
 
       p = c.f(static_cast<data_type>(1.5));
       TEST_ASSERT(std::abs(p.x()-static_cast<data_type>(1.5))<std::numeric_limits<data__>::epsilon());
+    }
+
+    // The length between two parameters counts only the part of the curve between them,
+    // and is zero for a NaN parameter.
+    void length_range_test()
+    {
+      data_type brk[3] = {0, 1, 2};
+      data_type nan(std::numeric_limits<data_type>::quiet_NaN());
+      data_type tol(std::sqrt(std::numeric_limits<data__>::epsilon()));
+      data_type s3(std::sqrt(static_cast<data_type>(3))), len;
+      piecewise_curve_type c;
+
+      c = make_line<piecewise_curve_type>(brk, 3);
+
+      eli::geom::curve::length(len, c, nan, static_cast<data_type>(0.5), tol);
+      TEST_ASSERT(len==0);
+      eli::geom::curve::length(len, c, static_cast<data_type>(1.5), nan, tol);
+      TEST_ASSERT(len==0);
+
+      eli::geom::curve::length(len, c, static_cast<data_type>(-1), static_cast<data_type>(3), tol);
+      TEST_ASSERT(std::abs(len-2*s3)<tol);
+      eli::geom::curve::length(len, c, static_cast<data_type>(0.5), static_cast<data_type>(3), tol);
+      TEST_ASSERT(std::abs(len-static_cast<data_type>(1.5)*s3)<tol);
+      eli::geom::curve::length(len, c, static_cast<data_type>(-1), static_cast<data_type>(0.5), tol);
+      TEST_ASSERT(std::abs(len-static_cast<data_type>(0.5)*s3)<tol);
+      eli::geom::curve::length(len, c, static_cast<data_type>(3), static_cast<data_type>(4), tol);
+      TEST_ASSERT(len==0);
     }
 
 };
