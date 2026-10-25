@@ -1029,27 +1029,64 @@ namespace eli
               return NO_ERRORS;
             }
 
-            piecewise<surface__, data_type, dim__, tol__> s(*this);
-
-            error_code spliterr = s.split_u( u_in );
-
+            index_type uk, vk;
             typename keymap_type::const_iterator uit, vit;
             data_type uu(0), vv(0);
             data_type vmin = vkey.get_pmin();
 
-            s.find_patch(uit, vit, uu, vv, u_in, vmin);
+            find_patch(uk, vk, uit, vit, uu, vv, u_in, vmin);
 
-            // Split should be at uu == 0.  However, when split already existed, this can
-            // result in uu = 1.0.  Intermediate values should not exist, so comparing to 0.5 seems reasonable.
-            if ( uu > 0.5 )
+            // check for out of range input
+            if ((uk == -1) || (vk == -1))
+              return INVALID_PARAM;
+
+            // Split at an existing patch boundary.
+            tolerance_type tol;
+            if (tol.approximately_equal(uu, 0) || tol.approximately_equal(uu, 1))
             {
-              ++uit;
+              if ( uu > 0.5 )
+              {
+                ++uit;
+              }
+
+              subsurf(before, ukey.key.begin(), uit, vkey.key.begin(), vkey.key.end());
+              subsurf(after, uit, ukey.key.end(), vkey.key.begin(), vkey.key.end());
+
+              return NO_ERRORS;
             }
 
-            s.subsurf(before, s.ukey.key.begin(), uit, s.vkey.key.begin(), s.vkey.key.end());
-            s.subsurf(after, uit, s.ukey.key.end(), s.vkey.key.begin(), s.vkey.key.end());
+            typename keymap_type::const_iterator uitnext = uit;
+            ++uitnext;
 
-            return spliterr;
+            // Both halves take a copy of the split column, which is then overwritten.
+            subsurf(before, ukey.key.begin(), uitnext, vkey.key.begin(), vkey.key.end());
+            subsurf(after, uit, ukey.key.end(), vkey.key.begin(), vkey.key.end());
+
+            before.ukey.set_pmax( before.ukey.key.rbegin()->first + ( u_in - uit->first ) );
+
+            after.ukey.clear();
+            after.set_u0( u_in );
+            if ( uitnext != ukey.key.end() )
+            {
+              after.ukey.append( uitnext->first - u_in );
+            }
+            else
+            {
+              after.ukey.append( ukey.get_pmax() - u_in );
+            }
+            for ( typename keymap_type::const_iterator it = uitnext; it != ukey.key.end(); ++it )
+            {
+              after.ukey.append( ukey.get_delta_parm( it ) );
+            }
+
+            index_type ilast = before.nu - 1;
+            index_type j = 0;
+            for ( vit = vkey.key.begin(); vit != vkey.key.end(); ++vit, ++j )
+            {
+              patches[uk][vit->second].split_u(before.patches[ilast][j], after.patches[0][j], uu);
+            }
+
+            return NO_ERRORS;
           }
 
           error_code split_v(const data_type &v_in)
@@ -1098,27 +1135,64 @@ namespace eli
               return NO_ERRORS;
             }
 
-            piecewise<surface__, data_type, dim__, tol__> s(*this);
-
-            error_code spliterr = s.split_v( v_in );
-
+            index_type uk, vk;
             typename keymap_type::const_iterator uit, vit;
             data_type uu(0), vv(0);
             data_type umin = ukey.get_pmin();
 
-            s.find_patch(uit, vit, uu, vv, umin, v_in);
+            find_patch(uk, vk, uit, vit, uu, vv, umin, v_in);
 
-            // Split should be at vv == 0.  However, when split already existed, this can
-            // result in vv = 1.0.  Intermediate values should not exist, so comparing to 0.5 seems reasonable.
-            if ( vv > 0.5 )
+            // check for out of range input
+            if ((uk == -1) || (vk == -1))
+              return INVALID_PARAM;
+
+            // Split at an existing patch boundary.
+            tolerance_type tol;
+            if (tol.approximately_equal(vv, 0) || tol.approximately_equal(vv, 1))
             {
-              ++vit;
+              if ( vv > 0.5 )
+              {
+                ++vit;
+              }
+
+              subsurf(before, ukey.key.begin(), ukey.key.end(), vkey.key.begin(), vit);
+              subsurf(after, ukey.key.begin(), ukey.key.end(), vit, vkey.key.end());
+
+              return NO_ERRORS;
             }
 
-            s.subsurf(before, s.ukey.key.begin(), s.ukey.key.end(), s.vkey.key.begin(), vit);
-            s.subsurf(after, s.ukey.key.begin(), s.ukey.key.end(), vit, s.vkey.key.end());
+            typename keymap_type::const_iterator vitnext = vit;
+            ++vitnext;
 
-            return spliterr;
+            // Both halves take a copy of the split row, which is then overwritten.
+            subsurf(before, ukey.key.begin(), ukey.key.end(), vkey.key.begin(), vitnext);
+            subsurf(after, ukey.key.begin(), ukey.key.end(), vit, vkey.key.end());
+
+            before.vkey.set_pmax( before.vkey.key.rbegin()->first + ( v_in - vit->first ) );
+
+            after.vkey.clear();
+            after.set_v0( v_in );
+            if ( vitnext != vkey.key.end() )
+            {
+              after.vkey.append( vitnext->first - v_in );
+            }
+            else
+            {
+              after.vkey.append( vkey.get_pmax() - v_in );
+            }
+            for ( typename keymap_type::const_iterator it = vitnext; it != vkey.key.end(); ++it )
+            {
+              after.vkey.append( vkey.get_delta_parm( it ) );
+            }
+
+            index_type jlast = before.nv - 1;
+            index_type i = 0;
+            for ( uit = ukey.key.begin(); uit != ukey.key.end(); ++uit, ++i )
+            {
+              patches[uit->second][vk].split_v(before.patches[i][jlast], after.patches[i][0], vv);
+            }
+
+            return NO_ERRORS;
           }
 
           void join_u( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
