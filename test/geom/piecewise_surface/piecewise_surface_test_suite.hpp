@@ -1123,6 +1123,31 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ASSERT(tol.approximately_equal(ps1.f(u, v), pafter.f(u, v)));
       TEST_ASSERT(tol.approximately_equal(ps1.f_u(u, v), pafter.f_u(u, v)));
       TEST_ASSERT(tol.approximately_equal(ps1.f_v(u, v), pafter.f_v(u, v)));
+
+      // split in place, at a patch interior, a patch boundary, and both ends
+      {
+        piecewise_surface_type ps3;
+        data_type cuts[4] = {1.5, 1, 0, 3};
+
+        for (index_type i=0; i<4; ++i)
+        {
+          ps2=ps1;
+          ps1.split_u(pbefore, pafter, cuts[i]);
+          TEST_ASSERT(ps2.split_u(ps3, cuts[i])==piecewise_surface_type::NO_ERRORS);
+          TEST_ASSERT(ps2==pbefore);
+          TEST_ASSERT(ps3==pafter);
+        }
+
+        cuts[3]=2;
+        for (index_type i=0; i<4; ++i)
+        {
+          ps2=ps1;
+          ps1.split_v(pbefore, pafter, cuts[i]);
+          TEST_ASSERT(ps2.split_v(ps3, cuts[i])==piecewise_surface_type::NO_ERRORS);
+          TEST_ASSERT(ps2==pbefore);
+          TEST_ASSERT(ps3==pafter);
+        }
+      }
     }
 
     void to_cubic_test()

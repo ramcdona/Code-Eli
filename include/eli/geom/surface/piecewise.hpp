@@ -1195,6 +1195,102 @@ namespace eli
             return NO_ERRORS;
           }
 
+          // Keeps the part before u_in and moves the part after it into after.
+          error_code split_u(piecewise<surface__, data_type, dim__, tol__> &after, const data_type &u_in)
+          {
+            after.clear();
+
+            if (u_in <= ukey.get_pmin())
+            {
+              after = std::move(*this);
+              clear();
+              return NO_ERRORS;
+            }
+
+            if (u_in >= ukey.get_pmax())
+            {
+              return NO_ERRORS;
+            }
+
+            index_type uk, vk;
+            typename keymap_type::iterator uit, vit;
+            data_type uu(0), vv(0);
+            data_type vmin = vkey.get_pmin();
+
+            find_patch(uk, vk, uit, vit, uu, vv, u_in, vmin);
+
+            // check for out of range input
+            if ((uk == -1) || (vk == -1))
+              return INVALID_PARAM;
+
+            tolerance_type tol;
+            if (!tol.approximately_equal(uu, 0) && !tol.approximately_equal(uu, 1))
+            {
+              // The new key follows uit.
+              split_u(uk, uit, u_in, uu);
+              ++uit;
+            }
+            else if (uu > 0.5)
+            {
+              ++uit;
+            }
+
+            piecewise<surface__, data_type, dim__, tol__> before;
+            subsurf_move(before, ukey.key.begin(), uit, vkey.key.begin(), vkey.key.end());
+            subsurf_move(after, uit, ukey.key.end(), vkey.key.begin(), vkey.key.end());
+            (*this) = std::move(before);
+
+            return NO_ERRORS;
+          }
+
+          // Keeps the part before v_in and moves the part after it into after.
+          error_code split_v(piecewise<surface__, data_type, dim__, tol__> &after, const data_type &v_in)
+          {
+            after.clear();
+
+            if (v_in <= vkey.get_pmin())
+            {
+              after = std::move(*this);
+              clear();
+              return NO_ERRORS;
+            }
+
+            if (v_in >= vkey.get_pmax())
+            {
+              return NO_ERRORS;
+            }
+
+            index_type uk, vk;
+            typename keymap_type::iterator uit, vit;
+            data_type uu(0), vv(0);
+            data_type umin = ukey.get_pmin();
+
+            find_patch(uk, vk, uit, vit, uu, vv, umin, v_in);
+
+            // check for out of range input
+            if ((uk == -1) || (vk == -1))
+              return INVALID_PARAM;
+
+            tolerance_type tol;
+            if (!tol.approximately_equal(vv, 0) && !tol.approximately_equal(vv, 1))
+            {
+              // The new key follows vit.
+              split_v(vk, vit, v_in, vv);
+              ++vit;
+            }
+            else if (vv > 0.5)
+            {
+              ++vit;
+            }
+
+            piecewise<surface__, data_type, dim__, tol__> before;
+            subsurf_move(before, ukey.key.begin(), ukey.key.end(), vkey.key.begin(), vit);
+            subsurf_move(after, ukey.key.begin(), ukey.key.end(), vit, vkey.key.end());
+            (*this) = std::move(before);
+
+            return NO_ERRORS;
+          }
+
           void join_u( const piecewise<surface__, data_type, dim__, tol__> &a, const piecewise<surface__, data_type, dim__, tol__> &b )
           {
             tolerance_type tol;
@@ -3445,6 +3541,34 @@ namespace eli
               }
               ikstore++;
             }
+
+            return NO_ERRORS;
+          }
+
+          error_code subsurf_move(piecewise<surface__, data_type, dim__, tol__> &surf, const typename keymap_type::const_iterator &ustart, const typename keymap_type::const_iterator &uend, const typename keymap_type::const_iterator &vstart, const typename keymap_type::const_iterator &vend )
+          {
+            index_type nusub, nvsub;
+            subsurf_keys( surf, nusub, nvsub, ustart, uend, vstart, vend );
+
+            // An empty surface has no patches in either direction, as from resize_store.
+            if ( ( nusub <= 0 ) || ( nvsub <= 0 ) )
+              return NO_ERRORS;
+
+            surf.patches.reserve( nusub );
+
+            typename keymap_type::const_iterator uit, vit;
+            for ( uit = ustart; uit != uend; uit++ )
+            {
+              surf.patches.push_back( patch_strip_type() );
+              surf.patches.back().reserve( nvsub );
+              for ( vit = vstart; vit != vend; vit++ )
+              {
+                surf.patches.back().push_back( std::move( patches[(*uit).second][(*vit).second] ) );
+              }
+            }
+
+            surf.nu = nusub;
+            surf.nv = nvsub;
 
             return NO_ERRORS;
           }
