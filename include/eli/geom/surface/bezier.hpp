@@ -15,6 +15,7 @@
 
 #include <cstddef>  // nullptr
 
+#include <utility>
 #include <vector>
 #include <iostream>
 
@@ -119,6 +120,14 @@ namespace eli
             set_Bs(bs.degree_u(), bs.degree_v());
           }
 
+          // The maps in B_u and B_v point into point_data's buffer, which a vector move keeps.
+          bezier(bezier<data_type, dim__, tol__> &&bs) noexcept : point_data(std::move(bs.point_data)), B_u(std::move(bs.B_u)), B_v(std::move(bs.B_v)), deriv_u( bs.deriv_u ), deriv_v( bs.deriv_v ), deriv_u_valid( bs.deriv_u_valid ), deriv_v_valid( bs.deriv_v_valid ), uclose_cache( bs.uclose_cache ), vclose_cache( bs.vclose_cache )
+          {
+            bs.deriv_u = NULL;
+            bs.deriv_v = NULL;
+            bs.invalidate_deriv();
+          }
+
           ~bezier()
           {
             delete deriv_u;
@@ -133,6 +142,26 @@ namespace eli
               set_Bs(bs.degree_u(), bs.degree_v());
               // Keep any existing derivative allocation; just mark it stale to be recomputed lazily.
               invalidate_deriv();
+            }
+
+            return (*this);
+          }
+
+          // Swapped so bs keeps a consistent surface and frees this one's old storage.
+          bezier & operator=(bezier<data_type, dim__, tol__> &&bs) noexcept
+          {
+            if (this!=&bs)
+            {
+              point_data.swap(bs.point_data);
+              B_u.swap(bs.B_u);
+              B_v.swap(bs.B_v);
+              std::swap(deriv_u, bs.deriv_u);
+              std::swap(deriv_v, bs.deriv_v);
+              deriv_u_valid = bs.deriv_u_valid;
+              deriv_v_valid = bs.deriv_v_valid;
+              uclose_cache = bs.uclose_cache;
+              vclose_cache = bs.vclose_cache;
+              bs.invalidate_deriv();
             }
 
             return (*this);
