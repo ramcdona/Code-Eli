@@ -3355,8 +3355,24 @@ namespace eli
           {
             surf.clear();
 
-            surf.set_u0( ustart->first );
-            surf.set_v0( vstart->first );
+            // An empty range may start at the end of a key.
+            if ( ustart != ukey.key.end() )
+            {
+              surf.set_u0( ustart->first );
+            }
+            else
+            {
+              surf.set_u0( ukey.get_pmax() );
+            }
+
+            if ( vstart != vkey.key.end() )
+            {
+              surf.set_v0( vstart->first );
+            }
+            else
+            {
+              surf.set_v0( vkey.get_pmax() );
+            }
 
             typename keymap_type::const_iterator uit, vit;
 
