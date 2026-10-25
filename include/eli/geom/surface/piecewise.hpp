@@ -3427,6 +3427,30 @@ namespace eli
 
           error_code subsurf(piecewise<surface__, data_type, dim__, tol__> &surf, const typename keymap_type::const_iterator &ustart, const typename keymap_type::const_iterator &uend, const typename keymap_type::const_iterator &vstart, const typename keymap_type::const_iterator &vend ) const
           {
+            index_type nusub, nvsub;
+            subsurf_keys( surf, nusub, nvsub, ustart, uend, vstart, vend );
+
+            surf.resize_store( nusub, nvsub );
+
+            typename keymap_type::const_iterator uit, vit;
+            index_type ikstore, jkstore;
+            ikstore = 0;
+            for ( uit = ustart; uit != uend; uit++ )
+            {
+              jkstore = 0;
+              for ( vit = vstart; vit != vend; vit++ )
+              {
+                surf.patches[ikstore][jkstore] = patches[(*uit).second][(*vit).second];
+                jkstore++;
+              }
+              ikstore++;
+            }
+
+            return NO_ERRORS;
+          }
+
+          void subsurf_keys(piecewise<surface__, data_type, dim__, tol__> &surf, index_type &nusub, index_type &nvsub, const typename keymap_type::const_iterator &ustart, const typename keymap_type::const_iterator &uend, const typename keymap_type::const_iterator &vstart, const typename keymap_type::const_iterator &vend ) const
+          {
             surf.clear();
 
             // An empty range may start at the end of a key.
@@ -3450,7 +3474,7 @@ namespace eli
 
             typename keymap_type::const_iterator uit, vit;
 
-            index_type nusub = 0;
+            nusub = 0;
             for ( uit = ustart; uit != uend; uit++ )
             {
               data_type du = ukey.get_delta_parm( uit );
@@ -3458,30 +3482,13 @@ namespace eli
               nusub++;
             }
 
-            index_type nvsub = 0;
+            nvsub = 0;
             for ( vit = vstart; vit != vend; vit++ )
             {
               data_type dv = vkey.get_delta_parm( vit );
               surf.vkey.append( dv );
                 nvsub++;
             }
-
-            surf.resize_store( nusub, nvsub );
-
-            index_type ikstore, jkstore;
-            ikstore = 0;
-            for ( uit = ustart; uit != uend; uit++ )
-            {
-              jkstore = 0;
-              for ( vit = vstart; vit != vend; vit++ )
-              {
-                surf.patches[ikstore][jkstore] = patches[(*uit).second][(*vit).second];
-                jkstore++;
-              }
-              ikstore++;
-            }
-
-            return NO_ERRORS;
           }
 
           error_code split_u(const index_type &uk, const typename keymap_type::iterator &uit, const data_type &u_in, const data_type &uu)
