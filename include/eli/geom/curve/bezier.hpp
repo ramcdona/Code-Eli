@@ -14,6 +14,7 @@
 #define eli_geom_curve_bezier_h
 
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include "eli/code_eli.hpp"
@@ -150,6 +151,11 @@ namespace eli
             }
           }
 
+          bezier(bezier<data_type, dim__, tolerance_type> &&bc) noexcept : B(std::move(bc.B)), deriv( bc.deriv )
+          {
+            bc.deriv = NULL;
+          }
+
           ~bezier()
           {
             invalidate_deriv();
@@ -169,6 +175,17 @@ namespace eli
               {
                 deriv = NULL;
               }
+            }
+            return *this;
+          }
+
+          // Swapped so bc keeps a consistent curve and frees this one's old storage.
+          bezier & operator=(bezier<data_type, dim__, tolerance_type> &&bc) noexcept
+          {
+            if (this != &bc)
+            {
+              B.swap(bc.B);
+              std::swap(deriv, bc.deriv);
             }
             return *this;
           }
