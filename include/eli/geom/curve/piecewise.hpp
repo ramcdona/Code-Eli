@@ -14,6 +14,7 @@
 #define eli_geom_curve_piecewise_hpp
 
 #include <map>
+#include <utility>
 #include <iostream>
 #include <iterator>
 
@@ -416,7 +417,7 @@ namespace eli
                 {
                   data_type delta_t = get_delta_t(it);
 
-                  shiftseg.insert(shiftseg.end(), std::make_pair(t, it->second));
+                  shiftseg.insert(shiftseg.end(), std::make_pair(t, std::move(it->second)));
 
                   t+=delta_t;
                 }
@@ -442,11 +443,11 @@ namespace eli
 
                 if( tol.approximately_equal(t_old, it->first) )
                 {
-                  shiftseg.insert( shiftseg.end(), std::make_pair( t_new, it->second) );
+                  shiftseg.insert( shiftseg.end(), std::make_pair( t_new, std::move(it->second)) );
                 }
                 else
                 {
-                  shiftseg.insert( shiftseg.end(), std::make_pair( it->first, it->second) );
+                  shiftseg.insert( shiftseg.end(), std::make_pair( it->first, std::move(it->second)) );
                 }
               }
               segments.swap(shiftseg);
@@ -469,7 +470,7 @@ namespace eli
               for (typename segment_collection_type::iterator it=segments.begin(); it!=segments.end(); ++it)
               {
                 data_type t = t_min_new + t_scale * (it->first - t_min);
-                scaleseg.insert( scaleseg.end(), std::make_pair( t, it->second) );
+                scaleseg.insert( scaleseg.end(), std::make_pair( t, std::move(it->second)) );
               }
               segments.swap(scaleseg);
               tmax = t_max_new;
@@ -865,7 +866,7 @@ namespace eli
 
             for (typename segment_collection_type::reverse_iterator it=segments.rbegin(); it!=segments.rend(); ++it)
             {
-              itr = rseg.insert(itrguess, std::make_pair(t, it->second));
+              itr = rseg.insert(itrguess, std::make_pair(t, std::move(it->second)));
 
               // reverse each segment
               itr->second.reverse();
@@ -894,7 +895,7 @@ namespace eli
 
             for ( typename segment_collection_type::iterator it = itstart; it != segments.end(); ++it )
             {
-              itr = rollseg.insert( itguess, std::make_pair( t, it->second ) );
+              itr = rollseg.insert( itguess, std::make_pair( t, std::move( it->second ) ) );
 
               data_type delta_t = get_delta_t(it);
               t += delta_t;
@@ -903,7 +904,7 @@ namespace eli
             }
             for ( typename segment_collection_type::iterator it = segments.begin(); it != itstart; ++it )
             {
-              itr = rollseg.insert( itguess, std::make_pair( t, it->second ) );
+              itr = rollseg.insert( itguess, std::make_pair( t, std::move( it->second ) ) );
 
               data_type delta_t = get_delta_t(it);
               t += delta_t;
