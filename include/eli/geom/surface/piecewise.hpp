@@ -872,7 +872,7 @@ namespace eli
             {
               for (index_type j=0; j<nv; ++j)
               {
-                patches[i][j]=old_patches[j][i];
+                patches[i][j]=std::move(old_patches[j][i]);
                 patches[i][j].swap_uv();
               }
             }
