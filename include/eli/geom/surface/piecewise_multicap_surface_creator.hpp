@@ -61,6 +61,7 @@ namespace eli
             POINT,
             ROUND_EXT,
             CONE,
+            OGIVE,
           };
 
           typedef piecewise_creator_base<data__, dim__, tol__> base_class_type;
@@ -109,6 +110,8 @@ namespace eli
             str_factor = sf;
             sweep_correct = sc;
             rad_factor = 0;
+            ogive_angle = 0;
+            ogive_surfref = false;
             frame_given = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
@@ -141,6 +144,8 @@ namespace eli
             str_factor = sf;
             sweep_correct = sc;
             rad_factor = 0;
+            ogive_angle = 0;
+            ogive_surfref = false;
             frame_given = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
@@ -169,6 +174,15 @@ namespace eli
           void set_cone_conditions( const data_type & rf )
           {
             rad_factor = rf;
+          }
+
+          // Angle, in radians, at which an ogive cap's sides leave the end, turned about the end's tangent,
+          // inwards for positive angles, from the surface's direction across the end where surfref is set, or
+          // else from the end's normal.  The sphere's radius is set as a cone cap's.
+          void set_ogive_conditions( const data_type & ang, const bool & surfref )
+          {
+            ogive_angle = ang;
+            ogive_surfref = surfref;
           }
 
           // The frame the surface is built in.  A cap that closes on a point runs its length along axis, away
@@ -205,6 +219,7 @@ namespace eli
             {
               case POINT:
               case CONE:
+              case OGIVE:
                 return true;
               default:
                 return false;
@@ -218,6 +233,7 @@ namespace eli
             switch ( cap_type )
             {
               case CONE:
+              case OGIVE:
                 return true;
               default:
                 return false;
@@ -295,6 +311,41 @@ namespace eli
             ndelta.split(nd_first_half, nd_second_half, tsplit);
             nd_second_half.reverse();
             nd_second_half.set_t0(nd_first_half.get_t0());
+
+            // An ogive cap's sides leave the end at an angle from its normal, or from the surface's
+            // direction across it.
+            point_type pnorm, dmean;
+            pnorm << 0, 0, 0;
+            dmean = pnorm;
+            piecewise_curve_type ed_first_half, ed_second_half;
+            std::vector < point_type > otop, obot;
+            if ( cap_type == OGIVE && sphere_tip() )
+            {
+              pnorm = end_normal( axis );
+              edelta.split( ed_first_half, ed_second_half, tsplit );
+              ed_second_half.reverse();
+              ed_second_half.set_t0( ed_first_half.get_t0() );
+
+              // The pole is ahead of the center along the mean line: the circular arc that leaves the middle
+              // of the end along its normal, or the mean of the surface's directions across the end at the
+              // middles of its halves, and runs through the center.
+              dmean = pnorm;
+              if ( ogive_surfref )
+              {
+                point_type d1 = ed_first_half.f( tmidseam );
+                point_type d2 = ed_second_half.f( tmidseam );
+                if ( !tol.approximately_equal( d1.norm(), 0.0 ) && !tol.approximately_equal( d2.norm(), 0.0 ) )
+                {
+                  point_type dm = d1 / d1.norm() + d2 / d2.norm();
+                  if ( !tol.approximately_equal( dm.norm(), 0.0 ) )
+                  {
+                    dmean = dm / dm.norm();
+                  }
+                }
+              }
+              ogive_pole_and_sides( first_half, second_half, ed_first_half, ed_second_half, tmidseam, pnorm, porigin,
+                                    dmean, pcen, rad, pdir, otop, obot );
+            }
 
             std::vector<data_type> pmap, dvcap, ducap;
             // Get edge parameter map
@@ -453,6 +504,58 @@ namespace eli
 
                       s4.set_control_point( tdn, 0, j );
                       s4.set_control_point( pdn, 1, j );
+                    }
+                  }
+                  break;
+                case OGIVE:
+                  {
+                    s3.resize( 3, deg );
+                    s1.resize( 3, deg );
+                    s2.resize( 3, deg );
+                    s4.resize( 3, deg );
+
+                    point_type ptip = pcen + pdir * rad;
+
+                    curve_type cdfirst, cdlast;
+                    ed_first_half.get( cdfirst, i );
+                    ed_second_half.get( cdlast, i );
+
+                    point_type tup0, tup1, tdn0, tdn1;
+                    end_tangents( second_half, first_half, i, tup0, tup1 );
+                    end_tangents( first_half, second_half, i, tdn0, tdn1 );
+
+                    std::vector < std::vector < point_type > > up, dn;
+                    ogive_sides( clast, cdlast, tup0, tup1, pnorm, porigin, pcen, rad, pdir, otop, obot, up );
+                    ogive_sides( cfirst, cdfirst, tdn0, tdn1, pnorm, porigin, pcen, rad, pdir, otop, obot, dn );
+
+                    for ( index_type j = 0; j <= deg; j++ )
+                    {
+                      point_type pup, pdn;
+
+                      pup = clast.get_control_point( j );
+                      pdn = cfirst.get_control_point( j );
+
+                      // Upper ogive arc, then the sphere from its tangent point to the tip
+                      s3.set_control_point( pup, 0, j );
+                      s3.set_control_point( up[0][j], 1, j );
+                      s3.set_control_point( up[1][j], 2, j );
+                      s3.set_control_point( up[2][j], 3, j );
+
+                      s1.set_control_point( up[2][j], 0, j );
+                      s1.set_control_point( up[3][j], 1, j );
+                      s1.set_control_point( up[4][j], 2, j );
+                      s1.set_control_point( ptip, 3, j );
+
+                      // The sphere from the tip to the lower tangent point, then the lower ogive arc
+                      s2.set_control_point( ptip, 0, j );
+                      s2.set_control_point( dn[4][j], 1, j );
+                      s2.set_control_point( dn[3][j], 2, j );
+                      s2.set_control_point( dn[2][j], 3, j );
+
+                      s4.set_control_point( dn[2][j], 0, j );
+                      s4.set_control_point( dn[1][j], 1, j );
+                      s4.set_control_point( dn[0][j], 2, j );
+                      s4.set_control_point( pdn, 3, j );
                     }
                   }
                   break;
@@ -1312,6 +1415,7 @@ namespace eli
                   break;
                 case POINT:
                 case CONE:
+                case OGIVE:
                   {
                     c1.resize( deg );
 
@@ -2576,6 +2680,39 @@ namespace eli
             return ( v - fwd * fwd.dot( v ) ).norm();
           }
 
+          // The direction pdir of the circular arc from porigin, leaving it along unit vector d, where it
+          // reaches pcen.  Where pcen lies on the line through porigin along d, pdir is d.
+          void ogive_pole_direction( const point_type &porigin, const point_type &d, const point_type &pcen,
+                                     point_type &pdir ) const
+          {
+            tolerance_type tol;
+
+            point_type c = pcen - porigin;
+            data_type clen = c.norm();
+            if ( tol.approximately_equal( clen, 0.0 ) )
+            {
+              return;
+            }
+            c = c / clen;
+            pdir = c * ( 2.0 * c.dot( d ) ) - d;
+          }
+
+          // An ogive cap's pole direction pdir, from the arc that leaves porigin along dmean and reaches the
+          // sphere's center pcen, and its top and bottom sides otop and obot, from the middles of the end's
+          // halves, which the other sides are blended from.
+          template < typename curve__ >
+          void ogive_pole_and_sides( const curve__ &first_half, const curve__ &second_half,
+                                     const curve__ &ed_first_half, const curve__ &ed_second_half,
+                                     const data_type &tmidseam, const point_type &pnorm, const point_type &porigin,
+                                     const point_type &dmean, const point_type &pcen, const data_type &rad,
+                                     point_type &pdir, std::vector < point_type > &otop,
+                                     std::vector < point_type > &obot ) const
+          {
+            ogive_pole_direction( porigin, dmean, pcen, pdir );
+            ogive_reference_side( second_half, ed_second_half, tmidseam, pnorm, porigin, pcen, rad, pdir, otop );
+            ogive_reference_side( first_half, ed_first_half, tmidseam, pnorm, porigin, pcen, rad, pdir, obot );
+          }
+
           // The side of a cone cap from point q of the end: the point ptan where the line from q touches the
           // sphere of center pcen and radius rad, and the inner control points parc1 and parc2 of the cubic
           // arc of the sphere from ptan to the pole, pcen + pdir * rad.  The side lies in the plane of q and
@@ -2825,6 +2962,585 @@ namespace eli
             parc2 = rows[2];
           }
 
+          // The direction d an ogive cap's side leaves point q of the end along: dref, the end's reference
+          // direction at q, made square to qt, the end's tangent there, and turned about qt by angle ang,
+          // towards pend for ang positive.  The surface's tangent plane at q holds d and qt.  Returns false
+          // where dref runs along qt.
+          bool ogive_direction( const point_type &q, const point_type &qt, const point_type &dref, const data_type &ang,
+                                const point_type &pend, point_type &d ) const
+          {
+            tolerance_type tol;
+
+            data_type qtlen = qt.norm();
+            if ( tol.approximately_equal( qtlen, 0.0 ) )
+            {
+              return false;
+            }
+            point_type qtu = qt / qtlen;
+            point_type dp = dref - qtu * qtu.dot( dref );
+            data_type dplen = dp.norm();
+            if ( tol.approximately_equal( dplen, 0.0 ) )
+            {
+              return false;
+            }
+            dp = dp / dplen;
+            point_type nout = dp.cross( qtu );
+            if ( nout.dot( q - pend ) < 0 )
+            {
+              nout = -nout;
+            }
+            d = dp * std::cos( ang ) - nout * std::sin( ang );
+            return true;
+          }
+
+          // The side of an ogive cap from point q of the end: a circular arc from q to the sphere of center
+          // pcen and radius rad, then an arc of the sphere on to the pole, pcen + pdir * rad.  The circular
+          // arc leaves q along d, from ogive_direction, in the plane of q, d and pcen.  The circles through q
+          // along d that touch the sphere's great circle in that plane come in two families, each holding one
+          // of the two straight lines from q that touch it.  The arc is the one of the family holding the
+          // line that has the sphere on its side towards pend, the middle of the end, as a cone cap's outward
+          // side does: its curvature towards that side is 2 ( w . n + rad ) / ( rad^2 - |w|^2 ), with
+          // w = q - pcen and n square to d in the plane towards pend, and it is that straight line where d
+          // runs along it.  It touches the sphere at ptan, and sphere_arc runs on from there to the pole,
+          // leaving along the arc.  With ang zero and dref square to the end it is a tangent ogive.  oarc1
+          // and oarc2 are the circular arc's inner control points and parc1 and parc2 the sphere arc's, which
+          // sphere_split parts from the circular arc.  With no radius the arc runs through the tip and is
+          // split in two halfway along, at ptan.  From a point inside the sphere the side runs straight out to
+          // it and on as from the point where it reaches it, which a side from outside the sphere becomes as
+          // the point reaches the sphere.
+          void ogive_side( const point_type &q, const point_type &qt, const point_type &dref, const data_type &ang,
+                           const point_type &pend, const point_type &pcen, const data_type &rad,
+                           const point_type &pdir, point_type &oarc1, point_type &oarc2, point_type &ptan,
+                           point_type &parc1, point_type &parc2 ) const
+          {
+            tolerance_type tol;
+
+            point_type ptip = pcen + pdir * rad;
+            point_type w = q - pcen;
+
+            point_type ctan, carc1, carc2;
+            cone_side( q, pend, pcen, rad, pdir, ctan, carc1, carc2 );
+
+            // The side leaves q along d, its direction from ogive_direction.
+            point_type d;
+            data_type wlen = w.norm();
+            if ( tol.approximately_equal( wlen, 0.0 ) || !ogive_direction( q, qt, dref, ang, pend, d ) )
+            {
+              cone_ogive_side( q, ctan, carc1, carc2, oarc1, oarc2, ptan, parc1, parc2 );
+              return;
+            }
+
+            // From a point inside the sphere the side runs straight out to it, at qs, and on from there as it
+            // would from a point of the sphere.
+            bool inside = wlen <= rad;
+            point_type ws = w;
+            if ( inside )
+            {
+              ws = w * ( rad / wlen );
+            }
+            point_type qs = pcen + ws;
+
+            // The normal of the arc's plane, through qs along d and through pcen, or through pend where d runs
+            // through pcen.
+            point_type mnorm = d.cross( ws );
+            if ( tol.approximately_equal( mnorm.norm(), 0.0 ) )
+            {
+              mnorm = d.cross( pend - q );
+            }
+            if ( tol.approximately_equal( mnorm.norm(), 0.0 ) )
+            {
+              cone_ogive_side( q, ctan, carc1, carc2, oarc1, oarc2, ptan, parc1, parc2 );
+              return;
+            }
+            mnorm = mnorm / mnorm.norm();
+
+            // Square to d in the arc's plane, towards pend.
+            point_type n = mnorm.cross( d );
+            if ( n.dot( pend - q ) < 0 )
+            {
+              n = -n;
+            }
+
+            // The arc's chord from qs to where it touches the sphere, - ( ws + n rad ) / ( 1 - kappa rad ) for
+            // an arc of curvature kappa towards n.  On the sphere the arc has shrunk to qs, and the chord's
+            // direction is its limit there.
+            point_type cw = -( ws + n * rad );
+            data_type cwlen = cw.norm();
+            if ( tol.approximately_equal( cwlen, 0.0 ) )
+            {
+              cone_ogive_side( q, ctan, carc1, carc2, oarc1, oarc2, ptan, parc1, parc2 );
+              return;
+            }
+            point_type cu = cw / cwlen;
+            data_type clen = 0;
+            if ( !inside )
+            {
+              data_type kappa = 2.0 * ( w.dot( n ) + rad ) / ( rad * rad - w.squaredNorm() );
+              data_type den = 1.0 - kappa * rad;
+              clen = cwlen / std::abs( den );
+              if ( den < 0 )
+              {
+                cu = -cu;
+              }
+            }
+            ptan = qs + cu * clen;
+            point_type dt = cu * ( 2.0 * cu.dot( d ) ) - d;
+            data_type psi = 2.0 * unit_angle( d, cu );
+
+            // The arc's last leg is never shorter than a thousandth of the radius, so it always gives the way
+            // the side reaches the sphere.
+            data_type lmin = 1e-3 * rad;
+
+            if ( inside )
+            {
+              // Out to the sphere, reaching it along dt.
+              data_type slen = ( qs - q ).norm();
+              oarc1 = ( q * 2.0 + qs ) / 3.0;
+              oarc2 = qs - dt * std::max( slen / 3.0, lmin );
+              sphere_arc( ptan, dt, pcen, rad, pdir, parc1, parc2 );
+              return;
+            }
+
+            if ( tol.approximately_equal( rad, 0.0 ) )
+            {
+              // The arc through the tip, in two halves meeting halfway along it.
+              data_type turn = 1.0;
+              if ( mnorm.dot( d.cross( cu ) ) < 0 )
+              {
+                turn = -1.0;
+              }
+              point_type dm = rotate_about( d, mnorm, turn * 0.5 * psi );
+              data_type hlen = half_chord( psi, clen );
+              point_type pm = q + rotate_about( d, mnorm, turn * 0.25 * psi ) * hlen;
+              data_type k = arc_handle( 0.5 * psi, hlen );
+              oarc1 = q + d * k;
+              oarc2 = pm - dm * k;
+              ptan = pm;
+              parc1 = pm + dm * k;
+              parc2 = ptip - dt * k;
+              return;
+            }
+
+            data_type k = arc_handle( psi, clen );
+            oarc1 = q + d * k;
+            oarc2 = ptan - dt * std::max( k, lmin );
+
+            sphere_split( q, oarc1, oarc2, ptan, dt, pcen, rad, pdir );
+            sphere_arc( ptan, dt, pcen, rad, pdir, parc1, parc2 );
+          }
+
+          // The cone cap's side from q, with tangent point ctan and sphere arc control points carc1 and
+          // carc2, as an ogive cap's side whose arc is the straight line from q to ctan.
+          void cone_ogive_side( const point_type &q, const point_type &ctan, const point_type &carc1,
+                                const point_type &carc2, point_type &oarc1, point_type &oarc2, point_type &ptan,
+                                point_type &parc1, point_type &parc2 ) const
+          {
+            ptan = ctan;
+            parc1 = carc1;
+            parc2 = carc2;
+            oarc1 = ( q * 2.0 + ptan ) / 3.0;
+            oarc2 = ( q + ptan * 2.0 ) / 3.0;
+          }
+
+          // The chord of half of an arc of a circle through angle psi with a chord of length clen.
+          data_type half_chord( const data_type &psi, const data_type &clen ) const
+          {
+            data_type s = std::sin( 0.5 * psi );
+            if ( std::abs( s ) < 1e-8 )
+            {
+              return 0.5 * clen;
+            }
+            return clen * std::sin( 0.25 * psi ) / s;
+          }
+
+          // v turned by angle a about the unit vector k.
+          point_type rotate_about( const point_type &v, const point_type &k, const data_type &a ) const
+          {
+            return v * std::cos( a ) + k.cross( v ) * std::sin( a ) + k * ( k.dot( v ) * ( 1.0 - std::cos( a ) ) );
+          }
+
+          // The control points of the side of an ogive cap from the middle of half, an end's half with t0 at
+          // its start, whose surface derivative across the end is dhalf: the point of the end, the ogive arc's
+          // inner control points, the tangent point, the sphere arc's inner control points and the pole.
+          template < typename curve__ >
+          void ogive_reference_side( const curve__ &half, const curve__ &dhalf, const data_type &tmid,
+                                     const point_type &pnorm, const point_type &pend, const point_type &pcen,
+                                     const data_type &rad, const point_type &pdir,
+                                     std::vector < point_type > &cp ) const
+          {
+            tolerance_type tol;
+
+            cp.resize( 7 );
+            cp[0] = half.f( tmid );
+
+            point_type dref = pnorm;
+            if ( ogive_surfref )
+            {
+              point_type d = dhalf.f( tmid );
+              data_type dlen = d.norm();
+              if ( !tol.approximately_equal( dlen, 0.0 ) )
+              {
+                dref = d / dlen;
+              }
+            }
+
+            ogive_side( cp[0], half.fp( tmid ), dref, ogive_angle, pend, pcen, rad, pdir, cp[1], cp[2], cp[3],
+                        cp[4], cp[5] );
+            cp[6] = pcen + pdir * rad;
+          }
+
+          // The side of an ogive cap from point q of the end, blended from the top and bottom sides top and
+          // bottom, each the seven control points from ogive_reference_side.  Their control points are framed
+          // in pairs: m their middle, a half their difference, w the half length of a, and across the unit
+          // vector square to the plane of the pair and pcen.  q's place in the end's frame is rho times the
+          // unit vector at angle phi from a, and each of the side's control points is m plus its frame's unit
+          // vector at phi times rho, eased from q's to one at the tangent point, or with no radius kept at
+          // q's.  The tangent point's frame is a circle on the sphere, so any end's shape becomes the sphere's
+          // circle there.  On the sphere the side is its arc from the tangent point to the pole, leaving along
+          // the ogive arc's direction there.  The first ogive control point keeps q's rho and moves along q's
+          // unit vector so the side leaves q in the plane of qt, the end's tangent there, and dq, the
+          // direction the side in its own plane leaves q along.  Returns false where the frame is degenerate.
+          bool ogive_blend_side( const point_type &q, const point_type &qt, const point_type &dq,
+                                 const point_type &pcen, const data_type &rad, const point_type &pdir,
+                                 const std::vector < point_type > &top,
+                                 const std::vector < point_type > &bottom, point_type &oarc1, point_type &oarc2,
+                                 point_type &ptan, point_type &parc1, point_type &parc2 ) const
+          {
+            tolerance_type tol;
+
+            index_type n = top.size();
+            std::vector < point_type > m( n ), a( n ), across( n );
+            std::vector < data_type > alen( n ), w( n );
+            for ( index_type k = 0; k < n; k++ )
+            {
+              m[k] = ( top[k] + bottom[k] ) * 0.5;
+              a[k] = ( top[k] - bottom[k] ) * 0.5;
+              alen[k] = a[k].norm();
+            }
+            if ( tol.approximately_equal( alen[0], 0.0 ) )
+            {
+              return false;
+            }
+
+            for ( index_type k = 0; k < n; k++ )
+            {
+              point_type c = ( top[k] - pcen ).cross( bottom[k] - pcen );
+              if ( tol.approximately_equal( c.norm(), 0.0 ) )
+              {
+                c = a[k].cross( pdir );
+              }
+              data_type clen = c.norm();
+              if ( tol.approximately_equal( clen, 0.0 ) )
+              {
+                if ( k == 0 )
+                {
+                  return false;
+                }
+                across[k] = across[k - 1];
+              }
+              else
+              {
+                across[k] = c / clen;
+                if ( k > 0 && across[k].dot( across[k - 1] ) < 0 )
+                {
+                  across[k] = -across[k];
+                }
+              }
+            }
+
+            // Half lengths at the control points: the end values, and the slopes there for the inner ones.
+            index_type ends[3] = { 0, 3, 6 };
+            for ( index_type e = 0; e < 3; e++ )
+            {
+              w[ ends[e] ] = alen[ ends[e] ];
+            }
+            index_type inner[4][2] = { { 1, 0 }, { 2, 3 }, { 4, 3 }, { 5, 6 } };
+            for ( index_type e = 0; e < 4; e++ )
+            {
+              index_type k = inner[e][0];
+              index_type j = inner[e][1];
+              if ( tol.approximately_equal( alen[j], 0.0 ) )
+              {
+                w[k] = ( a[k] - a[j] ).norm();
+              }
+              else
+              {
+                w[k] = alen[j] + a[j].dot( a[k] - a[j] ) / alen[j];
+              }
+            }
+
+            // q's place in the end's frame.
+            point_type r = q - m[0];
+            data_type x = r.dot( a[0] ) / ( alen[0] * alen[0] );
+            data_type y = r.dot( across[0] ) / alen[0];
+            data_type rho = std::sqrt( x * x + y * y );
+            data_type cphi = 1.0;
+            data_type sphi = 0.0;
+            if ( !tol.approximately_equal( rho, 0.0 ) )
+            {
+              cphi = x / rho;
+              sphi = y / rho;
+            }
+
+            std::vector < point_type > u( n );
+            for ( index_type k = 0; k < n; k++ )
+            {
+              u[k] = a[k] * cphi + across[k] * ( w[k] * sphi );
+            }
+
+            data_type rend = 1.0;
+            if ( tol.approximately_equal( rad, 0.0 ) )
+            {
+              rend = rho;
+            }
+
+            oarc1 = q + ( m[1] - m[0] ) + ( u[1] - u[0] ) * rho;
+            oarc2 = m[2] + u[2] * rend;
+            ptan = m[3] + u[3] * rend;
+
+            // Where one of the legs from the top and bottom sides' last ogive control points to their tangent
+            // points is far shorter than the other, framing them as they are lets the longer one set the
+            // side's direction on to the sphere.  There the side's leg is framed from the two at a common
+            // length instead, and runs along the sphere's tangent plane at its length eased between theirs.
+            data_type ltop = ( top[3] - top[2] ).norm();
+            data_type lbot = ( bottom[3] - bottom[2] ).norm();
+            data_type lmax = std::max( ltop, lbot );
+            data_type keep = 1.0;
+            if ( !tol.approximately_equal( lmax, 0.0 ) )
+            {
+              keep = ( std::min( ltop, lbot ) / lmax - 0.05 ) / 0.2;
+            }
+            if ( keep < 1.0 )
+            {
+              keep = std::max( keep, static_cast<data_type>( 0 ) );
+              data_type lmid = 0.5 * ( ltop + lbot );
+              point_type t2 = top[3];
+              point_type b2 = bottom[3];
+              if ( !tol.approximately_equal( ltop, 0.0 ) )
+              {
+                t2 = top[3] - ( top[3] - top[2] ) * ( lmid / ltop );
+              }
+              if ( !tol.approximately_equal( lbot, 0.0 ) )
+              {
+                b2 = bottom[3] - ( bottom[3] - bottom[2] ) * ( lmid / lbot );
+              }
+              point_type a2 = ( t2 - b2 ) * 0.5;
+              point_type u2 = a2 * cphi + across[2] * ( a2.norm() * sphi );
+              point_type leg = ptan - ( ( t2 + b2 ) * 0.5 + u2 * rend );
+              if ( !tol.approximately_equal( rad, 0.0 ) && on_sphere( ptan, pcen, rad ) )
+              {
+                point_type nsph = ( ptan - pcen ) / rad;
+                leg = leg - nsph * nsph.dot( leg );
+              }
+              data_type leglen = leg.norm();
+              if ( !tol.approximately_equal( leglen, 0.0 ) )
+              {
+                point_type o2 = ptan - leg * ( ( lmid + 0.5 * ( ltop - lbot ) * cphi ) / leglen );
+                oarc2 = oarc2 * keep + o2 * ( 1.0 - keep );
+              }
+            }
+            parc1 = m[4] + u[4] * rend;
+            parc2 = m[5] + u[5] * rend;
+
+            // On the sphere the side is its arc from the tangent point to the pole, leaving along the ogive arc's
+            // direction there.
+            if ( !tol.approximately_equal( rad, 0.0 ) )
+            {
+              point_type lin = ptan - oarc2;
+              data_type linlen = lin.norm();
+              if ( !tol.approximately_equal( linlen, 0.0 ) )
+              {
+                sphere_arc( ptan, lin / linlen, pcen, rad, pdir, parc1, parc2 );
+              }
+            }
+
+            // The side leaves q in the plane of qt and dq.
+            if ( tol.approximately_equal( qt.norm(), 0.0 ) )
+            {
+              return true;
+            }
+            point_type nu = dq.cross( qt / qt.norm() );
+
+            data_type den = nu.dot( u[0] );
+            if ( std::abs( den ) > 1e-3 * u[0].norm() )
+            {
+              oarc1 = oarc1 - u[0] * ( nu.dot( oarc1 - q ) / den );
+            }
+            return true;
+          }
+
+          // Whether point p lies on the sphere of center pcen and radius rad.
+          bool on_sphere( const point_type &p, const point_type &pcen, const data_type &rad ) const
+          {
+            return std::abs( ( p - pcen ).norm() - rad ) <= 1e-6 * rad;
+          }
+
+          // The unit tangents t0 and t1 of the end at the start and end of segment i of half, one of the end's
+          // halves and other the other, each the mean of the tangents of the two segments that meet there,
+          // so the segments on either side of a corner of the end turn their sides about the same line.
+          template < typename pcurve__ >
+          void end_tangents( const pcurve__ &half, const pcurve__ &other, const index_type &i, point_type &t0,
+                             point_type &t1 ) const
+          {
+            index_type n = half.number_segments();
+            typename pcurve__::curve_type seg, prev, next;
+            half.get( seg, i );
+
+            point_type a = seg.fp( 0 );
+            point_type b;
+            if ( i > 0 )
+            {
+              half.get( prev, i - 1 );
+              b = prev.fp( 1 );
+            }
+            else
+            {
+              other.get( prev, 0 );
+              b = prev.fp( 0 );
+            }
+            t0 = mean_line( a, b );
+
+            a = seg.fp( 1 );
+            if ( i < n - 1 )
+            {
+              half.get( next, i + 1 );
+              b = next.fp( 0 );
+            }
+            else
+            {
+              other.get( next, n - 1 );
+              b = next.fp( 1 );
+            }
+            t1 = mean_line( a, b );
+          }
+
+          // The unit vector along the mean of the lines along a and b, whichever way each points.
+          point_type mean_line( const point_type &a, const point_type &b ) const
+          {
+            tolerance_type tol;
+
+            point_type au = a;
+            point_type bu = b;
+            if ( !tol.approximately_equal( au.norm(), 0.0 ) )
+            {
+              au = au / au.norm();
+            }
+            if ( !tol.approximately_equal( bu.norm(), 0.0 ) )
+            {
+              bu = bu / bu.norm();
+            }
+            if ( au.dot( bu ) < 0 )
+            {
+              bu = -bu;
+            }
+            point_type m = au + bu;
+            if ( tol.approximately_equal( m.norm(), 0.0 ) )
+            {
+              return au;
+            }
+            return m / m.norm();
+          }
+
+          // The sides of an ogive cap from segment c of the end, whose middle is pend, with cd the surface's
+          // derivative across the end along the segment, and qt0 and qt1 the end's tangents to take at the
+          // segment's ends.  The sides gather at the pole pcen + pdir * rad.
+          // Their angle is measured from the surface's direction across the end where ogive_surfref is set,
+          // or else from pnorm, the end's normal.  At points along the segment, which lie on the end,
+          // ogive_side finds each side on its own, and ogive_blend_side blends it from the top and bottom
+          // sides otop and obot, leaving along the side's own direction; the blended side is taken where the
+          // blend's frame is sound, and the side on its own elsewhere.  fit_side_rows fits the rows to them:
+          // the ogive arc's two inner control points, the tangent point and the sphere arc's two inner control
+          // points.
+          template < typename curve__ >
+          void ogive_sides( const curve__ &c, const curve__ &cd, const point_type &qt0, const point_type &qt1,
+                            const point_type &pnorm, const point_type &pend,
+                            const point_type &pcen, const data_type &rad, const point_type &pdir,
+                            const std::vector < point_type > &otop, const std::vector < point_type > &obot,
+                            std::vector < std::vector < point_type > > &rows ) const
+          {
+            tolerance_type tol;
+
+            index_type nsamp = 8 * c.degree() + 1;
+
+            std::vector < data_type > ts( nsamp );
+            std::vector < std::vector < point_type > > vals( 5, std::vector < point_type >( nsamp ) );
+            for ( index_type i = 0; i < nsamp; i++ )
+            {
+              ts[i] = static_cast<data_type>( i ) / ( nsamp - 1 );
+              point_type q = c.f( ts[i] );
+              point_type qt = c.fp( ts[i] );
+              if ( i == 0 )
+              {
+                qt = qt0;
+              }
+              if ( i == nsamp - 1 )
+              {
+                qt = qt1;
+              }
+
+              point_type dref = pnorm;
+              if ( ogive_surfref )
+              {
+                point_type d = cd.f( ts[i] );
+                data_type dlen = d.norm();
+                if ( !tol.approximately_equal( dlen, 0.0 ) )
+                {
+                  dref = d / dlen;
+                }
+              }
+
+              ogive_side( q, qt, dref, ogive_angle, pend, pcen, rad, pdir, vals[0][i], vals[1][i],
+                          vals[2][i], vals[3][i], vals[4][i] );
+
+              point_type b[5];
+              point_type dq = vals[0][i] - q;
+              if ( !tol.approximately_equal( dq.norm(), 0.0 ) )
+              {
+                dq = dq / dq.norm();
+              }
+              if ( ogive_blend_side( q, qt, dq, pcen, rad, pdir, otop, obot, b[0], b[1], b[2], b[3], b[4] ) )
+              {
+                for ( index_type k = 0; k < 5; k++ )
+                {
+                  vals[k][i] = b[k];
+                }
+              }
+            }
+
+            fit_side_rows( c, pend, pdir, ts, vals, true, rows );
+          }
+
+          // Unit normal of the end's best plane, by Newell's method over points along it, on axis's side.
+          point_type end_normal( const point_type &axis ) const
+          {
+            tolerance_type tol;
+
+            index_type n = 256;
+            data_type t0 = edge.get_t0();
+            data_type dt = ( edge.get_tmax() - t0 ) / n;
+
+            point_type nrm;
+            nrm << 0, 0, 0;
+            for ( index_type k = 0; k < n; k++ )
+            {
+              point_type a = edge.f( t0 + k * dt );
+              point_type b = edge.f( t0 + ( k + 1 ) * dt );
+              nrm = nrm + a.cross( b );
+            }
+
+            data_type len = nrm.norm();
+            if ( tol.approximately_equal( len, 0.0 ) )
+            {
+              return axis;
+            }
+            nrm = nrm / len;
+            if ( nrm.dot( axis ) < 0 )
+            {
+              nrm = -nrm;
+            }
+            return nrm;
+          }
+
           // Rows of control points across segment c of the end, whose middle is pend, fitted to their exact
           // values vals at the segment's parameters ts.  Each exact value lies in the plane of its point of
           // the end and the line through pend along pdir, so it is pend plus a distance along pdir plus a
@@ -2981,6 +3697,8 @@ namespace eli
           bool extendle;
 
           data_type rad_factor;
+          data_type ogive_angle;
+          bool ogive_surfref;
           bool frame_given;
           point_type frame_axis;
           point_type frame_up;
