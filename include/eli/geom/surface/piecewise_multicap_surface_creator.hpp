@@ -30,6 +30,8 @@
 #include "eli/geom/surface/piecewise.hpp"
 #include "eli/geom/surface/piecewise_creator_base.hpp"
 #include "eli/geom/surface/piecewise_connection_data.hpp"
+#include "eli/mutil/dm/binomial_coefficient.hpp"
+#include "eli/mutil/opt/least_squares.hpp"
 
 namespace eli
 {
@@ -57,7 +59,8 @@ namespace eli
             EDGE,
             SHARP,
             POINT,
-            ROUND_EXT
+            ROUND_EXT,
+            CONE,
           };
 
           typedef piecewise_creator_base<data__, dim__, tol__> base_class_type;
@@ -105,6 +108,7 @@ namespace eli
             pnt_offset = pnt;
             str_factor = sf;
             sweep_correct = sc;
+            rad_factor = 0;
             frame_given = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
@@ -136,6 +140,7 @@ namespace eli
             pnt_offset = pnt;
             str_factor = sf;
             sweep_correct = sc;
+            rad_factor = 0;
             frame_given = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
@@ -158,6 +163,12 @@ namespace eli
           {
             extendle = le;
             extendte = te;
+          }
+
+          // Radius of a cone cap's spherical tip, in units of the cap's length scale.
+          void set_cone_conditions( const data_type & rf )
+          {
+            rad_factor = rf;
           }
 
           // The frame the surface is built in.  A cap that closes on a point runs its length along axis, away
@@ -193,6 +204,20 @@ namespace eli
             switch ( typ )
             {
               case POINT:
+              case CONE:
+                return true;
+              default:
+                return false;
+            }
+          }
+
+          // Whether this cap's sides run from the end onto a spherical tip that touches its point, as a cone
+          // cap's do.
+          bool sphere_tip() const
+          {
+            switch ( cap_type )
+            {
+              case CONE:
                 return true;
               default:
                 return false;
@@ -252,6 +277,17 @@ namespace eli
               return false;
             }
 
+            // A spherical tip touches the point, and the sides gather on the sphere at its pole.
+            point_type pcen, axis, pdir;
+            data_type rad( 0 );
+            if ( sphere_tip() )
+            {
+              if ( !cone_sphere( porigin, tmidseam, ppoint + pnt_offset, pcen, rad, axis, pdir ) )
+              {
+                return false;
+              }
+            }
+
             // Split the ndelta pseudocurve.  Since this isn't really a curve, it only works because the split
             // point already exists and this becomes reordering and manipulating of existing values, and should
             // not change any values of control points.
@@ -275,6 +311,10 @@ namespace eli
             {
               ducap.resize( 4, delta_param / 2.0 );
               i_hmax = seam.find( v_hmax );
+            }
+            else if ( sphere_tip() )
+            {
+              ducap.resize( 4, delta_param / 2.0 );
             }
             else
             {
@@ -364,6 +404,55 @@ namespace eli
                       // Build linear lower side curve
                       s2.set_control_point( ppoint + pnt_offset, 0, j );
                       s2.set_control_point( pdn, 1, j );
+                    }
+                  }
+                  break;
+                case CONE:
+                  {
+                    s3.resize( 1, deg );
+                    s1.resize( 3, deg );
+                    s2.resize( 3, deg );
+                    s4.resize( 1, deg );
+
+                    point_type ptip = pcen + pdir * rad;
+
+                    std::vector < point_type > tupv, aup1v, aup2v, tdnv, adn1v, adn2v;
+                    cone_sides( clast, porigin, pcen, rad, pdir, tupv, aup1v, aup2v );
+                    cone_sides( cfirst, porigin, pcen, rad, pdir, tdnv, adn1v, adn2v );
+
+                    for ( index_type j = 0; j <= deg; j++ )
+                    {
+                      point_type pup, pdn;
+                      point_type tup, aup1, aup2;
+                      point_type tdn, adn1, adn2;
+
+                      pup = clast.get_control_point( j );
+                      pdn = cfirst.get_control_point( j );
+
+                      tup = tupv[j];
+                      aup1 = aup1v[j];
+                      aup2 = aup2v[j];
+                      tdn = tdnv[j];
+                      adn1 = adn1v[j];
+                      adn2 = adn2v[j];
+
+                      // Upper cone side, then the sphere from its tangent point to the tip
+                      s3.set_control_point( pup, 0, j );
+                      s3.set_control_point( tup, 1, j );
+
+                      s1.set_control_point( tup, 0, j );
+                      s1.set_control_point( aup1, 1, j );
+                      s1.set_control_point( aup2, 2, j );
+                      s1.set_control_point( ptip, 3, j );
+
+                      // The sphere from the tip to the lower tangent point, then the lower cone side
+                      s2.set_control_point( ptip, 0, j );
+                      s2.set_control_point( adn2, 1, j );
+                      s2.set_control_point( adn1, 2, j );
+                      s2.set_control_point( tdn, 3, j );
+
+                      s4.set_control_point( tdn, 0, j );
+                      s4.set_control_point( pdn, 1, j );
                     }
                   }
                   break;
@@ -880,7 +969,7 @@ namespace eli
 
                 }
 
-                if ( cap_type == ROUND_EXT )
+                if ( cap_type == ROUND_EXT || sphere_tip() )
                 {
                   cap.set( s3, 0, i );
                   cap.set( s1, 1, i );
@@ -1222,6 +1311,7 @@ namespace eli
                   }
                   break;
                 case POINT:
+                case CONE:
                   {
                     c1.resize( deg );
 
@@ -2333,6 +2423,62 @@ namespace eli
             }
           }
 
+          // The sphere at a cone cap's tip, which touches the point ptip.  Its center pcen is rad back from
+          // ptip along axis, the unit vector the point moves along with length.  rad is rad_factor times the
+          // length scale.
+          // porigin is the middle of the end's seam, at tmidseam.  pdir points from the center to the pole,
+          // where the cap's sides gather: along the line through porigin and the center, so that line runs
+          // through the middle of the end, on the side ahead along the axis.  With no offset the pole is
+          // ptip.
+          bool cone_sphere( const point_type &porigin, const data_type &tmidseam, const point_type &ptip,
+                            point_type &pcen, data_type &rad, point_type &axis, point_type &pdir ) const
+          {
+            tolerance_type tol;
+
+            pcen = ptip;
+            rad = 0;
+            axis << 0, 0, 0;
+            pdir = axis;
+
+            if ( frame_given )
+            {
+              axis = frame_outward();
+            }
+            else
+            {
+              piecewise_curve_type cunit;
+              if ( !create_curve( cunit, EDGE, 1.0, 0.0 ) )
+              {
+                return false;
+              }
+
+              point_type v = cunit.f( tmidseam ) - porigin;
+              data_type vlen = v.norm();
+              if ( tol.approximately_equal( vlen, 0.0 ) )
+              {
+                return true;
+              }
+              axis = v / vlen;
+            }
+
+            rad = rad_factor * length_scale( porigin, tmidseam );
+
+            pcen = ptip - axis * rad;
+
+            pdir = axis;
+            point_type away = pcen - porigin;
+            data_type alen = away.norm();
+            if ( !tol.approximately_equal( alen, 0.0 ) )
+            {
+              pdir = away / alen;
+              if ( pdir.dot( axis ) < 0 )
+              {
+                pdir = -pdir;
+              }
+            }
+            return true;
+          }
+
           // The point a cap of type typ closes on, for length and offset factors lf and of, from porigin, the
           // middle of the end's seam at tmidseam: the middle of the edge cap's tip curve.  A cap that does not
           // close on a point has porigin.
@@ -2409,6 +2555,392 @@ namespace eli
             return std::sqrt( sum / n );
           }
 
+          // The cap's length scale: in a frame the end's size across its axis, or else the height across the
+          // forward direction of the point's move per unit length.  porigin is the middle of the end's seam, at
+          // tmidseam.
+          data_type length_scale( const point_type &porigin, const data_type &tmidseam ) const
+          {
+            if ( frame_given )
+            {
+              return frame_scale( porigin );
+            }
+
+            piecewise_curve_type cunit;
+            if ( !create_curve( cunit, EDGE, 1.0, 0.0 ) )
+            {
+              return 0;
+            }
+
+            point_type v = cunit.f( tmidseam ) - porigin;
+            point_type fwd = forward_direction();
+            return ( v - fwd * fwd.dot( v ) ).norm();
+          }
+
+          // The side of a cone cap from point q of the end: the point ptan where the line from q touches the
+          // sphere of center pcen and radius rad, and the inner control points parc1 and parc2 of the cubic
+          // arc of the sphere from ptan to the pole, pcen + pdir * rad.  The side lies in the plane of q and
+          // the line through the pole and pcen, which runs through pend, the middle of the end, so the sides
+          // from different points of the end never cross.  In that plane ( ptan - pcen ) . ( ptan - q ) = 0
+          // has two roots, and the side takes one that leads on to the pole: on q's side of the line
+          // through the pole and pcen, reached running along the meridian towards the pole, the one on
+          // the outward side of the line from pcen to q, away from pend, where both do.  Where neither
+          // does, the side runs straight to the pole.  The arc is the sphere's meridian from ptan to the
+          // pole.  From a point inside the sphere the side runs straight out to it, and with no radius it runs
+          // straight to the tip, ptan halfway along.
+          // Where the meridian would turn through little, sphere_split parts the arc from the side further
+          // back, and sphere_arc runs it on to the pole from there.
+          void cone_side( const point_type &q, const point_type &pend, const point_type &pcen, const data_type &rad,
+                          const point_type &pdir, point_type &ptan, point_type &parc1, point_type &parc2 ) const
+          {
+            tolerance_type tol;
+
+            point_type ptip = pcen + pdir * rad;
+
+            point_type dq = q - pcen;
+            data_type dlen = dq.norm();
+            if ( tol.approximately_equal( rad, 0.0 ) || tol.approximately_equal( dlen, 0.0 ) )
+            {
+              ptan = ( q + ptip ) * 0.5;
+              parc1 = ( ptan * 2.0 + ptip ) / 3.0;
+              parc2 = ( ptan + ptip * 2.0 ) / 3.0;
+              return;
+            }
+            dq = dq / dlen;
+
+            // Unit vector from the center to the tangent point.
+            point_type u = dq;
+            if ( dlen > rad )
+            {
+              point_type e = ( q - pend ) - dq * dq.dot( q - pend );
+              data_type elen = e.norm();
+              if ( tol.approximately_equal( elen, 0.0 ) )
+              {
+                e = pdir - dq * dq.dot( pdir );
+                elen = e.norm();
+              }
+              if ( !tol.approximately_equal( elen, 0.0 ) )
+              {
+                e = e / elen;
+
+                // The radius to the tangent point makes angle alpha with the line to q, cos( alpha ) = rad / |q - pcen|.
+                data_type ca = rad / dlen;
+                data_type sa = std::sqrt( 1.0 - ca * ca );
+                // Each root and the direction from q to it, which stays well set as the roots close on q.
+                u = dq * ca + e * sa;
+                if ( !cone_root_leads( q, u, dq * ( -dlen * sa ) + e * rad, pcen, pdir ) )
+                {
+                  u = dq * ca - e * sa;
+                  if ( !cone_root_leads( q, u, dq * ( -dlen * sa ) - e * rad, pcen, pdir ) )
+                  {
+                    u = pdir;
+                  }
+                }
+              }
+            }
+            ptan = pcen + u * rad;
+
+            if ( dlen <= rad )
+            {
+              sphere_arc( u, pcen, rad, pdir, parc1, parc2 );
+              return;
+            }
+
+            point_type o1 = ( q * 2.0 + ptan ) / 3.0;
+            point_type o2 = ( q + ptan * 2.0 ) / 3.0;
+            point_type dt;
+            sphere_split( q, o1, o2, ptan, dt, pcen, rad, pdir );
+            sphere_arc( ptan, dt, pcen, rad, pdir, parc1, parc2 );
+          }
+
+          // Whether the point of the sphere of center pcen in unit direction u from it, where the line from q
+          // along tq touches it, leads on to the pole, in direction pdir from the center: on q's side of the
+          // line through the pole and pcen, and reached running along the meridian towards the pole.
+          bool cone_root_leads( const point_type &q, const point_type &u, const point_type &tq, const point_type &pcen,
+                                const point_type &pdir ) const
+          {
+            point_type eo = ( q - pcen ) - pdir * pdir.dot( q - pcen );
+            if ( u.dot( eo ) < 0 )
+            {
+              return false;
+            }
+            point_type m = pdir - u * u.dot( pdir );
+            return tq.dot( m ) >= 0;
+          }
+
+          // Where the arc of the sphere of center pcen and radius rad from a side's tangent point to the pole,
+          // pcen + pdir * rad, would turn through less than a thirty-second of a half turn, the side's split
+          // moves back along its first part, the cubic q, o1, o2, ptan, by the sphere's radius times the
+          // shortfall, or at most halfway, so the arc's patch never collapses.  o1, o2 and ptan become the
+          // first part up to the split, and dt is the unit direction it reaches the split along.
+          void sphere_split( const point_type &q, point_type &o1, point_type &o2, point_type &ptan, point_type &dt,
+                             const point_type &pcen, const data_type &rad, const point_type &pdir ) const
+          {
+            tolerance_type tol;
+
+            data_type pi = eli::constants::math<data_type>::pi();
+            data_type tmin = pi / 32.0;
+
+            dt = ptan - o2;
+            if ( tol.approximately_equal( dt.norm(), 0.0 ) )
+            {
+              dt = ptan - q;
+            }
+            if ( !tol.approximately_equal( dt.norm(), 0.0 ) )
+            {
+              dt = dt / dt.norm();
+            }
+
+            point_type v = ptan - pcen;
+            data_type theta = 0;
+            if ( !tol.approximately_equal( v.norm(), 0.0 ) )
+            {
+              theta = unit_angle( v / v.norm(), pdir );
+            }
+            data_type plen = ( o1 - q ).norm() + ( o2 - o1 ).norm() + ( ptan - o2 ).norm();
+            if ( theta >= tmin || tol.approximately_equal( plen, 0.0 ) )
+            {
+              return;
+            }
+
+            data_type s = 1.0 - std::min( rad * ( tmin - theta ) / plen, static_cast<data_type>( 0.5 ) );
+            point_type a = q + ( o1 - q ) * s;
+            point_type b = o1 + ( o2 - o1 ) * s;
+            point_type c = o2 + ( ptan - o2 ) * s;
+            point_type ab = a + ( b - a ) * s;
+            point_type bc = b + ( c - b ) * s;
+            point_type split = ab + ( bc - ab ) * s;
+
+            o1 = a;
+            o2 = ab;
+            ptan = split;
+            dt = split - ab;
+            if ( tol.approximately_equal( dt.norm(), 0.0 ) )
+            {
+              dt = bc - split;
+            }
+            if ( !tol.approximately_equal( dt.norm(), 0.0 ) )
+            {
+              dt = dt / dt.norm();
+            }
+          }
+
+          // The inner control points parc1 and parc2 of the cubic arc of the sphere of center pcen and radius
+          // rad along its meridian from the point in unit direction u from the center to the pole,
+          // pcen + pdir * rad.
+          void sphere_arc( const point_type &u, const point_type &pcen, const data_type &rad, const point_type &pdir,
+                           point_type &parc1, point_type &parc2 ) const
+          {
+            tolerance_type tol;
+
+            point_type ptan = pcen + u * rad;
+            point_type ptip = pcen + pdir * rad;
+
+            // The meridian's tangent at the point, towards the pole.
+            data_type cth = std::max( std::min( u.dot( pdir ), static_cast<data_type>( 1 ) ), static_cast<data_type>( -1 ) );
+            point_type ttan = pdir - u * cth;
+            data_type alen = ttan.norm();
+            if ( tol.approximately_equal( alen, 0.0 ) )
+            {
+              parc1 = ( ptan * 2.0 + ptip ) / 3.0;
+              parc2 = ( ptan + ptip * 2.0 ) / 3.0;
+              return;
+            }
+
+            sphere_arc( ptan, ttan / alen, pcen, rad, pdir, parc1, parc2 );
+          }
+
+          // The inner control points parc1 and parc2 of the cubic arc of the circle from ptan, which it leaves
+          // along the unit direction dt, to the pole, pcen + pdir * rad.  With ptan on the sphere of center
+          // pcen and radius rad and dt along it, the circle is where the plane of ptan, dt and the pole cuts
+          // the sphere, and with dt along ptan's meridian it is the meridian.
+          void sphere_arc( const point_type &ptan, const point_type &dt, const point_type &pcen, const data_type &rad,
+                           const point_type &pdir, point_type &parc1, point_type &parc2 ) const
+          {
+            tolerance_type tol;
+
+            point_type ptip = pcen + pdir * rad;
+            point_type c = ptip - ptan;
+            data_type clen = c.norm();
+            if ( tol.approximately_equal( clen, 0.0 ) )
+            {
+              parc1 = ptan;
+              parc2 = ptip;
+              return;
+            }
+            point_type cu = c / clen;
+
+            // The arc turns through psi, and reaches the pole along dt reflected in the chord.  Its handles
+            // are those of no more than three quarters of a turn.
+            data_type psi = 2.0 * unit_angle( dt, cu );
+            point_type dtip = cu * ( 2.0 * cu.dot( dt ) ) - dt;
+            data_type h = arc_handle( std::min( psi, 1.5 * eli::constants::math<data_type>::pi() ), clen );
+            parc1 = ptan + dt * h;
+            parc2 = ptip - dtip * h;
+          }
+
+          // The angle between unit vectors a and b.
+          data_type unit_angle( const point_type &a, const point_type &b ) const
+          {
+            data_type c = std::max( std::min( a.dot( b ), static_cast<data_type>( 1 ) ), static_cast<data_type>( -1 ) );
+            return std::acos( c );
+          }
+
+          // The length of the inner control polygon legs of the cubic arc of a circle through angle psi with
+          // a chord of length clen.
+          data_type arc_handle( const data_type &psi, const data_type &clen ) const
+          {
+            data_type s = std::sin( 0.5 * psi );
+            if ( std::abs( s ) < 1e-8 )
+            {
+              return clen / 3.0;
+            }
+            data_type cbc = eli::constants::math<data_type>::cubic_bezier_circle_const();
+            return cbc * std::tan( 0.25 * psi ) * clen / ( 2.0 * s );
+          }
+
+          // The sides of a cone cap from segment c of the end, whose middle is pend.  cone_side finds the
+          // tangent point and arc control points exactly from points along the segment, which lie on the
+          // end, and fit_side_rows fits the rows to them.
+          template < typename curve__ >
+          void cone_sides( const curve__ &c, const point_type &pend, const point_type &pcen, const data_type &rad,
+                           const point_type &pdir,
+                           std::vector < point_type > &ptan, std::vector < point_type > &parc1,
+                           std::vector < point_type > &parc2 ) const
+          {
+            index_type nsamp = 8 * c.degree() + 1;
+
+            std::vector < data_type > ts( nsamp );
+            std::vector < std::vector < point_type > > vals( 3, std::vector < point_type >( nsamp ) );
+            for ( index_type i = 0; i < nsamp; i++ )
+            {
+              ts[i] = static_cast<data_type>( i ) / ( nsamp - 1 );
+              point_type q = c.f( ts[i] );
+              cone_side( q, pend, pcen, rad, pdir, vals[0][i], vals[1][i], vals[2][i] );
+            }
+
+            std::vector < std::vector < point_type > > rows;
+            fit_side_rows( c, pend, pdir, ts, vals, false, rows );
+            ptan = rows[0];
+            parc1 = rows[1];
+            parc2 = rows[2];
+          }
+
+          // Rows of control points across segment c of the end, whose middle is pend, fitted to their exact
+          // values vals at the segment's parameters ts.  Each exact value lies in the plane of its point of
+          // the end and the line through pend along pdir, so it is pend plus a distance along pdir plus a
+          // multiple of that point's offset across the line.  Each row is fitted with those two numbers per
+          // control point of the segment, applied to the control point's own offset across the line: exact
+          // at the segment's ends, least squares between.  The rows then go round the line as the end does,
+          // and a circular end centred on it is reproduced exactly.  Where across is set the values may leave
+          // those planes, and each control point takes a third number, a multiple of pdir crossed with its
+          // offset.
+          template < typename curve__ >
+          void fit_side_rows( const curve__ &c, const point_type &pend, const point_type &pdir,
+                              const std::vector < data_type > &ts, const std::vector < std::vector < point_type > > &vals,
+                              const bool &across, std::vector < std::vector < point_type > > &rows ) const
+          {
+            typedef Eigen::Matrix< data_type, Eigen::Dynamic, Eigen::Dynamic > matrix_type;
+
+            index_type deg = c.degree();
+            index_type nsamp = ts.size();
+
+            // Offsets across the line of the segment's control points, and those turned about the line.
+            std::vector < point_type > cpoff( deg + 1 ), cpturn( deg + 1 );
+            for ( index_type i = 0; i <= deg; i++ )
+            {
+              point_type o = c.get_control_point( i ) - pend;
+              cpoff[i] = o - pdir * pdir.dot( o );
+              cpturn[i] = pdir.cross( cpoff[i] );
+            }
+
+            index_type nper = 2;
+            if ( across )
+            {
+              nper = 3;
+            }
+
+            rows.resize( vals.size() );
+            for ( index_type k = 0; k < vals.size(); k++ )
+            {
+              std::vector < data_type > a( deg + 1, 0 ), b( deg + 1, 0 ), g( deg + 1, 0 );
+
+              // The ends are on the end: their numbers come straight from the exact values.
+              index_type iend[2] = { 0, deg };
+              index_type isamp[2] = { 0, nsamp - 1 };
+              for ( index_type e = 0; e < 2; e++ )
+              {
+                point_type x = vals[k][ isamp[e] ] - pend;
+                a[ iend[e] ] = pdir.dot( x );
+                data_type olen2 = cpoff[ iend[e] ].squaredNorm();
+                if ( olen2 > 0 )
+                {
+                  b[ iend[e] ] = ( x - pdir * a[ iend[e] ] ).dot( cpoff[ iend[e] ] ) / olen2;
+                  if ( across )
+                  {
+                    g[ iend[e] ] = x.dot( cpturn[ iend[e] ] ) / olen2;
+                  }
+                }
+              }
+
+              if ( deg >= 2 )
+              {
+                index_type ncol = nper * ( deg - 1 );
+                matrix_type A( 3 * nsamp, ncol ), rhs( 3 * nsamp, 1 ), x( ncol, 1 );
+                A.setZero();
+                for ( index_type m = 0; m < nsamp; m++ )
+                {
+                  std::vector < data_type > bern( deg + 1 );
+                  for ( index_type i = 0; i <= deg; i++ )
+                  {
+                    data_type bc;
+                    eli::mutil::dm::binomial_coefficient( bc, deg, i );
+                    bern[i] = bc * std::pow( ts[m], static_cast<data_type>( i ) ) * std::pow( 1 - ts[m], static_cast<data_type>( deg - i ) );
+                  }
+
+                  point_type r0 = vals[k][m] - pend;
+                  for ( index_type e = 0; e < 2; e++ )
+                  {
+                    index_type i = iend[e];
+                    r0 = r0 - ( pdir * a[i] + cpoff[i] * b[i] + cpturn[i] * g[i] ) * bern[i];
+                  }
+                  for ( index_type i = 1; i < deg; i++ )
+                  {
+                    for ( index_type d = 0; d < 3; d++ )
+                    {
+                      A( 3 * m + d, nper * ( i - 1 ) ) = bern[i] * pdir( d );
+                      A( 3 * m + d, nper * ( i - 1 ) + 1 ) = bern[i] * cpoff[i]( d );
+                      if ( across )
+                      {
+                        A( 3 * m + d, nper * ( i - 1 ) + 2 ) = bern[i] * cpturn[i]( d );
+                      }
+                    }
+                  }
+                  for ( index_type d = 0; d < 3; d++ )
+                  {
+                    rhs( 3 * m + d, 0 ) = r0( d );
+                  }
+                }
+
+                eli::mutil::opt::least_squares_uncon( x, A, rhs );
+                for ( index_type i = 1; i < deg; i++ )
+                {
+                  a[i] = x( nper * ( i - 1 ), 0 );
+                  b[i] = x( nper * ( i - 1 ) + 1, 0 );
+                  if ( across )
+                  {
+                    g[i] = x( nper * ( i - 1 ) + 2, 0 );
+                  }
+                }
+              }
+
+              rows[k].resize( deg + 1 );
+              for ( index_type i = 0; i <= deg; i++ )
+              {
+                rows[k][i] = pend + pdir * a[i] + cpoff[i] * b[i] + cpturn[i] * g[i];
+              }
+            }
+          }
+
           void dirty_prep()
           {
             prep_done = false;
@@ -2447,6 +2979,8 @@ namespace eli
 
           bool extendte;
           bool extendle;
+
+          data_type rad_factor;
           bool frame_given;
           point_type frame_axis;
           point_type frame_up;
