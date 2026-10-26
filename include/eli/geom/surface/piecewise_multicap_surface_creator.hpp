@@ -62,6 +62,15 @@ namespace eli
             ROUND_EXT,
             CONE,
             OGIVE,
+            PROFILE
+          };
+
+          // The profiles a PROFILE cap's sides follow from the end to its point.
+          enum profile_shape
+          {
+            POWER_LAW,
+            VON_KARMAN,
+            SEARS_HAACK,
           };
 
           typedef piecewise_creator_base<data__, dim__, tol__> base_class_type;
@@ -112,6 +121,9 @@ namespace eli
             rad_factor = 0;
             ogive_angle = 0;
             ogive_surfref = false;
+            profile = POWER_LAW;
+            profile_exp = 1;
+            profile_haack = 0;
             frame_given = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
@@ -146,6 +158,9 @@ namespace eli
             rad_factor = 0;
             ogive_angle = 0;
             ogive_surfref = false;
+            profile = POWER_LAW;
+            profile_exp = 1;
+            profile_haack = 0;
             frame_given = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
@@ -185,6 +200,15 @@ namespace eli
             ogive_surfref = surfref;
           }
 
+          // The profile a PROFILE cap's sides follow, for a power law its exponent, and for Von Karman the
+          // Haack series' C.
+          void set_profile_conditions( const index_type & shape, const data_type & exponent, const data_type & haack )
+          {
+            profile = shape;
+            profile_exp = exponent;
+            profile_haack = haack;
+          }
+
           // The frame the surface is built in.  A cap that closes on a point runs its length along axis, away
           // from the body, and its offset along up, made square to axis, each in units of the end's size
           // across axis.  axis points away from the body where the surface's direction across the end does
@@ -220,6 +244,7 @@ namespace eli
               case POINT:
               case CONE:
               case OGIVE:
+              case PROFILE:
                 return true;
               default:
                 return false;
@@ -238,6 +263,12 @@ namespace eli
               default:
                 return false;
             }
+          }
+
+          // Whether this cap's rows are the end scaled along a profile, as a profile cap's are.
+          bool profile_rows() const
+          {
+            return cap_type == PROFILE;
           }
 
           virtual bool create(piecewise_surface_type &ps) const
@@ -347,6 +378,22 @@ namespace eli
                                     dmean, pcen, rad, pdir, otop, obot );
             }
 
+            // A profile cap's profile from its point to the end, in ( s, f ): the distance from the point as a
+            // fraction of the cap's length, and the radius as a fraction of the end's.
+            piecewise_curve_type pprof;
+            std::vector<data_type> tprof;
+            point_type pproftip = ppoint + pnt_offset;
+            if ( profile_rows() )
+            {
+              profile_function fun;
+              profile_setup( fun );
+
+              data_type tstart( 0 );
+
+              profile_fit( pprof, tstart, fun );
+              pprof.get_pmap( tprof );
+            }
+
             std::vector<data_type> pmap, dvcap, ducap;
             // Get edge parameter map
             first_half.get_pmap( pmap );
@@ -366,6 +413,18 @@ namespace eli
             else if ( sphere_tip() )
             {
               ducap.resize( 4, delta_param / 2.0 );
+            }
+            else if ( profile_rows() )
+            {
+              // Each half of the cap has the profile's cubics, from the end to the point and back again.
+              index_type nprof = pprof.number_segments();
+              data_type dprof = delta_param / ( tprof[nprof] - tprof[0] );
+              ducap.resize( 2 * nprof );
+              for ( index_type ip = 0; ip < nprof; ip++ )
+              {
+                ducap[ip] = dprof * ( tprof[nprof - ip] - tprof[nprof - ip - 1] );
+                ducap[nprof + ip] = dprof * ( tprof[ip + 1] - tprof[ip] );
+              }
             }
             else
             {
@@ -556,6 +615,43 @@ namespace eli
                       s4.set_control_point( dn[1][j], 1, j );
                       s4.set_control_point( dn[0][j], 2, j );
                       s4.set_control_point( pdn, 3, j );
+                    }
+                  }
+                  break;
+                case PROFILE:
+                  {
+                    index_type nprof = pprof.number_segments();
+
+                    for ( index_type ip = 0; ip < nprof; ip++ )
+                    {
+                      // The upper side's cubic from the end towards the tip, and the lower side's from the tip
+                      // towards the end
+                      curve_type cpup, cpdn;
+                      pprof.get( cpup, nprof - 1 - ip );
+                      pprof.get( cpdn, ip );
+
+                      surface_type sup, sdn;
+                      sup.resize( 3, deg );
+                      sdn.resize( 3, deg );
+
+                      for ( index_type j = 0; j <= deg; j++ )
+                      {
+                        point_type pup, pdn;
+
+                        pup = clast.get_control_point( j );
+                        pdn = cfirst.get_control_point( j );
+
+                        for ( index_type k = 0; k <= 3; k++ )
+                        {
+                          sup.set_control_point( profile_row( cpup.get_control_point( 3 - k ), pup, porigin,
+                                                              pproftip ), k, j );
+                          sdn.set_control_point( profile_row( cpdn.get_control_point( k ), pdn, porigin,
+                                                              pproftip ), k, j );
+                        }
+                      }
+
+                      cap.set( sup, ip, i );
+                      cap.set( sdn, cap.number_u_patches() - nprof + ip, i );
                     }
                   }
                   break;
@@ -1079,7 +1175,7 @@ namespace eli
                   cap.set( s2, 2, i );
                   cap.set( s4, 3, i );
                 }
-                else
+                else if ( !profile_rows() )
                 {
                   cap.set( s1, 0, i );
                   cap.set( s2, 1, i );
@@ -1416,6 +1512,7 @@ namespace eli
                 case POINT:
                 case CONE:
                 case OGIVE:
+                case PROFILE:
                   {
                     c1.resize( deg );
 
@@ -3541,6 +3638,121 @@ namespace eli
             return nrm;
           }
 
+          // The control point of a profile cap's row at profile control point c, ( s, f ), for the point p of
+          // the end: the end's point p scaled about its middle pend by f and moved towards the tip ptip, s of
+          // the way from it.
+          point_type profile_row( const point_type &c, const point_type &p, const point_type &pend,
+                                  const point_type &ptip ) const
+          {
+            return ptip + ( pend - ptip ) * c( 0 ) + ( p - pend ) * c( 1 );
+          }
+
+          // A profile cap's profile from its point, t zero, to the end, t one: the point ( s, f ) and its
+          // derivative in t, s the distance from the point as a fraction of the cap's length and f the radius as
+          // a fraction of the end's.  A power law's radius is s raised to exponent, Von Karman's the Haack series
+          // with C haack, and Sears-Haack's the front half of the Sears-Haack body.  Near the point each radius
+          // rises as s to a power p, the exponent or three quarters.  Below one, s is t raised to one over p, so
+          // f rises with t: the profile leaves the point square to the axis with a finite derivative.  From one
+          // up, t is s, and the profile leaves the point along the axis.  Either way t runs along the flatter of
+          // s and f, and a power law of exponent p and one of 1 / p, the same curve with s and f swapped, are
+          // fitted alike.
+          class profile_function
+          {
+            public:
+              index_type shape;
+              data_type exponent;
+              data_type haack;
+
+              void operator()( const data_type &t, point_type &p, point_type &m ) const
+              {
+                data_type x = std::min( std::max( t, static_cast<data_type>( 0 ) ), static_cast<data_type>( 1 ) );
+
+                if ( shape == POWER_LAW )
+                {
+                  if ( exponent >= 1 )
+                  {
+                    data_type df = 0;
+                    if ( x > 0 )
+                    {
+                      df = exponent * std::pow( x, exponent - 1.0 );
+                    }
+                    else if ( exponent == 1 )
+                    {
+                      df = 1;
+                    }
+                    p << x, std::pow( x, exponent ), 0;
+                    m << 1, df, 0;
+                    return;
+                  }
+
+                  data_type ds = 0;
+                  if ( x > 0 )
+                  {
+                    ds = std::pow( x, 1.0 / exponent - 1.0 ) / exponent;
+                  }
+                  p << std::pow( x, 1.0 / exponent ), x, 0;
+                  m << ds, 1, 0;
+                  return;
+                }
+
+                data_type s = std::pow( x, static_cast<data_type>( 4.0 / 3.0 ) );
+                data_type ds = 4.0 / 3.0 * std::cbrt( x );
+
+                if ( shape == SEARS_HAACK )
+                {
+                  // ( s ( 2 - s ) ) to the three quarters is t ( 2 - s ) to the three quarters
+                  data_type g = 2.0 - s;
+                  data_type gq = std::pow( g, static_cast<data_type>( 0.75 ) );
+                  p << s, x * gq, 0;
+                  m << ds, gq - 0.75 * x * ds * gq / g, 0;
+                  return;
+                }
+
+                // The Haack series at th, where s is the half of one less the cosine of th
+                data_type pi = eli::constants::math<data_type>::pi();
+                data_type th = 2.0 * std::asin( std::sqrt( s ) );
+                data_type a;
+                if ( th < 1e-2 )
+                {
+                  data_type th2 = th * th;
+                  a = th * th2 * ( 2.0 / 3.0 - th2 * ( 2.0 / 15.0 - th2 * 4.0 / 315.0 ) );
+                }
+                else
+                {
+                  a = th - 0.5 * std::sin( 2.0 * th );
+                }
+                data_type sth = std::sin( th );
+                data_type f = std::sqrt( std::max( a + haack * sth * sth * sth, static_cast<data_type>( 0 ) ) / pi );
+
+                data_type df = std::sqrt( 8.0 * ( 2.0 / 3.0 + haack ) / pi );
+                if ( x > 0 && f > 0 )
+                {
+                  df = sth * ( 2.0 + 3.0 * haack * std::cos( th ) ) / ( pi * f ) * ds;
+                }
+                p << s, f, 0;
+                m << ds, df, 0;
+              }
+          };
+
+          // The profile fun a profile cap's rows follow, as set_profile_conditions sets it.
+          void profile_setup( profile_function &fun ) const
+          {
+            fun.shape = profile;
+            fun.exponent = profile_exp;
+            fun.haack = profile_haack;
+          }
+
+          // A profile cap's profile pc, along fun from its parameter tstart, zero at its point, to the end:
+          // cubics matching the profile's points and derivatives at their ends, halved until each misses the
+          // profile at its middle by less than a ten-thousandth, at most eight times.
+          void profile_fit( piecewise_curve_type &pc, const data_type &tstart, const profile_function &fun ) const
+          {
+            eli::geom::curve::piecewise_binary_cubic_creator_abstract< profile_function, data_type, dim__,
+                                                                       tolerance_type > pbcc;
+            pbcc.setup( fun, tstart, 1, 1e-4, 1, 8 );
+            pbcc.create( pc );
+          }
+
           // Rows of control points across segment c of the end, whose middle is pend, fitted to their exact
           // values vals at the segment's parameters ts.  Each exact value lies in the plane of its point of
           // the end and the line through pend along pdir, so it is pend plus a distance along pdir plus a
@@ -3699,6 +3911,9 @@ namespace eli
           data_type rad_factor;
           data_type ogive_angle;
           bool ogive_surfref;
+          index_type profile;
+          data_type profile_exp;
+          data_type profile_haack;
           bool frame_given;
           point_type frame_axis;
           point_type frame_up;
