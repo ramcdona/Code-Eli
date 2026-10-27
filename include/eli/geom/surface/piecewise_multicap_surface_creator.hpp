@@ -71,6 +71,7 @@ namespace eli
             POWER_LAW,
             VON_KARMAN,
             SEARS_HAACK,
+            MERIDIAN
           };
 
           typedef piecewise_creator_base<data__, dim__, tol__> base_class_type;
@@ -127,6 +128,7 @@ namespace eli
             truncate = false;
             frame_given = false;
             shear_offset = false;
+            scaled_rows = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
             {
@@ -166,6 +168,7 @@ namespace eli
             truncate = false;
             frame_given = false;
             shear_offset = false;
+            scaled_rows = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
             {
@@ -256,6 +259,16 @@ namespace eli
             shear_offset = sh;
           }
 
+          // Whether a cap that closes on a point, in a frame, is built as DATCOM builds a nose: each row
+          // the end scaled about its middle, as a profile cap's are.  A cone or ogive cap's profile is then its
+          // meridian, the cone or ogive and its sphere found for a round end the end's half width across, so on
+          // an elliptical end the sphere is an ellipsoid as high as the end is high to wide.  A truncated cap's
+          // face is the end scaled to the radius's share of that half width.
+          void set_scaled_conditions( const bool & sc )
+          {
+            scaled_rows = sc;
+          }
+
           // Whether this cap ends at a flat face: a truncated cone, ogive or profile cap with a face.
           bool truncated() const
           {
@@ -282,6 +295,11 @@ namespace eli
           // A truncated cap's sides run to its face instead.
           bool sphere_tip() const
           {
+            if ( meridian_rows() )
+            {
+              return false;
+            }
+
             switch ( cap_type )
             {
               case CONE:
@@ -295,7 +313,18 @@ namespace eli
           // Whether this cap's rows are the end scaled along a profile, as a profile cap's are.
           bool profile_rows() const
           {
+            if ( meridian_rows() )
+            {
+              return true;
+            }
+
             return cap_type == PROFILE;
+          }
+
+          // Whether this is a cone or ogive cap with scaled rows, built as a profile cap along its meridian.
+          bool meridian_rows() const
+          {
+            return scaled_rows && frame_given && ( cap_type == CONE || cap_type == OGIVE );
           }
 
           virtual bool create(piecewise_surface_type &ps) const
@@ -358,6 +387,15 @@ namespace eli
               return false;
             }
 
+            // A cone or ogive cap with scaled rows is built as a profile cap along its meridian.
+            bool scaled = scaled_rows && frame_given && closes_on_point( cap_type );
+            bool meridian = meridian_rows();
+            index_type ctype = cap_type;
+            if ( meridian )
+            {
+              ctype = PROFILE;
+            }
+
             // A truncated cap ends at a flat face centred on the point: the end scaled about its middle by
             // tface and moved there, so the face's radius is rad_factor times the length scale, as a cone
             // cap's sphere's is, where the end's is its root mean square distance from its middle.
@@ -367,6 +405,10 @@ namespace eli
             if ( trunc )
             {
               data_type rend = end_radius( porigin );
+              if ( scaled )
+              {
+                rend = end_half_width( porigin );
+              }
               if ( rend > 0 )
               {
                 tface = rad_factor * length_scale( porigin, tmidseam ) / rend;
@@ -438,6 +480,10 @@ namespace eli
             {
               profile_function fun;
               profile_setup( fun );
+              if ( meridian )
+              {
+                meridian_profile( fun, trunc, porigin, tmidseam );
+              }
 
               data_type tstart( 0 );
               if ( trunc )
@@ -538,7 +584,7 @@ namespace eli
                 surface_type s1, s2;
                 surface_type s3, s4;
 
-                switch( cap_type ){
+                switch( ctype ){
                 case FLAT:
                   {
                     s1.resize( 1, deg );
@@ -3992,9 +4038,62 @@ namespace eli
               data_type exponent;
               data_type haack;
 
+              // A MERIDIAN's pieces from the point to the end, in x from the point and r from the axis: each an
+              // arc of center ( cx, cr ), radius rho, from angle th0 to th1, or a line from ( x0, r0 ) to
+              // ( x1, r1 ).  Each takes t from tb to the next tb.  x and r are fractions of length and radius.
+              std::vector < bool > arc;
+              std::vector < data_type > cx, cr, rho, th0, th1, x0, r0, x1, r1, tb;
+              data_type length;
+              data_type radius;
+
+              // Piece k of a MERIDIAN at u, zero at its start and one at its end: the point and its derivative
+              // in u.
+              void piece( const index_type &k, const data_type &u, point_type &p, point_type &m ) const
+              {
+                data_type px, pr, dx, dr;
+                if ( arc[k] )
+                {
+                  data_type th = th0[k] + u * ( th1[k] - th0[k] );
+                  px = cx[k] + rho[k] * std::cos( th );
+                  pr = cr[k] + rho[k] * std::sin( th );
+                  dx = -rho[k] * std::sin( th ) * ( th1[k] - th0[k] );
+                  dr = rho[k] * std::cos( th ) * ( th1[k] - th0[k] );
+                }
+                else
+                {
+                  px = x0[k] + u * ( x1[k] - x0[k] );
+                  pr = r0[k] + u * ( r1[k] - r0[k] );
+                  dx = x1[k] - x0[k];
+                  dr = r1[k] - r0[k];
+                }
+                p << px / length, pr / radius, 0;
+                m << dx / length, dr / radius, 0;
+              }
+
               void operator()( const data_type &t, point_type &p, point_type &m ) const
               {
                 data_type x = std::min( std::max( t, static_cast<data_type>( 0 ) ), static_cast<data_type>( 1 ) );
+
+                if ( shape == MERIDIAN )
+                {
+                  index_type k = 0;
+                  while ( k + 1 < ( index_type )arc.size() && x > tb[k + 1] )
+                  {
+                    k++;
+                  }
+                  data_type dt = tb[k + 1] - tb[k];
+                  data_type u = 0;
+                  if ( dt > 0 )
+                  {
+                    u = ( x - tb[k] ) / dt;
+                  }
+                  piece( k, u, p, m );
+                  if ( dt > 0 )
+                  {
+                    m = m / dt;
+                  }
+                  return;
+                }
 
                 if ( shape == POWER_LAW )
                 {
@@ -4071,21 +4170,310 @@ namespace eli
             fun.haack = profile_haack;
           }
 
+          // fun as the meridian a cone or ogive cap with scaled rows follows, sharp where it is truncated.
+          // porigin is the middle of the end's seam, at tmidseam.
+          void meridian_profile( profile_function &fun, const bool &trunc, const point_type &porigin,
+                                 const data_type &tmidseam ) const
+          {
+            data_type sc = length_scale( porigin, tmidseam );
+            data_type b = rad_factor * sc;
+            data_type ang = ogive_angle;
+            if ( ogive_surfref )
+            {
+              ang += mean_surface_angle( porigin );
+            }
+            meridian_setup( fun, len_factor * sc, end_half_width( porigin ), b, ang, cap_type == OGIVE, trunc );
+          }
+
+          // The meridian of a round cone or ogive cap length long on an end radius across, with a sphere b in
+          // radius at its point, or none: from the point to the end, x along the axis and r from it.  A cone
+          // runs straight to the sphere it touches, or to the point.  An ogive is the circular arc that leaves
+          // the end at ang towards the axis and touches the sphere, or runs through the point, bending towards
+          // the axis where it leaves shallower than the cone and away where steeper.  The sphere's arc runs from
+          // the point round to where the cone or ogive touches it.  Where none touches, the meridian is the
+          // straight cone.  A truncated cap's meridian starts at the edge of its face, b from
+          // the axis at the point, the ogive running through it.
+          void meridian_setup( profile_function &fun, const data_type &length, const data_type &radius,
+                               const data_type &b, const data_type &ang, const bool &ogive, const bool &trunc ) const
+          {
+            data_type pi = eli::constants::math<data_type>::pi();
+
+            fun.shape = MERIDIAN;
+            fun.length = length;
+            fun.radius = radius;
+            fun.arc.clear();
+            fun.cx.clear(); fun.cr.clear(); fun.rho.clear(); fun.th0.clear(); fun.th1.clear();
+            fun.x0.clear(); fun.r0.clear(); fun.x1.clear(); fun.r1.clear();
+
+            data_type ex = length;
+            data_type er = radius;
+
+            // The point the meridian leaves the sphere, or where it starts, at the point or the face's edge.
+            data_type tx = 0;
+            data_type tr = 0;
+            if ( trunc )
+            {
+              tr = b;
+            }
+            bool sphere = !trunc && b > 0 && std::hypot( ex - b, er ) > b;
+
+            // The straight cone's meridian: where the line from the end touches the sphere, or the start.
+            data_type qx = tx;
+            data_type qr = tr;
+            if ( sphere )
+            {
+              data_type d = std::hypot( ex - b, er );
+              data_type phi = std::atan2( er, ex - b ) + std::acos( b / d );
+              qx = b + b * std::cos( phi );
+              qr = b * std::sin( phi );
+            }
+
+            bool done = false;
+            if ( ogive )
+            {
+              // An ogive leaving the end steeper than the cone bends away from the axis and touches the sphere
+              // from outside it; one leaving shallower bends towards it and holds the sphere inside it.  n is
+              // the normal to its direction at the end, towards its center.
+              data_type beta = std::atan2( er - qr, ex - qx );
+              bool convex = ang < beta;
+              data_type nx = std::sin( ang );
+              data_type nr = -std::cos( ang );
+              data_type side = 1.0;
+              if ( !convex )
+              {
+                nx = -nx;
+                nr = -nr;
+                side = -1.0;
+              }
+
+              data_type rho( 0 );
+              if ( std::abs( ang - beta ) > 1e-9 )
+              {
+                if ( sphere )
+                {
+                  // | O - C | = rho - b inside, rho + b outside, with O = E + rho n and C = ( b, 0 ).
+                  data_type ddx = ex - b;
+                  data_type ddr = er;
+                  data_type den = 2.0 * ( ddx * nx + ddr * nr + side * b );
+                  if ( den != 0 )
+                  {
+                    rho = ( b * b - ddx * ddx - ddr * ddr ) / den;
+                  }
+                }
+                else
+                {
+                  data_type chx = tx - ex;
+                  data_type chr = tr - er;
+                  data_type cn = chx * nx + chr * nr;
+                  if ( cn > 1e-12 * std::hypot( chx, chr ) )
+                  {
+                    rho = ( chx * chx + chr * chr ) / ( 2.0 * cn );
+                  }
+                }
+              }
+
+              if ( rho > 0 )
+              {
+                data_type ox = ex + rho * nx;
+                data_type orr = er + rho * nr;
+                if ( sphere )
+                {
+                  data_type gx = b - ox;
+                  data_type gr = -orr;
+                  data_type g = std::hypot( gx, gr );
+                  tx = ox + rho * gx / g;
+                  tr = orr + rho * gr / g;
+
+                  // An ogive that would touch the sphere past the axis reaches the axis first, and closes there
+                  // with no sphere: at the crossing nearer where it would touch.  Where it would touch the sphere
+                  // at the point, the crossing is the point.
+                  if ( tr < 0 && rho > std::abs( orr ) )
+                  {
+                    data_type h = std::sqrt( rho * rho - orr * orr );
+                    data_type x0 = ox - h;
+                    data_type x1 = ox + h;
+                    data_type xt = tx;
+                    tx = x0;
+                    if ( std::abs( x1 - xt ) < std::abs( x0 - xt ) )
+                    {
+                      tx = x1;
+                    }
+                    tr = 0;
+                    sphere = false;
+                  }
+                }
+
+                // The arc from where it leaves the sphere, or its start, to the end, the short way round.
+                data_type a0 = std::atan2( tr - orr, tx - ox );
+                data_type a1 = std::atan2( er - orr, ex - ox );
+                while ( a1 - a0 > pi )
+                {
+                  a1 -= 2.0 * pi;
+                }
+                while ( a0 - a1 > pi )
+                {
+                  a1 += 2.0 * pi;
+                }
+                if ( sphere )
+                {
+                  meridian_arc( fun, b, 0, b, pi, std::atan2( tr, tx - b ) );
+                }
+                meridian_arc( fun, ox, orr, rho, a0, a1 );
+                done = true;
+              }
+            }
+
+            if ( !done )
+            {
+              if ( sphere )
+              {
+                meridian_arc( fun, b, 0, b, pi, std::atan2( qr, qx - b ) );
+              }
+              meridian_line( fun, qx, qr, ex, er );
+            }
+
+            // Each piece takes an equal share of the parameter.
+            index_type npiece = fun.arc.size();
+            fun.tb.resize( npiece + 1 );
+            for ( index_type k = 0; k <= npiece; k++ )
+            {
+              fun.tb[k] = static_cast<data_type>( k ) / npiece;
+            }
+          }
+
+          static void meridian_arc( profile_function &fun, const data_type &cx, const data_type &cr,
+                                    const data_type &rho, const data_type &th0, const data_type &th1 )
+          {
+            fun.arc.push_back( true );
+            fun.cx.push_back( cx ); fun.cr.push_back( cr ); fun.rho.push_back( rho );
+            fun.th0.push_back( th0 ); fun.th1.push_back( th1 );
+            fun.x0.push_back( 0 ); fun.r0.push_back( 0 ); fun.x1.push_back( 0 ); fun.r1.push_back( 0 );
+          }
+
+          static void meridian_line( profile_function &fun, const data_type &x0, const data_type &r0,
+                                     const data_type &x1, const data_type &r1 )
+          {
+            fun.arc.push_back( false );
+            fun.cx.push_back( 0 ); fun.cr.push_back( 0 ); fun.rho.push_back( 0 );
+            fun.th0.push_back( 0 ); fun.th1.push_back( 0 );
+            fun.x0.push_back( x0 ); fun.r0.push_back( r0 ); fun.x1.push_back( x1 ); fun.r1.push_back( r1 );
+          }
+
+          // Half the end's width: its greatest distance from pend, its middle, across the frame's axis and up
+          // direction.
+          data_type end_half_width( const point_type &pend ) const
+          {
+            point_type wdir = frame_up.cross( frame_axis );
+            index_type n = 256;
+            data_type t0 = edge.get_t0();
+            data_type dt = ( edge.get_tmax() - t0 ) / n;
+
+            data_type w = 0;
+            for ( index_type k = 0; k <= n; k++ )
+            {
+              w = std::max( w, std::abs( wdir.dot( edge.f( t0 + k * dt ) - pend ) ) );
+            }
+            return w;
+          }
+
+          // The mean angle towards the axis at which the surface leaves the end, over points along it, in the
+          // plane of each point and the frame's axis: zero for a cylinder.
+          data_type mean_surface_angle( const point_type &pend ) const
+          {
+            point_type out = frame_outward();
+            index_type n = 64;
+            data_type t0 = edge.get_t0();
+            data_type dt = ( edge.get_tmax() - t0 ) / n;
+
+            data_type sum = 0;
+            index_type count = 0;
+            for ( index_type k = 0; k < n; k++ )
+            {
+              data_type t = t0 + ( k + 0.5 ) * dt;
+              point_type e = edge.f( t ) - pend;
+              e = e - out * out.dot( e );
+              point_type d = edelta.f( t );
+              if ( e.norm() > 0 && d.norm() > 0 )
+              {
+                sum += std::atan2( -d.dot( e / e.norm() ), d.dot( out ) );
+                count++;
+              }
+            }
+            if ( count == 0 )
+            {
+              return 0;
+            }
+            return sum / count;
+          }
+
           // A profile cap's profile pc, along fun from its parameter tstart, zero at its point, to the end:
           // cubics matching the profile's points and derivatives at their ends, halved until each misses the
           // profile at its middle by less than a ten-thousandth, at most eight times.
+          // A MERIDIAN is fitted a cubic to each piece, by meridian_fit.
           void profile_fit( piecewise_curve_type &pc, const data_type &tstart, const profile_function &fun ) const
           {
+            if ( fun.shape == MERIDIAN )
+            {
+              meridian_fit( pc, fun );
+              return;
+            }
+
             eli::geom::curve::piecewise_binary_cubic_creator_abstract< profile_function, data_type, dim__,
                                                                        tolerance_type > pbcc;
             pbcc.setup( fun, tstart, 1, 1e-4, 1, 8 );
             pbcc.create( pc );
           }
 
+          // A MERIDIAN fun as pc: one cubic for each piece, over the piece's share of the parameter.  A line's
+          // cubic is the line, and an arc's is the circular arc cubic, its handles the cubic Bezier circle
+          // constant times the tangent of a quarter of its turn times its radius long.
+          void meridian_fit( piecewise_curve_type &pc, const profile_function &fun ) const
+          {
+            typedef typename piecewise_curve_type::curve_type curve_type;
+
+            pc.clear();
+            pc.set_t0( 0 );
+            for ( index_type k = 0; k < ( index_type )fun.arc.size(); k++ )
+            {
+              data_type dt = fun.tb[k + 1] - fun.tb[k];
+              if ( dt <= 0 )
+              {
+                continue;
+              }
+
+              data_type h = 1.0 / 3.0;
+              if ( fun.arc[k] )
+              {
+                data_type turn = fun.th1[k] - fun.th0[k];
+                if ( turn != 0 )
+                {
+                  h = eli::constants::math<data_type>::cubic_bezier_circle_const() * std::tan( 0.25 * turn ) / turn;
+                }
+              }
+
+              point_type p0, m0, p1, m1;
+              fun.piece( k, 0, p0, m0 );
+              fun.piece( k, 1, p1, m1 );
+
+              curve_type c( 3 );
+              c.set_control_point( p0, 0 );
+              c.set_control_point( p0 + m0 * h, 1 );
+              c.set_control_point( p1 - m1 * h, 2 );
+              c.set_control_point( p1, 3 );
+              pc.push_back( c, dt );
+            }
+          }
+
           // The parameter along fun where its radius is the fraction f of the end's, by bisection, the radius
           // rising with the parameter.  Kept short of the end, where the profile would have no length left.
+          // A MERIDIAN starts at the face's edge.
           data_type profile_start( const data_type &f, const profile_function &fun ) const
           {
+            if ( fun.shape == MERIDIAN )
+            {
+              return 0;
+            }
+
             data_type tmax = 0.999;
             data_type lo = 0;
             data_type hi = tmax;
@@ -4275,6 +4663,7 @@ namespace eli
           bool truncate;
           bool frame_given;
           bool shear_offset;
+          bool scaled_rows;
           point_type frame_axis;
           point_type frame_up;
       };
