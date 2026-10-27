@@ -126,6 +126,7 @@ namespace eli
             profile_haack = 0;
             truncate = false;
             frame_given = false;
+            shear_offset = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
             {
@@ -164,6 +165,7 @@ namespace eli
             profile_haack = 0;
             truncate = false;
             frame_given = false;
+            shear_offset = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
             {
@@ -243,6 +245,15 @@ namespace eli
             }
             frame_up = frame_up / ulen;
             frame_given = true;
+          }
+
+          // Whether a cap that closes on a point in a frame takes its offset by shearing: built with none,
+          // then each point moved along the frame's up direction by the offset in proportion to its distance
+          // from the plane of the end, so the end stays put and the point reaches the offset.  This is how
+          // DATCOM cambers a body.  A point or profile cap's offset is that shear already.
+          void set_shear_conditions( const bool & sh )
+          {
+            shear_offset = sh;
           }
 
           // Whether this cap ends at a flat face: a truncated cone, ogive or profile cap with a face.
@@ -336,6 +347,13 @@ namespace eli
             // A cap that closes on a point closes on the middle of the edge cap's tip curve.
             point_type ppoint;
             if ( !cap_point( cap_type, porigin, tmidseam, len_factor, off_factor, ppoint ) )
+            {
+              return false;
+            }
+
+            // A sheared cap is built with no offset, and sheared once built.
+            bool shear = shear_offset && frame_given && closes_on_point( cap_type );
+            if ( shear && !cap_point( cap_type, porigin, tmidseam, len_factor, 0, ppoint ) )
             {
               return false;
             }
@@ -1328,6 +1346,11 @@ namespace eli
                 }
 
               }
+            }
+
+            if ( shear )
+            {
+              shear_cap( cap, porigin );
             }
 
             // split the cap surface at mid point
@@ -2856,6 +2879,52 @@ namespace eli
             return true;
           }
 
+          // Shear the cap built with no offset: each control point moves along the frame's up direction by the
+          // offset times its distance from the plane of the end over the point's.  The end stays where it is,
+          // even where it is not square to the axis, and the point moves by the offset.  The shear is linear,
+          // so the surface moves with its control points.
+          void shear_cap( piecewise_surface_type &cap, const point_type &porigin ) const
+          {
+            typedef typename piecewise_surface_type::surface_type surface_type;
+
+            tolerance_type tol;
+
+            data_type sc = frame_scale( porigin );
+            data_type len = len_factor * sc;
+            if ( !( len > 0 ) )
+            {
+              return;
+            }
+            point_type out = frame_outward();
+            point_type nend = end_normal( out );
+
+            // The point, built with no offset, is len along out from porigin.
+            data_type ptlen = len * nend.dot( out );
+            if ( tol.approximately_equal( ptlen, 0.0 ) )
+            {
+              return;
+            }
+            point_type step = frame_up * ( off_factor * sc / ptlen );
+
+            for ( index_type iu = 0; iu < cap.number_u_patches(); iu++ )
+            {
+              for ( index_type iv = 0; iv < cap.number_v_patches(); iv++ )
+              {
+                surface_type patch;
+                cap.get( patch, iu, iv );
+                for ( index_type i = 0; i <= patch.degree_u(); i++ )
+                {
+                  for ( index_type j = 0; j <= patch.degree_v(); j++ )
+                  {
+                    point_type cp = patch.get_control_point( i, j );
+                    patch.set_control_point( cp + step * nend.dot( cp - porigin ), i, j );
+                  }
+                }
+                cap.set( patch, iu, iv );
+              }
+            }
+          }
+
           // The frame's axis, pointing away from the body: the side of the end the surface's direction across
           // it leans to, its derivative across the end summed along it, or the axis as given where that is
           // square to the axis.
@@ -4205,6 +4274,7 @@ namespace eli
           data_type profile_haack;
           bool truncate;
           bool frame_given;
+          bool shear_offset;
           point_type frame_axis;
           point_type frame_up;
       };
