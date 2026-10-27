@@ -124,6 +124,7 @@ namespace eli
             profile = POWER_LAW;
             profile_exp = 1;
             profile_haack = 0;
+            truncate = false;
             frame_given = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
@@ -161,6 +162,7 @@ namespace eli
             profile = POWER_LAW;
             profile_exp = 1;
             profile_haack = 0;
+            truncate = false;
             frame_given = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
@@ -209,6 +211,13 @@ namespace eli
             profile_haack = haack;
           }
 
+          // Whether a cone, ogive or profile cap ends at a flat face in place of its point: the end scaled
+          // about its middle by the radius factor and moved to the point.
+          void set_truncate_conditions( const bool & tr )
+          {
+            truncate = tr;
+          }
+
           // The frame the surface is built in.  A cap that closes on a point runs its length along axis, away
           // from the body, and its offset along up, made square to axis, each in units of the end's size
           // across axis.  axis points away from the body where the surface's direction across the end does
@@ -236,6 +245,12 @@ namespace eli
             frame_given = true;
           }
 
+          // Whether this cap ends at a flat face: a truncated cone, ogive or profile cap with a face.
+          bool truncated() const
+          {
+            return truncate && rad_factor > 0 && ( cap_type == CONE || cap_type == OGIVE || cap_type == PROFILE );
+          }
+
           // Whether a cap of type typ closes on a single point.
           static bool closes_on_point( const index_type &typ )
           {
@@ -253,6 +268,7 @@ namespace eli
 
           // Whether this cap's sides run from the end onto a spherical tip that touches its point, as a cone
           // cap's do.
+          // A truncated cap's sides run to its face instead.
           bool sphere_tip() const
           {
             switch ( cap_type )
@@ -324,6 +340,21 @@ namespace eli
               return false;
             }
 
+            // A truncated cap ends at a flat face centred on the point: the end scaled about its middle by
+            // tface and moved there, so the face's radius is rad_factor times the length scale, as a cone
+            // cap's sphere's is, where the end's is its root mean square distance from its middle.
+            bool trunc = truncated();
+            point_type pface = ppoint + pnt_offset;
+            data_type tface( 0 );
+            if ( trunc )
+            {
+              data_type rend = end_radius( porigin );
+              if ( rend > 0 )
+              {
+                tface = rad_factor * length_scale( porigin, tmidseam ) / rend;
+              }
+            }
+
             // A spherical tip touches the point, and the sides gather on the sphere at its pole.
             point_type pcen, axis, pdir;
             data_type rad( 0 );
@@ -380,6 +411,8 @@ namespace eli
 
             // A profile cap's profile from its point to the end, in ( s, f ): the distance from the point as a
             // fraction of the cap's length, and the radius as a fraction of the end's.
+            // A truncated cap's profile starts where its radius is tface, s0 of the way from a point beyond
+            // the face, pproftip, so the face is at the cap's point.
             piecewise_curve_type pprof;
             std::vector<data_type> tprof;
             point_type pproftip = ppoint + pnt_offset;
@@ -389,9 +422,19 @@ namespace eli
               profile_setup( fun );
 
               data_type tstart( 0 );
+              if ( trunc )
+              {
+                tstart = profile_start( tface, fun );
+              }
 
               profile_fit( pprof, tstart, fun );
               pprof.get_pmap( tprof );
+
+              data_type s0 = pprof.f( pprof.get_t0() )( 0 );
+              if ( trunc && s0 < 1 )
+              {
+                pproftip = ( pface - porigin * s0 ) / ( 1 - s0 );
+              }
             }
 
             std::vector<data_type> pmap, dvcap, ducap;
@@ -417,13 +460,22 @@ namespace eli
             else if ( profile_rows() )
             {
               // Each half of the cap has the profile's cubics, from the end to the point and back again.
+              // A truncated cap's halves give the profile half their parameter and the face the other half.
               index_type nprof = pprof.number_segments();
               data_type dprof = delta_param / ( tprof[nprof] - tprof[0] );
+              if ( trunc )
+              {
+                dprof = 0.5 * dprof;
+              }
               ducap.resize( 2 * nprof );
               for ( index_type ip = 0; ip < nprof; ip++ )
               {
                 ducap[ip] = dprof * ( tprof[nprof - ip] - tprof[nprof - ip - 1] );
                 ducap[nprof + ip] = dprof * ( tprof[ip + 1] - tprof[ip] );
+              }
+              if ( trunc )
+              {
+                ducap.insert( ducap.begin() + nprof, 2, 0.5 * delta_param );
               }
             }
             else
@@ -518,6 +570,32 @@ namespace eli
                   }
                   break;
                 case CONE:
+                  if ( trunc )
+                  {
+                    // Straight sides from the end to the face, then the face
+                    s3.resize( 1, deg );
+                    s1.resize( 1, deg );
+                    s2.resize( 1, deg );
+                    s4.resize( 1, deg );
+
+                    for ( index_type j = 0; j <= deg; j++ )
+                    {
+                      point_type pup = clast.get_control_point( j );
+                      point_type pdn = cfirst.get_control_point( j );
+                      point_type fup = pface + ( pup - porigin ) * tface;
+                      point_type fdn = pface + ( pdn - porigin ) * tface;
+
+                      s3.set_control_point( pup, 0, j );
+                      s3.set_control_point( fup, 1, j );
+                      s1.set_control_point( fup, 0, j );
+                      s1.set_control_point( pface, 1, j );
+                      s2.set_control_point( pface, 0, j );
+                      s2.set_control_point( fdn, 1, j );
+                      s4.set_control_point( fdn, 0, j );
+                      s4.set_control_point( pdn, 1, j );
+                    }
+                  }
+                  else
                   {
                     s3.resize( 1, deg );
                     s1.resize( 3, deg );
@@ -567,6 +645,50 @@ namespace eli
                   }
                   break;
                 case OGIVE:
+                  if ( trunc )
+                  {
+                    // Circular arcs from the end to the face, then the face
+                    s3.resize( 3, deg );
+                    s1.resize( 1, deg );
+                    s2.resize( 1, deg );
+                    s4.resize( 3, deg );
+
+                    curve_type cdfirst, cdlast;
+                    ed_first_half.get( cdfirst, i );
+                    ed_second_half.get( cdlast, i );
+
+                    point_type tup0, tup1, tdn0, tdn1;
+                    end_tangents( second_half, first_half, i, tup0, tup1 );
+                    end_tangents( first_half, second_half, i, tdn0, tdn1 );
+
+                    std::vector < std::vector < point_type > > up, dn;
+                    ogive_truncated_sides( clast, cdlast, tup0, tup1, pnorm, porigin, pface, tface, up );
+                    ogive_truncated_sides( cfirst, cdfirst, tdn0, tdn1, pnorm, porigin, pface, tface, dn );
+
+                    for ( index_type j = 0; j <= deg; j++ )
+                    {
+                      point_type pup = clast.get_control_point( j );
+                      point_type pdn = cfirst.get_control_point( j );
+                      point_type fup = pface + ( pup - porigin ) * tface;
+                      point_type fdn = pface + ( pdn - porigin ) * tface;
+
+                      s3.set_control_point( pup, 0, j );
+                      s3.set_control_point( up[0][j], 1, j );
+                      s3.set_control_point( up[1][j], 2, j );
+                      s3.set_control_point( fup, 3, j );
+
+                      s1.set_control_point( fup, 0, j );
+                      s1.set_control_point( pface, 1, j );
+                      s2.set_control_point( pface, 0, j );
+                      s2.set_control_point( fdn, 1, j );
+
+                      s4.set_control_point( fdn, 0, j );
+                      s4.set_control_point( dn[1][j], 1, j );
+                      s4.set_control_point( dn[0][j], 2, j );
+                      s4.set_control_point( pdn, 3, j );
+                    }
+                  }
+                  else
                   {
                     s3.resize( 3, deg );
                     s1.resize( 3, deg );
@@ -652,6 +774,30 @@ namespace eli
 
                       cap.set( sup, ip, i );
                       cap.set( sdn, cap.number_u_patches() - nprof + ip, i );
+                    }
+
+                    // A truncated cap's face, from the profile's first rows to the point
+                    if ( trunc )
+                    {
+                      curve_type cpfirst;
+                      pprof.get( cpfirst, 0 );
+                      point_type cface = cpfirst.get_control_point( 0 );
+
+                      surface_type sup, sdn;
+                      sup.resize( 1, deg );
+                      sdn.resize( 1, deg );
+                      for ( index_type j = 0; j <= deg; j++ )
+                      {
+                        point_type fup = profile_row( cface, clast.get_control_point( j ), porigin, pproftip );
+                        point_type fdn = profile_row( cface, cfirst.get_control_point( j ), porigin, pproftip );
+
+                        sup.set_control_point( fup, 0, j );
+                        sup.set_control_point( pface, 1, j );
+                        sdn.set_control_point( pface, 0, j );
+                        sdn.set_control_point( fdn, 1, j );
+                      }
+                      cap.set( sup, nprof, i );
+                      cap.set( sdn, nprof + 1, i );
                     }
                   }
                   break;
@@ -2777,6 +2923,21 @@ namespace eli
             return ( v - fwd * fwd.dot( v ) ).norm();
           }
 
+          // The end's root mean square distance from pend, its middle, over points along it.
+          data_type end_radius( const point_type &pend ) const
+          {
+            index_type n = 256;
+            data_type t0 = edge.get_t0();
+            data_type dt = ( edge.get_tmax() - t0 ) / n;
+
+            data_type sum = 0;
+            for ( index_type k = 0; k < n; k++ )
+            {
+              sum += ( edge.f( t0 + ( k + 0.5 ) * dt ) - pend ).squaredNorm();
+            }
+            return std::sqrt( sum / n );
+          }
+
           // The direction pdir of the circular arc from porigin, leaving it along unit vector d, where it
           // reaches pcen.  Where pcen lies on the line through porigin along d, pdir is d.
           void ogive_pole_direction( const point_type &porigin, const point_type &d, const point_type &pcen,
@@ -2797,6 +2958,7 @@ namespace eli
           // An ogive cap's pole direction pdir, from the arc that leaves porigin along dmean and reaches the
           // sphere's center pcen, and its top and bottom sides otop and obot, from the middles of the end's
           // halves, which the other sides are blended from.
+          // A truncated cap's sides run to its face, and it has neither.
           template < typename curve__ >
           void ogive_pole_and_sides( const curve__ &first_half, const curve__ &second_half,
                                      const curve__ &ed_first_half, const curve__ &ed_second_half,
@@ -2805,6 +2967,11 @@ namespace eli
                                      point_type &pdir, std::vector < point_type > &otop,
                                      std::vector < point_type > &obot ) const
           {
+            if ( truncated() )
+            {
+              return;
+            }
+
             ogive_pole_direction( porigin, dmean, pcen, pdir );
             ogive_reference_side( second_half, ed_second_half, tmidseam, pnorm, porigin, pcen, rad, pdir, otop );
             ogive_reference_side( first_half, ed_first_half, tmidseam, pnorm, porigin, pcen, rad, pdir, obot );
@@ -3607,6 +3774,99 @@ namespace eli
             fit_side_rows( c, pend, pdir, ts, vals, true, rows );
           }
 
+          // The side of a truncated ogive cap from point q of the end: the circular arc that leaves q along d,
+          // from ogive_direction, and runs through q's point of the face, qf.  oarc1 and oarc2 are its inner
+          // control points.  Where d runs along the chord the arc is the straight line to qf.
+          void ogive_truncated_side( const point_type &q, const point_type &qt, const point_type &dref,
+                                     const point_type &pend, const point_type &qf, point_type &oarc1,
+                                     point_type &oarc2 ) const
+          {
+            tolerance_type tol;
+
+            point_type c = qf - q;
+            data_type clen = c.norm();
+            oarc1 = ( q * 2.0 + qf ) / 3.0;
+            oarc2 = ( q + qf * 2.0 ) / 3.0;
+            if ( tol.approximately_equal( clen, 0.0 ) )
+            {
+              return;
+            }
+            point_type cu = c / clen;
+
+            point_type d;
+            if ( !ogive_direction( q, qt, dref, ogive_angle, pend, d ) )
+            {
+              return;
+            }
+
+            // The arc turns through psi, and reaches qf along d reflected in the chord.  Its handles are
+            // those of no more than three quarters of a turn.
+            data_type psi = 2.0 * unit_angle( d, cu );
+            point_type dt = cu * ( 2.0 * cu.dot( d ) ) - d;
+            data_type h = arc_handle( std::min( psi, 1.5 * eli::constants::math<data_type>::pi() ), clen );
+            oarc1 = q + d * h;
+            oarc2 = qf - dt * h;
+          }
+
+          // The sides of a truncated ogive cap from segment c of the end, whose middle is pend, to the face,
+          // the end scaled about pend by tface and moved to pface.  cd, qt0, qt1 and pnorm are as for
+          // ogive_sides.  At points along the segment, which lie on the end, ogive_truncated_side finds each
+          // side, and fit_side_rows fits the rows to them: the arc's two inner control points.
+          template < typename curve__ >
+          void ogive_truncated_sides( const curve__ &c, const curve__ &cd, const point_type &qt0,
+                                      const point_type &qt1, const point_type &pnorm, const point_type &pend,
+                                      const point_type &pface, const data_type &tface,
+                                      std::vector < std::vector < point_type > > &rows ) const
+          {
+            tolerance_type tol;
+
+            // The sides run about the line from pend to pface.
+            point_type pdir = pface - pend;
+            if ( tol.approximately_equal( pdir.norm(), 0.0 ) )
+            {
+              pdir = pnorm;
+            }
+            else
+            {
+              pdir = pdir / pdir.norm();
+            }
+
+            index_type nsamp = 8 * c.degree() + 1;
+
+            std::vector < data_type > ts( nsamp );
+            std::vector < std::vector < point_type > > vals( 2, std::vector < point_type >( nsamp ) );
+            for ( index_type i = 0; i < nsamp; i++ )
+            {
+              ts[i] = static_cast<data_type>( i ) / ( nsamp - 1 );
+              point_type q = c.f( ts[i] );
+              point_type qt = c.fp( ts[i] );
+              if ( i == 0 )
+              {
+                qt = qt0;
+              }
+              if ( i == nsamp - 1 )
+              {
+                qt = qt1;
+              }
+
+              point_type dref = pnorm;
+              if ( ogive_surfref )
+              {
+                point_type d = cd.f( ts[i] );
+                data_type dlen = d.norm();
+                if ( !tol.approximately_equal( dlen, 0.0 ) )
+                {
+                  dref = d / dlen;
+                }
+              }
+
+              point_type qf = pface + ( q - pend ) * tface;
+              ogive_truncated_side( q, qt, dref, pend, qf, vals[0][i], vals[1][i] );
+            }
+
+            fit_side_rows( c, pend, pdir, ts, vals, true, rows );
+          }
+
           // Unit normal of the end's best plane, by Newell's method over points along it, on axis's side.
           point_type end_normal( const point_type &axis ) const
           {
@@ -3751,6 +4011,35 @@ namespace eli
                                                                        tolerance_type > pbcc;
             pbcc.setup( fun, tstart, 1, 1e-4, 1, 8 );
             pbcc.create( pc );
+          }
+
+          // The parameter along fun where its radius is the fraction f of the end's, by bisection, the radius
+          // rising with the parameter.  Kept short of the end, where the profile would have no length left.
+          data_type profile_start( const data_type &f, const profile_function &fun ) const
+          {
+            data_type tmax = 0.999;
+            data_type lo = 0;
+            data_type hi = tmax;
+            point_type p, m;
+            fun( hi, p, m );
+            if ( p( 1 ) <= f )
+            {
+              return tmax;
+            }
+            for ( index_type k = 0; k < 60; k++ )
+            {
+              data_type mid = 0.5 * ( lo + hi );
+              fun( mid, p, m );
+              if ( p( 1 ) < f )
+              {
+                lo = mid;
+              }
+              else
+              {
+                hi = mid;
+              }
+            }
+            return 0.5 * ( lo + hi );
           }
 
           // Rows of control points across segment c of the end, whose middle is pend, fitted to their exact
@@ -3914,6 +4203,7 @@ namespace eli
           index_type profile;
           data_type profile_exp;
           data_type profile_haack;
+          bool truncate;
           bool frame_given;
           point_type frame_axis;
           point_type frame_up;
