@@ -251,6 +251,54 @@ namespace eli
 
       }
 
+      // Starts in the intervals of [tstart, tend] where C' . d, given as grad over the interval, may vanish, the
+      // distance to the point being stationary there, found by splitting the interval nsplit times.  An interval is passed over where
+      // its control points are all of one sign.  Where it is zero to within tol over the whole interval, the distance
+      // does not change along it, so every point is as good as any other, and its middle stands for them all.
+      template<typename onedcurve__>
+      void findstationary( std::vector< typename onedcurve__::data_type > & optpts,
+                           const typename onedcurve__::data_type &tstart,
+                           const typename onedcurve__::data_type &tend,
+                           const onedcurve__ &grad, const typename onedcurve__::data_type &tol,
+                           const typename onedcurve__::index_type &nsplit )
+      {
+        typedef typename onedcurve__::data_type data_type;
+
+        data_type tmid = ( tstart + tend ) * 0.5;
+
+        if ( grad.allnear( tol ) )
+        {
+          optpts.push_back( tmid );
+          return;
+        }
+        if ( !grad.straddles( tol ) )
+        {
+          return;
+        }
+        if ( nsplit <= 0 )
+        {
+          // The interval's end or middle where the derivative is nearest zero.
+          data_type t = tstart;
+          data_type g = std::abs( grad.f( 0 )(0) );
+          if ( std::abs( grad.f( 0.5 )(0) ) < g )
+          {
+            g = std::abs( grad.f( 0.5 )(0) );
+            t = tmid;
+          }
+          if ( std::abs( grad.f( 1 )(0) ) < g )
+          {
+            t = tend;
+          }
+          optpts.push_back( t );
+          return;
+        }
+
+        onedcurve__ low, high;
+        grad.split( low, high, 0.5 );
+        findstationary( optpts, tstart, tmid, low, tol, nsplit - 1 );
+        findstationary( optpts, tmid, tend, high, tol, nsplit - 1 );
+      }
+
       template<typename curve__>
       typename curve__::data_type minimum_distance_new(typename curve__::data_type &t, const curve__ &c, const typename curve__::point_type &pt)
       {
@@ -264,10 +312,17 @@ namespace eli
         data_type start = 0;
         data_type end = 1;
 
-        objcurve obj = c.mindistcurve( pt );
+        objcurve grad = c.mindistgrad( pt );
+
+        // Zero for the derivative, relative to the curve's size and its distance from the point.
+        typename curve__::bounding_box_type bb;
+        c.get_bounding_box( bb );
+        data_type len = ( bb.get_max() - bb.get_min() ).norm();
+        data_type far = ( pt - 0.5 * ( bb.get_max() + bb.get_min() ) ).norm() + len;
+        data_type tol = 1.0e-10 * len * far;
 
         std::vector< data_type > optpts;
-        findnonpos( optpts, start, end, obj, 6 );
+        findstationary( optpts, start, end, grad, tol, 6 );
 
         if ( optpts.empty() )
         {

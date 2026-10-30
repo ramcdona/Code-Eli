@@ -1047,9 +1047,10 @@ namespace eli
             return retcurve;
           }
 
-          onedbezcurve mindistcurve( const point_type & pt ) const
+          // The derivative of half the squared distance to pt: C' . ( C - pt ).  It vanishes where the distance is
+          // stationary.
+          onedbezcurve mindistgrad( const point_type & pt ) const
           {
-            onedbezcurve retcurve;
             typedef bezier<data_type, dim__> curve_type;
 
             curve_type c(*this);
@@ -1062,8 +1063,14 @@ namespace eli
 
             prod.product( *deriv, c );
 
-            onedbezcurve dot;
-            dot = prod.sumcompcurve();
+            return prod.sumcompcurve();
+          }
+
+          onedbezcurve mindistcurve( const point_type & pt ) const
+          {
+            onedbezcurve retcurve;
+
+            onedbezcurve dot = mindistgrad( pt );
 
             retcurve.product( dot, dot );
 
@@ -1118,6 +1125,58 @@ namespace eli
             retcurve.dot( c, nvec );
 
             return retcurve;
+          }
+
+          // Whether every control point is within tol of zero, so the curve is zero to within tol.
+          bool allnear( const data_type &tol ) const
+          {
+            index_type i, j;
+            index_type n(degree());
+
+            for (i=0; i<=n; ++i)
+            {
+              point_type p = get_control_point( i );
+
+              for (j=0; j<dim__; ++j)
+              {
+                if ( std::abs( p(j) ) > tol )
+                {
+                  return false;
+                }
+              }
+            }
+            return true;
+          }
+
+          // Whether every component's control points reach zero, to within tol, from both sides.  A component
+          // whose control points are all of one sign cannot be zero, as the curve is in their convex hull.
+          bool straddles( const data_type &tol ) const
+          {
+            index_type i, j;
+            index_type n(degree());
+
+            for (j=0; j<dim__; ++j)
+            {
+              bool lo = false;
+              bool hi = false;
+              for (i=0; i<=n; ++i)
+              {
+                data_type c = get_control_point( i )(j);
+                if ( c <= tol )
+                {
+                  lo = true;
+                }
+                if ( c >= -tol )
+                {
+                  hi = true;
+                }
+              }
+              if ( !lo || !hi )
+              {
+                return false;
+              }
+            }
+            return true;
           }
 
           bool allpos( const data_type &smallpos ) const
