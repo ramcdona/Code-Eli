@@ -1137,6 +1137,65 @@ namespace eli
 
       }
 
+      // One start from each group of the cells findstationary keeps, those whose rectangles in parameter touch at a side or a
+      // corner: the middle of the cell of the group whose middle is nearest pt.
+      template<typename surface__>
+      void mindist_cell_starts( std::vector< std::pair< typename surface__::data_type, typename surface__::data_type > > &starts,
+                                const std::vector< std::pair< std::pair< typename surface__::data_type, typename surface__::data_type >,
+                                                              std::pair< typename surface__::data_type, typename surface__::data_type > > > &cells,
+                                const surface__ &s, const typename surface__::point_type &pt )
+      {
+        typedef typename surface__::data_type data_type;
+        typedef std::pair< data_type, data_type > uvpair;
+
+        data_type tol = 1.0e-12;
+
+        std::vector< uvpair > mid( cells.size() );
+        std::vector< data_type > dist( cells.size() );
+        for ( size_t i = 0; i < cells.size(); i++ )
+        {
+          mid[i] = std::make_pair( 0.5 * ( cells[i].first.first + cells[i].second.first ),
+                                   0.5 * ( cells[i].first.second + cells[i].second.second ) );
+          dist[i] = eli::geom::point::distance( s.f( mid[i].first, mid[i].second ), pt );
+        }
+
+        std::vector< bool > seen( cells.size(), false );
+        for ( size_t i = 0; i < cells.size(); i++ )
+        {
+          if ( seen[i] )
+          {
+            continue;
+          }
+
+          size_t best = i;
+          std::vector< size_t > todo( 1, i );
+          seen[i] = true;
+          while ( !todo.empty() )
+          {
+            size_t k = todo.back();
+            todo.pop_back();
+
+            if ( dist[k] < dist[best] )
+            {
+              best = k;
+            }
+
+            for ( size_t j = 0; j < cells.size(); j++ )
+            {
+              if ( !seen[j] &&
+                   cells[j].first.first <= cells[k].second.first + tol && cells[k].first.first <= cells[j].second.first + tol &&
+                   cells[j].first.second <= cells[k].second.second + tol && cells[k].first.second <= cells[j].second.second + tol )
+              {
+                seen[j] = true;
+                todo.push_back( j );
+              }
+            }
+          }
+
+          starts.push_back( mid[best] );
+        }
+      }
+
       template<typename surface__>
       typename surface__::data_type minimum_distance_new(typename surface__::data_type &u, typename surface__::data_type &v, const surface__ &s, const typename surface__::point_type &pt)
       {
@@ -1151,10 +1210,26 @@ namespace eli
         uvpair start = std::make_pair( 0, 0 );
         uvpair end = std::make_pair( 1, 1 );
 
-        objsurf obj = s.mindistsurf( pt );
+        objsurf du, dv;
+        s.mindistgrad( du, dv, pt );
+
+        // Zero for the derivatives, relative to the patch's size and its distance from the point.
+        typename surface__::bounding_box_type bb;
+        s.get_bounding_box( bb );
+        data_type len = ( bb.get_max() - bb.get_min() ).norm();
+        data_type far = ( pt - 0.5 * ( bb.get_max() + bb.get_min() ) ).norm() + len;
+        data_type tol = 1.0e-10 * len * far;
+
+        // The cells the distance may be stationary in.  Touching cells hold one family of points as good as each
+        // other, a ring about a pole or a line where the distance hardly changes, so each group is one start.
+        deflate_zero_edges( du, tol );
+        deflate_zero_edges( dv, tol );
+
+        std::vector< std::pair< uvpair, uvpair > > cells;
+        findstationary( cells, start, end, du, dv, tol, 6 );
 
         std::vector< uvpair > optpts;
-        findnonpos( optpts, start, end, obj, 6 );
+        mindist_cell_starts( optpts, cells, s, pt );
 
         if ( optpts.empty() )
         {

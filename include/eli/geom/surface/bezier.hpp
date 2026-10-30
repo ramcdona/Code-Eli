@@ -2142,9 +2142,10 @@ namespace eli
             return retsurf;
           }
 
-          onedbezsurf mindistsurf( const point_type & pt ) const
+          // The derivatives across u and v of half the squared distance to pt: Su . ( S - pt ) and
+          // Sv . ( S - pt ).  Both vanish where the distance is stationary.
+          void mindistgrad( onedbezsurf & dot1, onedbezsurf & dot2, const point_type & pt ) const
           {
-            onedbezsurf retsurf;
             typedef bezier<data_type, dim__, tol__> surf_type;
 
             surf_type d(*this);
@@ -2160,9 +2161,16 @@ namespace eli
             prod1.product( *deriv_u, d );
             prod2.product( *deriv_v, d );
 
-            onedbezsurf dot1, dot2;
             dot1 = prod1.sumcompsurf();
             dot2 = prod2.sumcompsurf();
+          }
+
+          onedbezsurf mindistsurf( const point_type & pt ) const
+          {
+            onedbezsurf retsurf;
+
+            onedbezsurf dot1, dot2;
+            mindistgrad( dot1, dot2, pt );
 
             onedbezsurf sq1, sq2;
 
@@ -2257,6 +2265,64 @@ namespace eli
             sq.product( d, d );
 
             return sq.sumcompsurf();
+          }
+
+          // Whether every control point is within tol of zero, so the surface is zero to within tol.
+          bool allnear( const data_type &tol ) const
+          {
+            index_type i, j, k;
+            index_type n(degree_u()), m(degree_v());
+
+            for (i=0; i<=n; ++i)
+            {
+              for (j=0; j<=m; ++j)
+              {
+                point_type p = get_control_point( i, j );
+
+                for (k=0; k<dim__; ++k)
+                {
+                  if ( std::abs( p(k) ) > tol )
+                  {
+                    return false;
+                  }
+                }
+              }
+            }
+            return true;
+          }
+
+          // Whether every component's control points reach zero, to within tol, from both sides.  A component
+          // whose control points are all of one sign cannot be zero, as the surface is in their convex hull.
+          bool straddles( const data_type &tol ) const
+          {
+            index_type i, j, k;
+            index_type n(degree_u()), m(degree_v());
+
+            for (k=0; k<dim__; ++k)
+            {
+              bool lo = false;
+              bool hi = false;
+              for (i=0; i<=n; ++i)
+              {
+                for (j=0; j<=m; ++j)
+                {
+                  data_type c = get_control_point( i, j )(k);
+                  if ( c <= tol )
+                  {
+                    lo = true;
+                  }
+                  if ( c >= -tol )
+                  {
+                    hi = true;
+                  }
+                }
+              }
+              if ( !lo || !hi )
+              {
+                return false;
+              }
+            }
+            return true;
           }
 
           bool allpos( const data_type &smallpos ) const
