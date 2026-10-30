@@ -105,6 +105,7 @@ namespace eli
             pnt_offset = pnt;
             str_factor = sf;
             sweep_correct = sc;
+            frame_given = false;
 
             if ( orig_surface.number_u_patches() == 0 || orig_surface.number_v_patches() == 0 )
             {
@@ -135,6 +136,7 @@ namespace eli
             pnt_offset = pnt;
             str_factor = sf;
             sweep_correct = sc;
+            frame_given = false;
 
             if ( orig_edge.number_segments() == 0 || orig_edge.number_segments() != orig_edge_next.number_segments() )
             {
@@ -156,6 +158,33 @@ namespace eli
           {
             extendle = le;
             extendte = te;
+          }
+
+          // The frame the surface is built in.  A cap that closes on a point runs its length along axis, away
+          // from the body, and its offset along up, made square to axis, each in units of the end's size
+          // across axis.  axis points away from the body where the surface's direction across the end does
+          // not say which way that is.  Without a frame the cap finds its direction from the end.
+          void set_frame_conditions( const point_type &axis, const point_type &up )
+          {
+            tolerance_type tol;
+
+            data_type alen = axis.norm();
+            if ( tol.approximately_equal( alen, 0.0 ) )
+            {
+              frame_given = false;
+              return;
+            }
+            frame_axis = axis / alen;
+
+            frame_up = up - frame_axis * frame_axis.dot( up );
+            data_type ulen = frame_up.norm();
+            if ( tol.approximately_equal( ulen, 0.0 ) )
+            {
+              frame_given = false;
+              return;
+            }
+            frame_up = frame_up / ulen;
+            frame_given = true;
           }
 
           // Whether a cap of type typ closes on a single point.
@@ -2107,6 +2136,11 @@ namespace eli
                 if ( tol.approximately_equal(len, 0) )
                 {
                   p << 0, 0, 0;
+                  // A surface of no length across the end leaves it along the frame's axis, outward as given.
+                  if ( frame_given )
+                  {
+                    p = frame_axis;
+                  }
                 }
                 else
                 {
@@ -2266,6 +2300,11 @@ namespace eli
           // cap holds.
           bool length_across_forward() const
           {
+            // In a frame a cap that closes on a point moves along the frame's axis, and its move is the length.
+            if ( frame_given && closes_on_point( cap_type ) )
+            {
+              return false;
+            }
             return true;
           }
 
@@ -2297,12 +2336,21 @@ namespace eli
           // The point a cap of type typ closes on, for length and offset factors lf and of, from porigin, the
           // middle of the end's seam at tmidseam: the middle of the edge cap's tip curve.  A cap that does not
           // close on a point has porigin.
+          // In a frame the point is along the frame's outward axis and its up direction, each times the end's
+          // size across the axis.
           bool cap_point( const index_type &typ, const point_type &porigin, const data_type &tmidseam,
                           const data_type &lf, const data_type &of, point_type &ppoint ) const
           {
             ppoint = porigin;
             if ( !closes_on_point( typ ) )
             {
+              return true;
+            }
+
+            if ( frame_given )
+            {
+              data_type sc = frame_scale( porigin );
+              ppoint = porigin + frame_outward() * ( lf * sc ) + frame_up * ( of * sc );
               return true;
             }
 
@@ -2313,6 +2361,52 @@ namespace eli
             }
             ppoint = cedge.f( tmidseam );
             return true;
+          }
+
+          // The frame's axis, pointing away from the body: the side of the end the surface's direction across
+          // it leans to, its derivative across the end summed along it, or the axis as given where that is
+          // square to the axis.
+          point_type frame_outward() const
+          {
+            index_type n = 64;
+            data_type t0 = edelta.get_t0();
+            data_type dt = ( edelta.get_tmax() - t0 ) / n;
+
+            point_type sum;
+            sum << 0, 0, 0;
+            for ( index_type k = 0; k < n; k++ )
+            {
+              point_type d = edelta.f( t0 + ( k + 0.5 ) * dt );
+              data_type dlen = d.norm();
+              if ( dlen > 0 )
+              {
+                sum = sum + d / dlen;
+              }
+            }
+
+            if ( frame_axis.dot( sum ) < -1e-3 * n )
+            {
+              return -frame_axis;
+            }
+            return frame_axis;
+          }
+
+          // The end's size across the frame's axis: the root mean square distance of points along it from pend,
+          // its middle, square to the axis.
+          data_type frame_scale( const point_type &pend ) const
+          {
+            index_type n = 256;
+            data_type t0 = edge.get_t0();
+            data_type dt = ( edge.get_tmax() - t0 ) / n;
+
+            data_type sum = 0;
+            for ( index_type k = 0; k < n; k++ )
+            {
+              point_type d = edge.f( t0 + ( k + 0.5 ) * dt ) - pend;
+              d = d - frame_axis * frame_axis.dot( d );
+              sum += d.squaredNorm();
+            }
+            return std::sqrt( sum / n );
           }
 
           void dirty_prep()
@@ -2353,6 +2447,9 @@ namespace eli
 
           bool extendte;
           bool extendle;
+          bool frame_given;
+          point_type frame_axis;
+          point_type frame_up;
       };
     }
   }
