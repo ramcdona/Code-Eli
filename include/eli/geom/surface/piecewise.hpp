@@ -1200,6 +1200,9 @@ namespace eli
           {
             after.clear();
 
+            if (std::isnan(u_in))
+              return INVALID_PARAM;
+
             if (u_in <= ukey.get_pmin())
             {
               after = std::move(*this);
@@ -1247,6 +1250,9 @@ namespace eli
           error_code split_v(piecewise<surface__, data_type, dim__, tol__> &after, const data_type &v_in)
           {
             after.clear();
+
+            if (std::isnan(v_in))
+              return INVALID_PARAM;
 
             if (v_in <= vkey.get_pmin())
             {

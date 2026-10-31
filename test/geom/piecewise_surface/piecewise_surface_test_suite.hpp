@@ -3079,6 +3079,8 @@ class piecewise_surface_test_suite : public Test::Suite
       TEST_ASSERT(ps.split_v(nan)==piecewise_surface_type::INVALID_PARAM);
       TEST_ASSERT(ps.split_u(before, after, nan)==piecewise_surface_type::INVALID_PARAM);
       TEST_ASSERT(ps.split_v(before, after, nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.split_u(after, nan)==piecewise_surface_type::INVALID_PARAM);
+      TEST_ASSERT(ps.split_v(after, nan)==piecewise_surface_type::INVALID_PARAM);
       TEST_ASSERT(ps.number_u_patches()==2);
       TEST_ASSERT(ps.number_v_patches()==2);
 
