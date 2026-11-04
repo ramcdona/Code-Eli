@@ -151,6 +151,104 @@ namespace eli
         p=Q.row(0);
       }
 
+      // de Casteljau on n points of dimension m read from raw storage, point i at cp + i*stride,
+      // with the answer written to p[0..m).  The same operations in the same order as the fast
+      // path of de_casteljau above, so the answer is bit for bit the same; it only skips the
+      // Eigen maps and temporaries around them, which is most of the cost at low degree.  The
+      // first level reads the control points where they are rather than copying them first.
+      //
+      // This one is for n >= 2 known when compiling, so the loops unroll; de_casteljau_raw
+      // below takes any n.
+      template<typename scalar_type, int m, int n, typename index_type>
+      void de_casteljau_fixed(scalar_type *p, const scalar_type *cp, const index_type &stride, const scalar_type &t)
+      {
+        const scalar_type oneminust(1-t);
+        scalar_type q[(n-1)*m];
+        int k, i, j;
+
+        for (i=0; i<n-1; ++i)
+        {
+          for (j=0; j<m; ++j)
+          {
+            q[i*m+j] = oneminust*cp[i*stride+j] + t*cp[(i+1)*stride+j];
+          }
+        }
+
+        for (k=2; k<n; ++k)
+        {
+          for (i=0; i<(n-k)*m; ++i)
+          {
+            q[i] = oneminust*q[i] + t*q[i+m];
+          }
+        }
+
+        for (j=0; j<m; ++j)
+        {
+          p[j] = q[j];
+        }
+      }
+
+      // As de_casteljau_fixed, for any 1 <= n <= DC_MAX_N.
+      template<typename scalar_type, int m, typename index_type>
+      void de_casteljau_raw(scalar_type *p, const scalar_type *cp, const index_type &n, const index_type &stride, const scalar_type &t)
+      {
+        assert((n>=1) && (n<=DC_MAX_N));
+
+        index_type k, i, j;
+
+        // Linear and cubic are most of what is evaluated, and quadratic is the derivative of
+        // a cubic.
+        if (n==2)
+        {
+          de_casteljau_fixed<scalar_type, m, 2>(p, cp, stride, t);
+          return;
+        }
+        if (n==3)
+        {
+          de_casteljau_fixed<scalar_type, m, 3>(p, cp, stride, t);
+          return;
+        }
+        if (n==4)
+        {
+          de_casteljau_fixed<scalar_type, m, 4>(p, cp, stride, t);
+          return;
+        }
+
+        if (n==1)
+        {
+          for (j=0; j<m; ++j)
+          {
+            p[j] = cp[j];
+          }
+          return;
+        }
+
+        const scalar_type oneminust(1-t);
+        scalar_type q[DC_MAX_N*m];
+
+        for (i=0; i<n-1; ++i)
+        {
+          for (j=0; j<m; ++j)
+          {
+            q[i*m+j] = oneminust*cp[i*stride+j] + t*cp[(i+1)*stride+j];
+          }
+        }
+
+        for (k=2; k<n; ++k)
+        {
+          const index_type nrem((n-k)*m);
+          for (i=0; i<nrem; ++i)
+          {
+            q[i] = oneminust*q[i] + t*q[i+m];
+          }
+        }
+
+        for (j=0; j<m; ++j)
+        {
+          p[j] = q[j];
+        }
+      }
+
       // Evaluate Bezier relative to an offset (p0).  This is used to improve precision of surface intersection
       // algorithms.
       template<typename Derived1, typename Derived2>

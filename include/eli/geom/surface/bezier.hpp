@@ -941,6 +941,35 @@ namespace eli
             assert((u>=0) && (u<=1));
             assert((v>=0) && (v<=1));
 
+            // The same collapse as below, worked on the control point storage directly: the
+            // u-direction curve j is contiguous at j*(n+1)*dim__, and the v-direction curve i
+            // starts at i*dim__ with a stride of (n+1)*dim__.  Bit for bit the same answer.
+            if ((n<eli::geom::utility::DC_MAX_N) && (m<eli::geom::utility::DC_MAX_N) && (dim__<=eli::geom::utility::DC_MAX_M))
+            {
+              const data_type *pd = &(point_data[0]);
+              data_type q[eli::geom::utility::DC_MAX_N*dim__];
+              index_type np(n+1), mp(m+1), pstride(dim__), lstride((n+1)*dim__);
+
+              if (n<=m)
+              {
+                for (i=0; i<=m; ++i)
+                {
+                  eli::geom::utility::de_casteljau_raw<data_type, dim__>(q+i*dim__, pd+i*lstride, np, pstride, u);
+                }
+                eli::geom::utility::de_casteljau_raw<data_type, dim__>(ans.data(), q, mp, pstride, v);
+              }
+              else
+              {
+                for (i=0; i<=n; ++i)
+                {
+                  eli::geom::utility::de_casteljau_raw<data_type, dim__>(q+i*dim__, pd+i*pstride, mp, lstride, v);
+                }
+                eli::geom::utility::de_casteljau_raw<data_type, dim__>(ans.data(), q, np, pstride, u);
+              }
+
+              return ans;
+            }
+
             if (n<=m)
             {
               // collapse u -> temporary v-direction curve.  temp_v is a per-patch member, so this
