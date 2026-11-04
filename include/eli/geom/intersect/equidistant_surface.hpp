@@ -82,12 +82,9 @@ namespace eli
             point_type m( (p0+p1)/static_cast<data_type>(2) );
             point_type n( p1-p0 );
 
-            point_type S( ps->f(uu, vv) );
-            point_type Su( ps->f_u(uu, vv) );
-            point_type Sv( ps->f_v(uu, vv) );
-            point_type Suu( ps->f_uu(uu, vv) );
-            point_type Suv( ps->f_uv(uu, vv) );
-            point_type Svv( ps->f_vv(uu, vv) );
+            // The point and its derivatives from one patch lookup.
+            point_type S, Su, Sv, Suu, Suv, Svv;
+            ps->f_pt_derivs2(uu, vv, S, Su, Sv, Suu, Suv, Svv);
 
             point_type r( S-p0 );
 
