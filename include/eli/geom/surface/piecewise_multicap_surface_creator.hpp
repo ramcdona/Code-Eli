@@ -491,7 +491,17 @@ namespace eli
                 tstart = profile_start( tface, fun );
               }
 
+              // A profile with a radius, not truncated, is blunted by a sphere at its point.
+              piecewise_curve_type parc;
+              data_type sarc( 0 );
+              bool blunt = !trunc && !meridian && rad_factor > 0 &&
+                           blunt_profile_setup( fun, tstart, parc, sarc, porigin, tmidseam, scaled );
+
               profile_fit( pprof, tstart, fun );
+              if ( blunt )
+              {
+                blunt_profile_join( pprof, parc, sarc );
+              }
               pprof.get_pmap( tprof );
 
               data_type s0 = pprof.f( pprof.get_t0() )( 0 );
@@ -4046,6 +4056,16 @@ namespace eli
               data_type length;
               data_type radius;
 
+              // A profile other than a MERIDIAN runs from a virtual tip: its s is soff plus sscale times the
+              // profile's own.
+              data_type soff;
+              data_type sscale;
+
+              profile_function() : shape( POWER_LAW ), exponent( 1 ), haack( 0 ), length( 1 ), radius( 1 ), soff( 0 ),
+                sscale( 1 )
+              {
+              }
+
               // Piece k of a MERIDIAN at u, zero at its start and one at its end: the point and its derivative
               // in u.
               void piece( const index_type &k, const data_type &u, point_type &p, point_type &m ) const
@@ -4071,6 +4091,17 @@ namespace eli
               }
 
               void operator()( const data_type &t, point_type &p, point_type &m ) const
+              {
+                raw( t, p, m );
+                if ( shape != MERIDIAN )
+                {
+                  p( 0 ) = soff + sscale * p( 0 );
+                  m( 0 ) = sscale * m( 0 );
+                }
+              }
+
+              // The profile at t from its own tip.
+              void raw( const data_type &t, point_type &p, point_type &m ) const
               {
                 data_type x = std::min( std::max( t, static_cast<data_type>( 0 ) ), static_cast<data_type>( 1 ) );
 
@@ -4168,6 +4199,8 @@ namespace eli
             fun.shape = profile;
             fun.exponent = profile_exp;
             fun.haack = profile_haack;
+            fun.soff = 0;
+            fun.sscale = 1;
           }
 
           // fun as the meridian a cone or ogive cap with scaled rows follows, sharp where it is truncated.
@@ -4462,6 +4495,252 @@ namespace eli
               c.set_control_point( p1, 3 );
               pc.push_back( c, dt );
             }
+          }
+
+          // A profile cap's profile fun, blunted by a sphere rad_factor times the length scale in radius whose
+          // front is at the point, so the cap keeps its length and its end: the sphere's arc from the point round
+          // to where the profile touches it, then the profile to the end.  As a cone cap's sides are drawn from
+          // the end to touch its sphere, the profile runs to the end from a virtual tip, ahead of the point or
+          // behind it, placed so that it touches the sphere.  Its radius is a fraction of the end's half width
+          // where scaled, or else of its root mean square radius, as a truncated cap's face is.  A profile whose
+          // tip is rounder than the sphere, as a power law's of exponent one half or less can be, touches no sphere
+          // that small, and the cap stays sharp.  A sphere as big as the end, too big for any profile to touch, is met
+          // as a cone cap's is, by the line from the end that touches it.  porigin is the middle of the end's
+          // seam, at tmidseam.
+          // fun runs from the virtual tip, tstart is where it touches the sphere, and parc is the sphere's arc,
+          // which takes sarc of the cap's parameter; blunt_profile_join puts the arc ahead of the profile fitted
+          // from tstart.  False where the cap is not blunted so: where it stays sharp, and where it meets the
+          // cone's line, which fun becomes the meridian of.
+          bool blunt_profile_setup( profile_function &fun, data_type &tstart, piecewise_curve_type &parc,
+                                    data_type &sarc, const point_type &porigin, const data_type &tmidseam,
+                                    const bool &scaled ) const
+          {
+            data_type pi = eli::constants::math<data_type>::pi();
+
+            point_type pzero;
+            if ( !cap_point( cap_type, porigin, tmidseam, len_factor, 0, pzero ) )
+            {
+              return false;
+            }
+            data_type length = ( pzero + pnt_offset - porigin ).norm();
+            data_type radius = end_radius( porigin );
+            if ( scaled )
+            {
+              radius = end_half_width( porigin );
+            }
+            data_type b = rad_factor * length_scale( porigin, tmidseam );
+
+            data_type lp, tt;
+            if ( !( length > 0 && radius > 0 ) || !blunt_solve( fun, length, radius, b, lp, tt ) )
+            {
+              if ( length > 0 && b >= radius )
+              {
+                profile_function cone;
+                meridian_setup( cone, length, radius, b, 0, false, false );
+                fun = cone;
+              }
+              return false;
+            }
+
+            fun.soff = ( length - lp ) / length;
+            fun.sscale = lp / length;
+
+            // Where the profile touches the sphere, along the axis from the point and out from it.
+            point_type ptt, mtt;
+            fun( tt, ptt, mtt );
+            data_type xt = length * ptt( 0 );
+            data_type rt = radius * ptt( 1 );
+
+            profile_function arc;
+            arc.shape = MERIDIAN;
+            arc.length = length;
+            arc.radius = radius;
+            meridian_arc( arc, b, 0, b, pi, std::atan2( rt, xt - b ) );
+            arc.tb.resize( 2 );
+            arc.tb[0] = 0;
+            arc.tb[1] = 1;
+
+            meridian_fit( parc, arc );
+            tstart = tt;
+
+            // The arc takes a share of the parameter as its length is to the arc's and the profile's chord's
+            // together, and the profile's cubics the rest as they share it.  Each share is a binary fraction, as
+            // the halved profile's are, so they sum to one exactly and the cap spans its parameter exactly.
+            data_type side = std::hypot( length - xt, radius - rt );
+            data_type arclen = b * std::abs( pi - std::atan2( rt, xt - b ) );
+            sarc = 0.5;
+            if ( arclen + side > 0 )
+            {
+              sarc = arclen / ( arclen + side );
+            }
+            sarc = std::ldexp( std::round( std::ldexp( sarc, 10 ) ), -10 );
+            sarc = std::min( std::max( sarc, std::ldexp( static_cast<data_type>( 1 ), -10 ) ),
+                             1 - std::ldexp( static_cast<data_type>( 1 ), -10 ) );
+            return true;
+          }
+
+          // The blunted profile pc, from pc, the profile fitted from where it touches the sphere: the arc parc
+          // over sarc of the parameter, then the profile's cubics over the rest as they share it.
+          void blunt_profile_join( piecewise_curve_type &pc, const piecewise_curve_type &parc,
+                                   const data_type &sarc ) const
+          {
+            typedef typename piecewise_curve_type::curve_type curve_type;
+
+            piecewise_curve_type pside( pc );
+            pc.clear();
+            pc.set_t0( 0 );
+            curve_type c;
+            parc.get( c, 0 );
+            pc.push_back( c, sarc );
+
+            std::vector < data_type > tside;
+            pside.get_pmap( tside );
+            index_type nside = pside.number_segments();
+            data_type tspan = tside[nside] - tside[0];
+            for ( index_type k = 0; k < nside; k++ )
+            {
+              data_type share = std::ldexp( std::round( std::ldexp( ( tside[k + 1] - tside[k] ) / tspan, 16 ) ), -16 );
+              pside.get( c, k );
+              pc.push_back( c, ( 1 - sarc ) * share );
+            }
+          }
+
+          // For fun from a virtual tip lp ahead of the end, at parameter t, the point xc where the profile's normal
+          // meets the axis and the radius rho of the sphere about it that touches the profile there, along the
+          // axis from the cap's point length from the end, as the profile's radius is a fraction of radius.
+          static void blunt_sphere( const profile_function &fun, const data_type &length, const data_type &radius,
+                                    const data_type &lp, const data_type &t, data_type &xc, data_type &rho )
+          {
+            point_type p, m;
+            fun.raw( t, p, m );
+            data_type x = length - lp + lp * p( 0 );
+            data_type r = radius * p( 1 );
+            data_type xt = lp * m( 0 );
+            data_type rt = radius * m( 1 );
+            xc = x + r * rt / xt;
+            rho = r * std::sqrt( xt * xt + rt * rt ) / xt;
+          }
+
+          // The parameter t of the point nearest the end where the sphere touching fun, from a virtual tip lp
+          // ahead of the end, is b in radius, and where that sphere's front is from the cap's point, front; false
+          // where the sphere touching the profile at the end is no bigger than b, or none is b.
+          static bool blunt_touch( const profile_function &fun, const data_type &length, const data_type &radius,
+                                   const data_type &lp, const data_type &b, data_type &t, data_type &front )
+          {
+            index_type n = 200;
+            data_type xc, rho;
+            data_type thi = 1;
+            blunt_sphere( fun, length, radius, lp, thi, xc, rho );
+            if ( !( rho > b ) )
+            {
+              return false;
+            }
+            for ( index_type i = 1; i <= n; i++ )
+            {
+              data_type tlo = static_cast<data_type>( n - i ) / n;
+              if ( i == n )
+              {
+                tlo = 1e-9;
+              }
+              blunt_sphere( fun, length, radius, lp, tlo, xc, rho );
+              if ( !( rho > b ) )
+              {
+                for ( index_type k = 0; k < 60; k++ )
+                {
+                  data_type tm = 0.5 * ( tlo + thi );
+                  blunt_sphere( fun, length, radius, lp, tm, xc, rho );
+                  if ( rho > b )
+                  {
+                    thi = tm;
+                  }
+                  else
+                  {
+                    tlo = tm;
+                  }
+                }
+                t = 0.5 * ( tlo + thi );
+                blunt_sphere( fun, length, radius, lp, t, xc, rho );
+                front = xc - b;
+                return true;
+              }
+              thi = tlo;
+            }
+            return false;
+          }
+
+          // The virtual tip, lp ahead of the end, from which fun touches a sphere b in radius whose front is at the
+          // cap's point, length from the end, and the parameter tt where it touches: the one nearest the profile's
+          // own length, among lengths a quarter octave apart from a sixteenth of it to 2^40 times it, bisected.
+          // false where there is none.
+          static bool blunt_solve( const profile_function &fun, const data_type &length, const data_type &radius,
+                                   const data_type &b, data_type &lp, data_type &tt )
+          {
+            index_type jmin = -16;
+            index_type jmax = 160;
+
+            data_type tk, fk;
+            bool found = false;
+            data_type llo( 0 ), lhi( 0 ), flo( 0 );
+
+            // Outwards from the profile's own length, longer first.
+            for ( index_type step = 1; step <= jmax && !found; step++ )
+            {
+              for ( index_type side = 0; side < 2 && !found; side++ )
+              {
+                index_type j = step;
+                if ( side == 1 )
+                {
+                  j = -step;
+                }
+                if ( j < jmin )
+                {
+                  continue;
+                }
+                index_type jin = j - 1;
+                if ( j < 0 )
+                {
+                  jin = j + 1;
+                }
+                data_type lin = length * std::pow( static_cast<data_type>( 2 ), static_cast<data_type>( jin ) / 4 );
+                data_type lout = length * std::pow( static_cast<data_type>( 2 ), static_cast<data_type>( j ) / 4 );
+                data_type tin, fin;
+                bool hasin = blunt_touch( fun, length, radius, lin, b, tin, fin );
+                bool hasout = blunt_touch( fun, length, radius, lout, b, tk, fk );
+                if ( hasin && hasout && ( fin > 0 ) != ( fk > 0 ) )
+                {
+                  found = true;
+                  llo = lin;
+                  lhi = lout;
+                  flo = fin;
+                }
+              }
+            }
+            if ( !found )
+            {
+              return false;
+            }
+
+            for ( index_type k = 0; k < 60; k++ )
+            {
+              data_type lm = std::sqrt( llo * lhi );
+              data_type fm;
+              if ( !blunt_touch( fun, length, radius, lm, b, tt, fm ) )
+              {
+                return false;
+              }
+              if ( ( fm > 0 ) == ( flo > 0 ) )
+              {
+                llo = lm;
+                flo = fm;
+              }
+              else
+              {
+                lhi = lm;
+              }
+            }
+            lp = std::sqrt( llo * lhi );
+            data_type front;
+            return blunt_touch( fun, length, radius, lp, b, tt, front );
           }
 
           // The parameter along fun where its radius is the fraction f of the end's, by bisection, the radius
